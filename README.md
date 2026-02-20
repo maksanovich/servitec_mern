@@ -20,6 +20,9 @@ servitec/
 # Install all dependencies
 npm install
 
+# Seed admin user (backend must have MongoDB running)
+npm run seed:admin -w @servitec/backend
+
 # Run all apps
 npm run dev
 
@@ -29,10 +32,15 @@ npm run frontend  # http://localhost:6191
 npm run admin     # http://localhost:6192
 ```
 
+### Admin Login
+- URL: http://localhost:6192
+- Email: `admin@servitec.local`
+- Password: `admin123`
+
 ## Tech Stack
 
-- **Backend**: Node.js, Express, MongoDB
-- **Frontend**: React (landing, blog, track)
-- **Admin**: React (admin panel)
+- **Backend**: Node.js, Express, TypeScript, MongoDB
+- **Frontend**: React, Vite, TypeScript, Tailwind CSS (landing, blog, track)
+- **Admin**: React, Vite, TypeScript (admin panel)
 
 See [JD.md](./JD.md) for full requirements.

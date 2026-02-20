@@ -1,11 +1,9 @@
 import { Router } from 'express';
+import { authRoutes } from './auth.js';
 
 const apiRouter = Router();
 
-// Placeholder - add route modules here
-// apiRouter.use('/orders', orderRoutes);
-// apiRouter.use('/track', trackRoutes);
-// apiRouter.use('/blog', blogRoutes);
+apiRouter.use('/auth', authRoutes);
 
 apiRouter.get('/', (req, res) => {
   res.json({ message: 'Servitec API', version: '1.0.0' });

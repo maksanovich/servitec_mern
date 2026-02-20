@@ -21,11 +21,13 @@ app.get('/health', (req, res) => {
 });
 
 // Connect DB and start server
-connectDB().then(() => {
-  app.listen(PORT, () => {
-    console.log(`Backend running at http://localhost:${PORT}`);
+connectDB()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Backend running at http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('Failed to connect to MongoDB:', err);
+    process.exit(1);
   });
-}).catch((err) => {
-  console.error('Failed to connect to MongoDB:', err);
-  process.exit(1);
-});
