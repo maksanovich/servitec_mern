@@ -1,4 +1,9 @@
-import { Link, useLocation, Outlet } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
+import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
+import logoUrl from '../assets/images/logo.png';
+import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
+import { Input } from './ui';
 import {
   LayoutDashboard,
   Wrench,
@@ -13,8 +18,12 @@ import {
   Menu,
   Search,
   Sun,
+  Moon,
   Grid3X3,
   Bell,
+  User,
+  Activity,
+  LogOut,
   LucideIcon,
 } from 'lucide-react';
 
@@ -60,20 +69,46 @@ const navGroups: NavGroup[] = [
 
 export function AdminLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const profileDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+        setProfileDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = () => {
+    setProfileDropdownOpen(false);
+    logout();
+    navigate('/admin/login');
+  };
 
   return (
-    <div className="flex min-h-screen bg-slate-900">
+    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors">
       {/* Sidebar */}
-      <aside className="w-64 flex-shrink-0 bg-slate-800 border-r border-slate-700 flex flex-col">
-        <div className="p-4 border-b border-slate-700">
-          <Link to="/admin" className="flex items-center gap-2 text-white font-semibold">
-            <span className="text-blue-400 font-bold">Digitalserver</span>
+      <aside
+        className={`flex-shrink-0 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col transition-all duration-150 ${
+          sidebarCollapsed ? 'w-20' : 'w-64'
+        }`}
+      >
+        <div className={`border-b border-slate-200 dark:border-slate-700 flex items-center ${sidebarCollapsed ? 'p-3 justify-center' : 'p-4'}`}>
+          <Link to="/admin" className="flex justify-center w-full text-slate-900 dark:text-white font-semibold">
+            <img src={logoUrl} alt="Digitalserver" className="h-auto w-44 object-contain" />
           </Link>
         </div>
         <nav className="flex-1 overflow-y-auto py-4 px-2">
           {navGroups.map((group) => (
             <div key={group.label || 'main'} className="mb-4">
-              {group.label && (
+              {group.label && !sidebarCollapsed && (
                 <div className="px-3 py-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   {group.label}
                 </div>
@@ -85,14 +120,17 @@ export function AdminLayout() {
                     <li key={path}>
                       <Link
                         to={path}
-                        className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                        title={sidebarCollapsed ? label : undefined}
+                        className={`flex items-center rounded-lg text-sm transition-colors ${
+                          sidebarCollapsed ? 'justify-center px-2 py-2' : 'gap-3 px-3 py-2'
+                        } ${
                           isActive
-                            ? 'bg-blue-600/20 text-blue-400'
-                            : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-200'
+                            ? 'bg-blue-100 dark:bg-blue-600/20 text-blue-600 dark:text-blue-400'
+                            : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-200'
                         }`}
                       >
                         <Icon className="w-5 h-5 flex-shrink-0" />
-                        <span>{label}</span>
+                        {!sidebarCollapsed && <span>{label}</span>}
                       </Link>
                     </li>
                   );
@@ -106,56 +144,101 @@ export function AdminLayout() {
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <header className="h-14 flex-shrink-0 bg-slate-800/80 border-b border-slate-700 flex items-center justify-between px-4 gap-4">
+        <header className="h-14 flex-shrink-0 bg-white/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 gap-4 backdrop-blur-sm">
           <div className="flex items-center gap-3 flex-1 max-w-xl">
             <button
               type="button"
-              className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
-              aria-label="Menu"
+              onClick={() => setSidebarCollapsed((prev) => !prev)}
+              className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              aria-label="Toggle sidebar"
             >
               <Menu className="w-5 h-5" />
             </button>
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-              <input
-                type="text"
-                placeholder="Write something..."
-                className="w-full pl-10 pr-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-slate-200 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500"
-              />
+            <div className="flex-1 max-w-xl">
+              <Input leftIcon={Search} placeholder="Write something..." />
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button
               type="button"
-              className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
-              aria-label="Light mode"
+              onClick={toggleTheme}
+              className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
             >
-              <Sun className="w-5 h-5" />
+              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
             <button
               type="button"
-              className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+              className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
               aria-label="Apps"
             >
               <Grid3X3 className="w-5 h-5" />
             </button>
             <button
               type="button"
-              className="relative p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors"
+              className="relative p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
               aria-label="Notifications"
             >
               <Bell className="w-5 h-5" />
             </button>
-            <div className="flex items-center gap-3 pl-4 ml-2 border-l border-slate-600">
-              <div className="text-right">
-                <div className="text-sm font-medium text-white">Administrator User</div>
-                <div className="text-xs text-slate-500">Administrator</div>
-              </div>
-              <div className="relative">
-                <div className="w-9 h-9 rounded-full bg-slate-600 flex items-center justify-center text-slate-300 font-medium">
-                  A
+            <div className="flex items-center gap-3 pl-4 ml-2 border-l border-slate-200 dark:border-slate-600">
+              {!sidebarCollapsed && (
+                <div className="text-right hidden sm:block">
+                  <div className="text-sm font-medium text-slate-900 dark:text-white">
+                    {user?.name || user?.email || 'Administrator'}
+                  </div>
+                  <div className="text-xs text-slate-500 capitalize">{user?.role || 'Admin'}</div>
                 </div>
-                <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-slate-800" />
+              )}
+              <div className="relative" ref={profileDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => setProfileDropdownOpen((prev) => !prev)}
+                  className="flex items-center gap-2 p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+                  title="Profile menu"
+                >
+                  <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center text-slate-700 dark:text-slate-300 font-medium">
+                    {(user?.name || user?.email || 'A')[0].toUpperCase()}
+                  </div>
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-800" />
+                </button>
+                {profileDropdownOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-56 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg z-50">
+                    <Link
+                      to="/admin/profile"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50"
+                    >
+                      <User className="w-4 h-4" />
+                      Profile
+                    </Link>
+                    <Link
+                      to="/admin/config"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50"
+                    >
+                      <Settings className="w-4 h-4" />
+                      Configuration
+                    </Link>
+                    <Link
+                      to="/admin/activity"
+                      onClick={() => setProfileDropdownOpen(false)}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50"
+                    >
+                      <Activity className="w-4 h-4" />
+                      Activity
+                    </Link>
+                    <hr className="my-1 border-slate-200 dark:border-slate-600" />
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 text-left"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Logout
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
