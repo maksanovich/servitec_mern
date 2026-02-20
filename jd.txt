@@ -1,0 +1,86 @@
+PROJECT FOR A TECHNICAL SERVICE AND WARRANTY SYSTEM
+
+The objective of this project is to develop a system that allows for the proper administration of our technical service and warranty services. It will also include a public database detailing the problems and solutions submitted for technical service. This will enable us to feature these problems and solutions in a technical service blog, generating more traffic to our website and attracting new clients.
+
+It is important that the system be flexible, allowing for the addition of areas and new options, similar to the points system implemented.
+
+The system must allow clients to check the status and progress of their order.
+
+The system must communicate with clients via email and WhatsApp API, providing updates on the order's progress at each stage of the process.
+
+The system must alert technicians for orders that are longer than initially estimated, ensuring constant communication with the client.
+
+The system must calculate revenue by sales category for technical services. This information should only be visible to Admin and Super Admin users.
+
+The system must allow for the generation of reports that enable the proper management of technical services.
+
+The system must connect to the Perseo system API to perform various actions, such as: calling clients using only their ID number; adding products to be used in the system, along with their code, price, and description; contacting suppliers to process warranty claims; and recording the serial numbers of entered products.
+
+The system must send automatic messages after 30 days of the equipment being in the delivery area, and after 60 days, indicating that the product needs to be picked up and that failure to do so may result in it being considered abandoned.
+
+When the equipment is transferred to a third-party technician, the system must allow the technician to be charged the repair cost.
+
+The system must allow for the entry of computer equipment, enabling the tracking of the order status.
+
+The system must allow the assignment of areas, such as:
+
+Entrance Area
+Maintenance Area
+Outsourced Area
+Warehouse Area
+Delivery Area
+Spare Parts Waiting Area
+
+USER ROLES
+The system must have the following roles:
+
+Super Administrator
+Administrator
+Cashiers
+Lead Technician
+Outsourced Technician
+Customers
+
+
+2, client can not create order on our site directly?
+You can inquire about the products used in that technical service, but you cannot create orders.
+Orders are created by the cashiers who have physical contact with the customer in our store.
+The warehouse manager will also use it when a product we purchased from our suppliers is under wananty, and they will track it.
+
+
+The system will be administrative, but at the same time it will serve as a public database with all the problems that come into our workshop so that if someone identifies with the same problem, they can appear in Google search results and we can sell the products used for that repair.
+
+
+https://serviciotecnico.xyz/Admin
+admin@digitalserver.com.ec
+Emilioydiego007
+
+
+
+I'm sharing a simple system we currently use for managing our technical services.
+
+You can use it as an example.
+I would like to be able to configure an automatic email message when an order has been in the workshop for a long time, in order to extend 
+the waiting time and stay in touch with the cusmmer‘
+
+
+The customer will pay at our physical checkout
+The cashier must obtain a receipt from the technician detailing the products used, their serial numbers, and the cost of the technical
+service.
+All these products must be imported into the Perseo system.
+Sometimes our technical services can‘t be resolved here, and the service is sent to other specialized technicians. We also need to
+maintain traceability for that. The customer shouldn‘t know that their
+equipment has been sent to a third-party technician who also provides service to us.
+
+
+Physical cashiers often lack the appropriate vocabulary to describe technical issues with equipment.
+I would like them to be able to write in their own words, and then an Al-powered button can refine the description of the problem for which the
+equipment was brought in.
+
+Do you have landing page design?
+
+The system must allow printing a technical report that will be delivered physically once the service is completed. 
+
+The customer can check the status of their order through the  DigitalServer app and the technical support website.
+
+The 'pizza method' should be used. providing step-by-step instructions with a graphical interface.
