@@ -8,7 +8,7 @@ import {
 } from 'react';
 import { login as apiLogin, me, User } from '../api/auth';
 
-const TOKEN_KEY = 'servitec_admin_token';
+export const TOKEN_KEY = 'servitec_admin_token';
 
 interface AuthState {
   user: User | null;
@@ -24,11 +24,14 @@ interface AuthContextValue extends AuthState {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+const storedToken = typeof localStorage !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
     user: null,
-    token: localStorage.getItem(TOKEN_KEY),
-    loading: true,
+    token: storedToken,
+    // Only show loading when we have a token to verify; no token = not authenticated, redirect immediately
+    loading: !!storedToken,
   });
 
   const loadUser = useCallback(async (token: string) => {

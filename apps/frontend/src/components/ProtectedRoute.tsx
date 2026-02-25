@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth, TOKEN_KEY } from '../contexts/AuthContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -8,6 +8,12 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { isAuthenticated, loading } = useAuth();
   const location = useLocation();
+
+  // Require auth: no token in storage = always send to login (avoids showing panel before auth resolves)
+  const hasToken = typeof localStorage !== 'undefined' && !!localStorage.getItem(TOKEN_KEY);
+  if (!hasToken) {
+    return <Navigate to="/admin/login" state={{ from: location }} replace />;
+  }
 
   if (loading) {
     return (
