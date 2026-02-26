@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar, ChevronDown } from 'lucide-react';
 import { DatePicker } from './DatePicker';
 
@@ -16,7 +16,43 @@ export function DateRangePicker({
   className = '',
 }: DateRangePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [pendingStart, setPendingStart] = useState(startDate);
+  const [pendingEnd, setPendingEnd] = useState(endDate);
+
   const displayValue = `${startDate}, ${endDate}`;
+
+  // When popover opens, init pending from current applied values
+  useEffect(() => {
+    if (isOpen) {
+      setPendingStart(startDate);
+      setPendingEnd(endDate);
+    }
+  }, [isOpen, startDate, endDate]);
+
+  const handleStartChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newStart = e.target.value;
+    if (pendingEnd && newStart > pendingEnd) {
+      setPendingStart(newStart);
+      setPendingEnd(newStart);
+    } else {
+      setPendingStart(newStart);
+    }
+  };
+
+  const handleEndChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newEnd = e.target.value;
+    if (pendingStart && newEnd < pendingStart) {
+      setPendingEnd(newEnd);
+      setPendingStart(newEnd);
+    } else {
+      setPendingEnd(newEnd);
+    }
+  };
+
+  const handleApply = () => {
+    onChange?.(pendingStart, pendingEnd);
+    setIsOpen(false);
+  };
 
   return (
     <div className={`relative ${className}`}>
@@ -52,8 +88,9 @@ export function DateRangePicker({
                   Start date
                 </label>
                 <DatePicker
-                  value={startDate}
-                  onChange={(e) => onChange?.(e.target.value, endDate)}
+                  value={pendingStart}
+                  onChange={handleStartChange}
+                  max={pendingEnd || undefined}
                 />
               </div>
               <div>
@@ -61,13 +98,14 @@ export function DateRangePicker({
                   End date
                 </label>
                 <DatePicker
-                  value={endDate}
-                  onChange={(e) => onChange?.(startDate, e.target.value)}
+                  value={pendingEnd}
+                  onChange={handleEndChange}
+                  min={pendingStart || undefined}
                 />
               </div>
               <button
                 type="button"
-                onClick={() => setIsOpen(false)}
+                onClick={handleApply}
                 className="w-full py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors"
               >
                 Apply

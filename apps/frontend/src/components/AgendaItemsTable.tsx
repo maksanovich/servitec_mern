@@ -1,14 +1,13 @@
-import { useMemo, useState } from 'react';
-import DataTable, { type TableColumn } from 'react-data-table-component';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
-import * as XLSX from 'xlsx';
-import { BarChart3, FileText, List, CalendarDays, Download, FileSpreadsheet } from 'lucide-react';
-import { Card, CardHeader } from './ui';
-import { Button, ButtonGroup } from './ui';
-import { DateRangePicker } from './ui';
-import { Input } from './ui';
-import { useTheme } from '../contexts/ThemeContext';
+import { useRef, useCallback } from 'react';
+import {
+  DataTableWithToolbar,
+  exportTableToPDF,
+  exportTableToExcel,
+  type TableColumn,
+  type DataTableFilterState,
+} from './datatable';
+import { Download, FileSpreadsheet } from 'lucide-react';
+import { Card, CardHeader, Button, ButtonGroup } from './ui';
 
 export interface AgendaItem {
   branch: string;
@@ -23,199 +22,75 @@ export interface AgendaItem {
 }
 
 const columns: TableColumn<AgendaItem>[] = [
-  { name: 'Branch', selector: (row) => row.branch, sortable: true },
-  { name: 'Date', selector: (row) => row.date, sortable: true },
-  { name: 'Customer', selector: (row) => row.customer, sortable: true },
-  { name: 'Area', selector: (row) => row.area, sortable: true },
-  { name: 'State', selector: (row) => row.state, sortable: true },
-  { name: 'Service', selector: (row) => row.service, sortable: true },
-  { name: 'Advancement', selector: (row) => row.advancement, sortable: true },
-  { name: 'Total', selector: (row) => row.total, sortable: true },
-  { name: 'Debt', selector: (row) => row.debt, sortable: true },
+  { id: 'branch', name: 'Branch', selector: (row) => row.branch, sortable: true },
+  {
+    id: 'date',
+    name: 'Date',
+    selector: (row) => row.date,
+    sortable: true,
+    sortFunction: (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+  },
+  { id: 'customer', name: 'Customer', selector: (row) => row.customer, sortable: true },
+  { id: 'area', name: 'Area', selector: (row) => row.area, sortable: true },
+  { id: 'state', name: 'State', selector: (row) => row.state, sortable: true },
+  { id: 'service', name: 'Service', selector: (row) => row.service, sortable: true },
+  { id: 'advancement', name: 'Advancement', selector: (row) => row.advancement, sortable: true },
+  {
+    id: 'total',
+    name: 'Total',
+    selector: (row) => row.total,
+    sortable: true,
+    sortFunction: (a, b) => parseFloat(a.total.replace(/,/g, '')) - parseFloat(b.total.replace(/,/g, '')),
+  },
+  {
+    id: 'debt',
+    name: 'Debt',
+    selector: (row) => row.debt,
+    sortable: true,
+    sortFunction: (a, b) => parseFloat(a.debt.replace(/,/g, '')) - parseFloat(b.debt.replace(/,/g, '')),
+  },
 ];
 
-// Sample data - replace with API data when available
-const sampleData: AgendaItem[] = [];
+const sampleData: AgendaItem[] = [
+  { branch: 'Central', date: '2026-02-20', customer: 'Acme Corp', area: 'North', state: 'Scheduled', service: 'Maintenance', advancement: '25%', total: '1,200', debt: '0' },
+  { branch: 'East', date: '2026-02-21', customer: 'Tech Solutions', area: 'South', state: 'In Progress', service: 'Installation', advancement: '60%', total: '3,500', debt: '500' },
+  { branch: 'West', date: '2026-02-22', customer: 'Global Industries', area: 'Central', state: 'Pending', service: 'Repair', advancement: '0%', total: '890', debt: '0' },
+  { branch: 'Central', date: '2026-02-23', customer: 'Metro Services', area: 'East', state: 'Completed', service: 'Inspection', advancement: '100%', total: '450', debt: '0' },
+  { branch: 'North', date: '2026-02-24', customer: 'Prime Logistics', area: 'West', state: 'Scheduled', service: 'Maintenance', advancement: '10%', total: '2,100', debt: '200' },
+  { branch: 'South', date: '2026-02-25', customer: 'City Utilities', area: 'North', state: 'In Progress', service: 'Upgrade', advancement: '75%', total: '5,800', debt: '1,200' },
+];
 
-const customStyles = {
-  headCells: {
-    style: {
-      backgroundColor: 'rgb(241 245 249)',
-      color: 'rgb(15 23 42)',
-      fontWeight: 600,
-      fontSize: '0.8125rem',
-      padding: '0.75rem 1rem',
-    },
-  },
-  cells: {
-    style: {
-      fontSize: '0.875rem',
-      padding: '0.75rem 1rem',
-    },
-  },
-  rows: {
-    style: {
-      minHeight: '48px',
-    },
-  },
-};
-
-const darkCustomStyles = {
-  headCells: {
-    style: {
-      backgroundColor: 'rgb(30 41 59)',
-      color: 'rgb(248 250 252)',
-      fontWeight: 600,
-      fontSize: '0.8125rem',
-      padding: '0.75rem 1rem',
-    },
-  },
-  cells: {
-    style: {
-      fontSize: '0.875rem',
-      padding: '0.75rem 1rem',
-      color: 'rgb(226 232 240)',
-    },
-  },
-  rows: {
-    style: {
-      minHeight: '48px',
-      backgroundColor: 'rgb(15 23 42)',
-      '&:hover': {
-        backgroundColor: 'rgb(30 41 59)',
-      },
-    },
-  },
-};
+const exportOptions = { title: 'Agenda Items', filename: 'agenda-items' };
 
 export function AgendaItemsTable() {
-  const { isDark } = useTheme();
-  const [startDate, setStartDate] = useState('2026-02-20');
-  const [endDate, setEndDate] = useState('2026-02-20');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [pageSize, setPageSize] = useState(10);
+  const filteredDataRef = useRef<AgendaItem[]>(sampleData);
 
-  const filteredData = useMemo(() => {
-    if (!searchQuery.trim()) return sampleData;
-    const q = searchQuery.toLowerCase();
-    return sampleData.filter(
-      (row) =>
-        row.branch.toLowerCase().includes(q) ||
-        row.customer.toLowerCase().includes(q) ||
-        row.service.toLowerCase().includes(q) ||
-        row.state.toLowerCase().includes(q)
-    );
-  }, [searchQuery]);
+  const onFilteredDataChange = useCallback((_filters: DataTableFilterState, filteredData: AgendaItem[]) => {
+    filteredDataRef.current = filteredData;
+  }, []);
 
-  const handleDateRangeChange = (start: string, end: string) => {
-    setStartDate(start);
-    setEndDate(end);
-  };
-
-  const getRowValues = (row: AgendaItem) =>
-    columns.map((col) => {
-      const val = col.selector ? (col.selector as (r: AgendaItem) => unknown)(row) : '';
-      return String(val ?? '');
-    });
-
-  const exportPDF = () => {
-    const doc = new jsPDF();
-    doc.text('Agenda Items', 14, 20);
-    autoTable(doc, {
-      head: [columns.map((c) => (c.name as string) || '')],
-      body: filteredData.map(getRowValues),
-      startY: 28,
-      styles: { fontSize: 8 },
-      headStyles: { fillColor: [37, 99, 235] },
-    });
-    doc.save('agenda-items.pdf');
-  };
-
-  const exportExcel = () => {
-    const wsData = [
-      columns.map((c) => c.name as string),
-      ...filteredData.map(getRowValues),
-    ];
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Agenda Items');
-    XLSX.writeFile(wb, 'agenda-items.xlsx');
-  };
+  const exportPDF = () => exportTableToPDF(columns, filteredDataRef.current, exportOptions);
+  const exportExcel = () => exportTableToExcel(columns, filteredDataRef.current, exportOptions);
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader
-        title="Agenda Items"
-        actions={
-          <>
-            <ButtonGroup>
-              <Button variant="emerald" size="sm" leftIcon={BarChart3}>
-                Chart
-              </Button>
-              <Button variant="red" size="sm" leftIcon={FileText}>
-                Document
-              </Button>
-              <Button variant="amber" size="sm" leftIcon={List}>
-                List
-              </Button>
-              <Button variant="orange" size="sm" leftIcon={CalendarDays}>
-                Calendar
-              </Button>
-            </ButtonGroup>
-            <ButtonGroup>
-            <Button variant="secondary" size="sm" leftIcon={Download} onClick={exportPDF}>
-              Export PDF
-            </Button>
-            <Button variant="secondary" size="sm" leftIcon={FileSpreadsheet} onClick={exportExcel}>
-              Export Excel
-            </Button>
-            </ButtonGroup>
-            <select
-              value={pageSize}
-              onChange={(e) => setPageSize(Number(e.target.value))}
-              className="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 px-3 py-1.5 text-sm"
-            >
-              <option value={10}>10 per page</option>
-              <option value={25}>25 per page</option>
-              <option value={50}>50 per page</option>
-              <option value={100}>100 per page</option>
-            </select>
-            <DateRangePicker
-              startDate={startDate}
-              endDate={endDate}
-              onChange={handleDateRangeChange}
-            />
-            <Input
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-40"
-            />
-          </>
+      <CardHeader title="Agenda Items" />
+      <DataTableWithToolbar<AgendaItem>
+        data={sampleData}
+        columns={columns}
+        searchFields={['branch', 'customer', 'service', 'state']}
+        searchPlaceholder="Search..."
+        dateColumnId="date"
+        defaultStartDate="2026-02-20"
+        defaultEndDate="2026-02-25"
+        onFilteredDataChange={onFilteredDataChange}
+        rightContent={
+          <ButtonGroup>
+            <Button variant="secondary" size="sm" leftIcon={Download} onClick={exportPDF} title="Export PDF" className="p-2" aria-label="Export PDF" />
+            <Button variant="secondary" size="sm" leftIcon={FileSpreadsheet} onClick={exportExcel} title="Export Excel" className="p-2" aria-label="Export Excel" />
+          </ButtonGroup>
         }
       />
-      <div className="px-5 pb-5">
-        <DataTable
-          columns={columns}
-          data={filteredData}
-          pagination
-          paginationPerPage={pageSize}
-          paginationRowsPerPageOptions={[10, 25, 50, 100]}
-          noDataComponent={
-            <div className="py-12 text-center text-slate-500 dark:text-slate-400">
-              No data available in this table.
-            </div>
-          }
-          theme={isDark ? 'dark' : 'light'}
-          customStyles={isDark ? darkCustomStyles : customStyles}
-          paginationComponentOptions={{
-            rowsPerPageText: 'Show',
-            rangeSeparatorText: 'of',
-            selectAllRowsItem: true,
-            selectAllRowsItemText: 'All',
-          }}
-        />
-      </div>
     </Card>
   );
 }
