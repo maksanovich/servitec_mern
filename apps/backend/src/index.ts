@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import { config } from './config/index.js';
 import { connectDB } from './db/connection.js';
+import { seedAdminIfNeeded } from './db/seedAdmin.js';
 import { apiRouter } from './routes/index.js';
 
 const app = express();
@@ -20,8 +21,9 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'servitec-backend' });
 });
 
-// Connect DB and start server
+// Connect DB, seed admin if needed, start server
 connectDB()
+  .then(() => seedAdminIfNeeded())
   .then(() => {
     app.listen(PORT, () => {
       console.log(`Backend running at http://localhost:${PORT}`);
