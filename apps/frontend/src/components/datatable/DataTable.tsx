@@ -18,12 +18,14 @@ export function DataTable<T>(props: DataTableProps<T>) {
   const customStyles = propsStyles ?? (isDark ? darkStyles : lightStyles);
 
   return (
-    <RDT<T>
-      {...rest}
-      columns={columns}
-      data={data}
-      theme={theme}
-      customStyles={customStyles}
-    />
+    <div className="w-full max-w-full overflow-x-hidden">
+      <RDT<T>
+        {...rest}
+        columns={columns}
+        data={data}
+        theme={theme}
+        customStyles={customStyles}
+      />
+    </div>
   );
 }
