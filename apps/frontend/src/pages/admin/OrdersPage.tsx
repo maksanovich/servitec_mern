@@ -1,4 +1,5 @@
 import { useMemo, useRef, useCallback, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Home, Wrench, FileText, FileSpreadsheet, Download } from 'lucide-react';
 import { PageHeader, Card, Button, ButtonGroup } from '../../components/ui';
 import {
@@ -16,6 +17,7 @@ import {
   ordersColumns,
 } from './orders';
 import { OrderExpandedRow } from './orders/OrderExpandedRow';
+import { Plus, Minus } from 'lucide-react';
 
 export type { Order, OrderArea };
 
@@ -44,15 +46,16 @@ export function OrdersPage() {
           title="Orders - DIGITALSERVER TECHNICAL SERVICE"
           breadcrumb={[{ label: 'Dashboard', icon: Home }, { label: 'Order' }]}
         />
-        <Button
-          variant="emerald"
-          size="md"
-          leftIcon={Wrench}
-          onClick={() => {}}
-          className="sm:ml-auto"
-        >
-          New Order
-        </Button>
+        <Link to="/admin/repair-shop/new">
+          <Button
+            variant="emerald"
+            size="md"
+            leftIcon={Wrench}
+            className="sm:ml-auto"
+          >
+            New Order
+          </Button>
+        </Link>
       </div>
 
       {/* Area tabs */}
@@ -86,6 +89,10 @@ export function OrdersPage() {
           onFilteredDataChange={onFilteredDataChange}
           expandableRows
           expandableRowsComponent={OrderExpandedRow}
+          expandableIcon={{
+            collapsed: <Plus className="h-4 w-4" strokeWidth={2.5} />,
+            expanded: <Minus className="h-4 w-4" strokeWidth={2.5} />,
+          }}
           rightContent={
             <ButtonGroup>
               <Button

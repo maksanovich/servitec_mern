@@ -10,6 +10,7 @@ import { TrackPage } from './pages/TrackPage';
 import { LoginPage } from './pages/admin/LoginPage';
 import { DashboardPage } from './pages/admin/DashboardPage';
 import { OrdersPage } from './pages/admin/OrdersPage';
+import { NewOrderPage } from './pages/admin/NewOrderPage';
 import { AdminPlaceholder } from './pages/admin/AdminPlaceholder';
 
 function App() {
@@ -35,7 +36,8 @@ function App() {
         <Route path="profile" element={<AdminPlaceholder title="Profile" />} />
         <Route path="config" element={<AdminPlaceholder title="Configuration" />} />
         <Route path="activity" element={<AdminPlaceholder title="Activity" />} />
-        <Route path="repair-shop" element={<OrdersPage />} />
+        <Route path="order" element={<OrdersPage />} />
+        <Route path="order/new" element={<NewOrderPage />} />
         <Route path="workshop-config" element={<AdminPlaceholder title="Workshop Configurations" />} />
         <Route path="services" element={<AdminPlaceholder title="Services / Spare Parts" />} />
         <Route path="income" element={<AdminPlaceholder title="Monetary Income" />} />

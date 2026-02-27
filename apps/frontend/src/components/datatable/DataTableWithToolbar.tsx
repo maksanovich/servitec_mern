@@ -35,6 +35,8 @@ export interface DataTableWithToolbarProps<T> {
   expandableRows?: boolean;
   expandableRowsComponent?: React.ComponentType<{ data: T }>;
   expandableRowDisabled?: (row: T) => boolean;
+  /** Icons for expand/collapse (e.g. Plus when collapsed, Minus when expanded) */
+  expandableIcon?: { collapsed: React.ReactNode; expanded: React.ReactNode };
 }
 
 function getColumnId(col: TableColumn<unknown>): string | null {
@@ -93,6 +95,7 @@ export function DataTableWithToolbar<T>({
   expandableRows,
   expandableRowsComponent,
   expandableRowDisabled,
+  expandableIcon,
 }: DataTableWithToolbarProps<T>) {
   const [search, setSearch] = useState('');
   const [startDate, setStartDate] = useState(defaultStartDate);
@@ -154,6 +157,7 @@ export function DataTableWithToolbar<T>({
           expandableRows={expandableRows}
           expandableRowsComponent={expandableRowsComponent}
           expandableRowDisabled={expandableRowDisabled}
+          expandableIcon={expandableIcon}
         />
       </div>
     </>

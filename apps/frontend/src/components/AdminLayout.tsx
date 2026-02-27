@@ -115,7 +115,9 @@ export function AdminLayout() {
               )}
               <ul className="space-y-0.5">
                 {group.items.map(({ path, label, icon: Icon }) => {
-                  const isActive = location.pathname === path;
+                  const isActive =
+                    location.pathname === path ||
+                    (path !== '/admin' && location.pathname.startsWith(path + '/'));
                   return (
                     <li key={path}>
                       <Link
