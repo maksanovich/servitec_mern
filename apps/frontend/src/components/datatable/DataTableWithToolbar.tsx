@@ -31,6 +31,12 @@ export interface DataTableWithToolbarProps<T> {
   /** Initial date range (for date filter) */
   defaultStartDate?: string;
   defaultEndDate?: string;
+  /** Enable expandable rows; pass expandableRowsComponent to render expanded content */
+  expandableRows?: boolean;
+  expandableRowsComponent?: React.ComponentType<{ data: T }>;
+  expandableRowDisabled?: (row: T) => boolean;
+  /** Icons for expand/collapse (e.g. Plus when collapsed, Minus when expanded) */
+  expandableIcon?: { collapsed: React.ReactNode; expanded: React.ReactNode };
 }
 
 function getColumnId(col: TableColumn<unknown>): string | null {
@@ -86,6 +92,10 @@ export function DataTableWithToolbar<T>({
   defaultPageSize = 10,
   defaultStartDate = '',
   defaultEndDate = '',
+  expandableRows,
+  expandableRowsComponent,
+  expandableRowDisabled,
+  expandableIcon,
 }: DataTableWithToolbarProps<T>) {
   const [search, setSearch] = useState('');
   const [startDate, setStartDate] = useState(defaultStartDate);
@@ -130,8 +140,9 @@ export function DataTableWithToolbar<T>({
         searchPlaceholder={searchPlaceholder}
         rightContent={rightContent}
       />
-      <div className="px-5 pb-5">
+      <div className="px-5 pb-5 w-full min-w-0 overflow-x-hidden overflow-hidden">
         <DataTable<T>
+          className="w-full max-w-full"
           columns={columns}
           data={filteredData}
           pagination
@@ -143,6 +154,10 @@ export function DataTableWithToolbar<T>({
               No data available in this table.
             </div>
           )}
+          expandableRows={expandableRows}
+          expandableRowsComponent={expandableRowsComponent}
+          expandableRowDisabled={expandableRowDisabled}
+          expandableIcon={expandableIcon}
         />
       </div>
     </>

@@ -1,8 +1,30 @@
 /** Styles compatible with react-data-table-component customStyles prop */
+const lightHeadBg = 'rgb(241 245 249)';
+const darkHeadBg = 'rgb(30 41 59)';
+
 export const lightStyles = {
+  table: {
+    style: {
+      width: '100%',
+      tableLayout: 'fixed' as const,
+    },
+  },
+  tableWrapper: {
+    style: {
+      width: '100%',
+      maxWidth: '100%',
+      overflow: 'hidden',
+      overflowX: 'hidden' as const,
+    },
+  },
+  headRow: {
+    style: {
+      backgroundColor: lightHeadBg,
+    },
+  },
   headCells: {
     style: {
-      backgroundColor: 'rgb(241 245 249)',
+      backgroundColor: lightHeadBg,
       color: 'rgb(15 23 42)',
       fontWeight: 600,
       fontSize: '0.8125rem',
@@ -41,9 +63,28 @@ export const lightStyles = {
 };
 
 export const darkStyles = {
+  table: {
+    style: {
+      width: '100%',
+      tableLayout: 'fixed' as const,
+    },
+  },
+  tableWrapper: {
+    style: {
+      width: '100%',
+      maxWidth: '100%',
+      overflow: 'hidden',
+      overflowX: 'hidden' as const,
+    },
+  },
+  headRow: {
+    style: {
+      backgroundColor: darkHeadBg,
+    },
+  },
   headCells: {
     style: {
-      backgroundColor: 'rgb(30 41 59)',
+      backgroundColor: darkHeadBg,
       color: 'rgb(248 250 252)',
       fontWeight: 600,
       fontSize: '0.8125rem',

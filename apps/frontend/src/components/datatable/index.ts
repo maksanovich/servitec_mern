@@ -6,6 +6,6 @@ export { DataTablePagination } from './DataTablePagination';
 export type { DataTablePaginationProps } from './DataTablePagination';
 export { DataTableWithToolbar } from './DataTableWithToolbar';
 export type { DataTableWithToolbarProps, DataTableFilterState } from './DataTableWithToolbar';
-export { exportTableToPDF, exportTableToExcel } from './exportTable';
+export { exportTableToPDF, exportTableToExcel, exportTableToCSV } from './exportTable';
 export type { ExportTableOptions } from './exportTable';
 export { lightStyles, darkStyles } from './styles';
