@@ -200,11 +200,11 @@ export function NewOrderPage() {
     }
     setBranchError('');
     // TODO: submit to API
-    navigate('/admin/repair-shop');
+    navigate('/admin/order');
   };
 
   const handleCancel = () => {
-    navigate('/admin/repair-shop');
+    navigate('/admin/order');
   };
 
   const servicesColumns: TableColumn<ServiceSparePart>[] = useMemo(

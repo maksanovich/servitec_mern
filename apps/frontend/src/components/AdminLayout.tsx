@@ -46,7 +46,7 @@ const navGroups: NavGroup[] = [
   {
     label: 'Components',
     items: [
-      { path: '/admin/repair-shop', label: 'Repair Shop', icon: Wrench },
+      { path: '/admin/order', label: 'Orders', icon: Wrench },
       { path: '/admin/workshop-config', label: 'Workshop Configurations', icon: Settings },
       { path: '/admin/services', label: 'Services / Spare Parts', icon: Package },
       { path: '/admin/income', label: 'Monetary Income', icon: DollarSign },

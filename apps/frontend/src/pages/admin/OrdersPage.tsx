@@ -46,7 +46,7 @@ export function OrdersPage() {
           title="Orders - DIGITALSERVER TECHNICAL SERVICE"
           breadcrumb={[{ label: 'Dashboard', icon: Home }, { label: 'Order' }]}
         />
-        <Link to="/admin/repair-shop/new">
+        <Link to="/admin/order/new">
           <Button
             variant="emerald"
             size="md"
