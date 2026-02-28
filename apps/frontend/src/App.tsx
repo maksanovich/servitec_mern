@@ -12,6 +12,11 @@ import { DashboardPage } from './pages/admin/DashboardPage';
 import { OrdersPage } from './pages/admin/OrdersPage';
 import { NewOrderPage } from './pages/admin/NewOrderPage';
 import { AdminPlaceholder } from './pages/admin/AdminPlaceholder';
+import { CustomersPage } from './pages/admin/CustomersPage';
+import { BrandsPage } from './pages/admin/BrandsPage';
+import { ModelsPage } from './pages/admin/ModelsPage';
+import { AccessoriesPage } from './pages/admin/AccessoriesPage';
+import { ProductsPage } from './pages/admin/ProductsPage';
 
 function App() {
   return (
@@ -38,8 +43,17 @@ function App() {
         <Route path="activity" element={<AdminPlaceholder title="Activity" />} />
         <Route path="order" element={<OrdersPage />} />
         <Route path="order/new" element={<NewOrderPage />} />
-        <Route path="workshop-config" element={<AdminPlaceholder title="Workshop Configurations" />} />
-        <Route path="services" element={<AdminPlaceholder title="Services / Spare Parts" />} />
+        <Route path="clients" element={<CustomersPage />} />
+        <Route path="clients/new" element={<AdminPlaceholder title="New Customer" />} />
+        <Route path="brand" element={<BrandsPage />} />
+        <Route path="brand/new" element={<AdminPlaceholder title="New Brand" />} />
+        <Route path="models" element={<ModelsPage />} />
+        <Route path="model/new" element={<AdminPlaceholder title="New Model" />} />
+        <Route path="accessories" element={<AccessoriesPage />} />
+        <Route path="accessories/new" element={<AdminPlaceholder title="New Accessory" />} />
+        <Route path="products" element={<ProductsPage />} />
+        <Route path="products/new" element={<AdminPlaceholder title="New Product" />} />
+        <Route path="services" element={<AdminPlaceholder title="Services & Spare Parts" />} />
         <Route path="income" element={<AdminPlaceholder title="Monetary Income" />} />
         <Route path="company" element={<AdminPlaceholder title="Company" />} />
         <Route path="branch" element={<AdminPlaceholder title="Branch" />} />
@@ -48,6 +62,7 @@ function App() {
         <Route path="docs" element={<AdminPlaceholder title="Documentation" />} />
         </Route>
         <Route path="/admin/dashboard" element={<Navigate to="/admin" replace />} />
+        <Route path="/admin/workshop-config" element={<Navigate to="/admin/clients" replace />} />
       </Routes>
       </ThemeProvider>
     </AuthProvider>

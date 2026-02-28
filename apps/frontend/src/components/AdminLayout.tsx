@@ -25,6 +25,11 @@ import {
   Activity,
   LogOut,
   LucideIcon,
+  UserCircle,
+  Cpu,
+  Layers,
+  ShoppingBag,
+  Tag,
 } from 'lucide-react';
 
 interface NavItem {
@@ -44,25 +49,37 @@ const navGroups: NavGroup[] = [
     items: [{ path: '/admin', label: 'Dashboard', icon: LayoutDashboard }],
   },
   {
-    label: 'Components',
+    label: 'Operations',
+    items: [{ path: '/admin/order', label: 'Orders', icon: Wrench }],
+  },
+  {
+    label: 'Workshop Setup',
     items: [
-      { path: '/admin/order', label: 'Orders', icon: Wrench },
-      { path: '/admin/workshop-config', label: 'Workshop Configurations', icon: Settings },
-      { path: '/admin/services', label: 'Services / Spare Parts', icon: Package },
-      { path: '/admin/income', label: 'Monetary Income', icon: DollarSign },
+      { path: '/admin/clients', label: 'Clients', icon: UserCircle },
+      { path: '/admin/brand', label: 'Brand', icon: Tag },
+      { path: '/admin/models', label: 'Models', icon: Cpu },
+      { path: '/admin/accessories', label: 'Accessories', icon: Layers },
+      { path: '/admin/products', label: 'Products', icon: ShoppingBag },
     ],
   },
   {
-    label: 'Configurations',
+    label: 'Catalog & Finance',
+    items: [
+      { path: '/admin/services', label: 'Services & Spare Parts', icon: Package },
+      { path: '/admin/income', label: 'Income', icon: DollarSign },
+    ],
+  },
+  {
+    label: 'System',
     items: [
       { path: '/admin/company', label: 'Company', icon: Building2 },
-      { path: '/admin/branch', label: 'Branch', icon: GitBranch },
+      { path: '/admin/branch', label: 'Branches', icon: GitBranch },
       { path: '/admin/users', label: 'Users', icon: Users },
       { path: '/admin/roles', label: 'Roles', icon: Shield },
     ],
   },
   {
-    label: 'Documentation',
+    label: null,
     items: [{ path: '/admin/docs', label: 'Documentation', icon: FileQuestion }],
   },
 ];

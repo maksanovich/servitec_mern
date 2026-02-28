@@ -164,14 +164,6 @@ export const ordersColumns: TableColumn<Order>[] = [
     selector: (row) => row.no,
     sortable: true,
     width: '100px',
-    cell: (row) => (
-      <div className="flex items-center gap-2">
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white">
-          <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
-        </span>
-        <span className="font-medium text-slate-900 dark:text-slate-100">{row.no}</span>
-      </div>
-    ),
   },
   {
     id: 'code',
