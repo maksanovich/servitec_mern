@@ -94,9 +94,9 @@ export function AdminLayout() {
 
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors">
-      {/* Sidebar */}
+      {/* Sidebar - fixed so it stays visible when scrolling */}
       <aside
-        className={`flex-shrink-0 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col transition-all duration-150 ${
+        className={`fixed left-0 top-0 h-screen z-20 flex-shrink-0 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col transition-all duration-150 ${
           sidebarCollapsed ? 'w-20' : 'w-64'
         }`}
       >
@@ -143,8 +143,12 @@ export function AdminLayout() {
         </nav>
       </aside>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Main content - offset by sidebar width */}
+      <div
+        className={`flex-1 flex flex-col min-w-0 transition-[margin] duration-150 ${
+          sidebarCollapsed ? 'ml-20' : 'ml-64'
+        }`}
+      >
         {/* Header */}
         <header className="h-14 flex-shrink-0 bg-white/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 gap-4 backdrop-blur-sm">
           <div className="flex items-center gap-3 flex-1 max-w-xl">

@@ -140,7 +140,7 @@ export function DataTableWithToolbar<T>({
         searchPlaceholder={searchPlaceholder}
         rightContent={rightContent}
       />
-      <div className="px-5 pb-5 w-full min-w-0 overflow-x-hidden overflow-hidden">
+      <div className="pb-5 w-full min-w-0 overflow-x-hidden overflow-hidden">
         <DataTable<T>
           className="w-full max-w-full"
           columns={columns}

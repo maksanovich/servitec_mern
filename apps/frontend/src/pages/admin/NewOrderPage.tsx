@@ -225,7 +225,7 @@ export function NewOrderPage() {
             onClick={() => addToBudget(row)}
             aria-label={`Add ${row.name}`}
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-5 h-5 font-bold" />
           </Button>
         ),
         ignoreRowClick: true,
@@ -528,15 +528,17 @@ export function NewOrderPage() {
                           <td className="py-3 px-4 text-slate-700 dark:text-slate-300">{line.name}</td>
                           <td className="py-3 px-4 text-slate-700 dark:text-slate-300">{line.price.toFixed(2)}</td>
                           <td className="py-3 px-4">
-                            <input
-                              type="number"
-                              min={1}
-                              value={line.amount}
-                              onChange={(e) =>
-                                updateBudgetAmount(line.id, Math.max(1, parseInt(e.target.value, 10) || 1))
-                              }
-                              className="w-20 rounded border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 px-2 py-1 text-sm"
-                            />
+                            <div className="w-20">
+                              <Input
+                                type="number"
+                                min={1}
+                                value={line.amount}
+                                onChange={(e) =>
+                                  updateBudgetAmount(line.id, Math.max(1, parseInt(e.target.value, 10) || 1))
+                                }
+                                className="py-1 px-2"
+                              />
+                            </div>
                           </td>
                           <td className="py-3 px-4 text-slate-700 dark:text-slate-300">{line.total.toFixed(2)}</td>
                           <td className="py-3 px-4">
@@ -572,7 +574,7 @@ export function NewOrderPage() {
             Cancel
           </Button>
           <Button type="submit" variant="primary" size="md">
-            Keep
+            Submit
           </Button>
         </div>
       </form>
