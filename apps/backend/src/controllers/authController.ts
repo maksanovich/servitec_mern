@@ -16,10 +16,15 @@ export async function login(req: Request, res: Response): Promise<Response | voi
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    const adminRoles = ['admin', 'super_admin'];
+    if (!adminRoles.includes(user.role)) {
+      return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+    }
+
     const token = jwt.sign(
       { id: user._id, email: user.email },
       config.jwtSecret,
-      { expiresIn: config.jwtExpires }
+      { expiresIn: config.jwtExpires as jwt.SignOptions['expiresIn'] }
     );
 
     res.json({

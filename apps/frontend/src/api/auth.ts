@@ -1,4 +1,4 @@
-const API_BASE = '/api';
+import { apiFetch } from './client';
 
 export interface LoginResponse {
   token: string;
@@ -21,7 +21,7 @@ export async function login(
   email: string,
   password: string
 ): Promise<LoginResponse> {
-  const res = await fetch(`${API_BASE}/auth/login`, {
+  const res = await fetch('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, password }),
@@ -34,9 +34,7 @@ export async function login(
 }
 
 export async function me(token: string): Promise<{ user: User }> {
-  const res = await fetch(`${API_BASE}/auth/me`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await apiFetch('/auth/me', { token });
   const data = await res.json();
   if (!res.ok) {
     throw new Error(data.error || 'Failed to fetch user');

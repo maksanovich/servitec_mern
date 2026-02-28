@@ -26,7 +26,7 @@ export function DataTablePagination({
   const pageNumbers = Array.from({ length: pageEnd - pageStart + 1 }, (_, i) => pageStart + i);
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 w-full px-1 mt-4">
+    <div className="flex flex-wrap items-center justify-between gap-3 w-full px-5 mt-4">
       <div className="text-sm text-slate-600 dark:text-slate-400">
         Showing {start} to {end} of {rowCount} Entries
       </div>
