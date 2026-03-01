@@ -17,6 +17,8 @@ import { BrandsPage } from './pages/admin/BrandsPage';
 import { ModelsPage } from './pages/admin/ModelsPage';
 import { AccessoriesPage } from './pages/admin/AccessoriesPage';
 import { ProductsPage } from './pages/admin/ProductsPage';
+import { ServicesSparePartsPage } from './pages/admin/ServicesSparePartsPage';
+import { IncomePage } from './pages/admin/income';
 
 function App() {
   return (
@@ -53,8 +55,8 @@ function App() {
         <Route path="accessories/new" element={<AdminPlaceholder title="New Accessory" />} />
         <Route path="products" element={<ProductsPage />} />
         <Route path="products/new" element={<AdminPlaceholder title="New Product" />} />
-        <Route path="services" element={<AdminPlaceholder title="Services & Spare Parts" />} />
-        <Route path="income" element={<AdminPlaceholder title="Monetary Income" />} />
+        <Route path="services" element={<ServicesSparePartsPage />} />
+        <Route path="income" element={<IncomePage />} />
         <Route path="company" element={<AdminPlaceholder title="Company" />} />
         <Route path="branch" element={<AdminPlaceholder title="Branch" />} />
         <Route path="users" element={<AdminPlaceholder title="Users" />} />
