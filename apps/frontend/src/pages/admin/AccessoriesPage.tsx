@@ -30,7 +30,7 @@ export function AccessoriesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
           title="Accessories - DIGITALSERVER TECHNICAL SERVICE"
-          breadcrumb={[{ label: 'Dashboard', icon: Home }, { label: 'Accessory' }]}
+          breadcrumb={[{ label: 'Workshop', icon: Home }, { label: 'Accessories' }]}
         />
         <Link to="/admin/accessories/new" className="sm:ml-auto">
           <Button variant="emerald" size="md" leftIcon={Plus}>

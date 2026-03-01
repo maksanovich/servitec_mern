@@ -34,7 +34,7 @@ export function ServicesSparePartsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
           title="Services / Spare Parts - DIGITALSERVER TECHNICAL SERVICE"
-          breadcrumb={[{ label: 'Dashboard', icon: Home }, { label: 'Service' }, { label: 'Spare Parts' }]}
+          breadcrumb={[{ label: 'Catalog & Finance', icon: Home }, { label: 'Services & Spare Parts' }]}
         />
         <Link to="/admin/services/new" className="sm:ml-auto">
           <Button variant="emerald" size="md" leftIcon={Plus}>

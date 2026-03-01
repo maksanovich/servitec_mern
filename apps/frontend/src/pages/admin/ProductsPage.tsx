@@ -30,7 +30,7 @@ export function ProductsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
           title="Products - DIGITALSERVER TECHNICAL SERVICE"
-          breadcrumb={[{ label: 'Dashboard', icon: Home }, { label: 'Product' }]}
+          breadcrumb={[{ label: 'Workshop', icon: Home }, { label: 'Products' }]}
         />
         <Link to="/admin/products/new" className="sm:ml-auto">
           <Button variant="emerald" size="md" leftIcon={Plus}>

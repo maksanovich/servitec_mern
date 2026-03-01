@@ -54,7 +54,7 @@ export function IncomePage() {
     <div className="space-y-4">
       <PageHeader
         title="Revenue - DIGITALSERVER TECHNICAL SERVICE"
-        breadcrumb={[{ label: 'Dashboard', icon: Home }, { label: 'Income' }]}
+        breadcrumb={[{ label: 'Catalog & Finance', icon: Home }, { label: 'Income' }]}
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
