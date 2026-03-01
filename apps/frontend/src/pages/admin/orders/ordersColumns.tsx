@@ -196,7 +196,7 @@ export const ordersColumns: TableColumn<Order>[] = [
   },
   {
     id: 'type',
-    name: 'Guy',
+    name: 'Type',
     selector: (row) => row.type,
     sortable: true,
     width: '110px',
