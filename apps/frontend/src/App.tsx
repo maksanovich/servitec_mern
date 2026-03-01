@@ -13,6 +13,7 @@ import { OrdersPage } from './pages/admin/OrdersPage';
 import { NewOrderPage } from './pages/admin/NewOrderPage';
 import { AdminPlaceholder } from './pages/admin/AdminPlaceholder';
 import { CompanyPage } from './pages/admin/company/CompanyPage';
+import { BranchPage } from './pages/admin/branch/BranchPage';
 import { CustomersPage } from './pages/admin/CustomersPage';
 import { BrandsPage } from './pages/admin/BrandsPage';
 import { ModelsPage } from './pages/admin/ModelsPage';
@@ -59,7 +60,8 @@ function App() {
         <Route path="services" element={<ServicesSparePartsPage />} />
         <Route path="income" element={<IncomePage />} />
         <Route path="company" element={<CompanyPage />} />
-        <Route path="branch" element={<AdminPlaceholder title="Branch" />} />
+        <Route path="branch" element={<BranchPage />} />
+        <Route path="branch/new" element={<AdminPlaceholder title="New Branch" />} />
         <Route path="users" element={<AdminPlaceholder title="Users" />} />
         <Route path="roles" element={<AdminPlaceholder title="Roles" />} />
         <Route path="docs" element={<AdminPlaceholder title="Documentation" />} />
