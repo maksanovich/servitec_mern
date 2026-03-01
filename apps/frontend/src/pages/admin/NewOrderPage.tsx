@@ -239,7 +239,7 @@ export function NewOrderPage() {
       <PageHeader
         title="Orders - DIGITALSERVER TECHNICAL SERVICE"
         breadcrumb={[
-          { label: 'Dashboard', icon: Home },
+          { label: 'Operations', icon: Home },
           { label: 'Orders' },
           { label: 'New Order' },
         ]}

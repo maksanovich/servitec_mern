@@ -33,7 +33,7 @@ export function CompanyPage() {
     <div className="space-y-4">
       <PageHeader
         title="Company - DIGITALSERVER TECHNICAL SERVICE"
-        breadcrumb={[{ label: 'Dashboard', icon: Home }, { label: 'Company' }]}
+        breadcrumb={[{ label: 'System', icon: Home }, { label: 'Company' }]}
       />
 
       <Card className="overflow-hidden">

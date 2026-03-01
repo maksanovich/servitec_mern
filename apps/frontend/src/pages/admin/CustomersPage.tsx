@@ -18,7 +18,7 @@ export function CustomersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
           title="Clients - DIGITALSERVER TECHNICAL SERVICE"
-          breadcrumb={[{ label: 'Dashboard', icon: Home }, { label: 'Customer' }]}
+          breadcrumb={[{ label: 'Workshop', icon: Home }, { label: 'Clients' }]}
         />
         <Link to="/admin/clients/new" className="sm:ml-auto">
           <Button variant="emerald" size="md" leftIcon={UserPlus}>

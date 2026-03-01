@@ -30,7 +30,7 @@ export function BrandsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
           title="Brands - DIGITALSERVER TECHNICAL SERVICE"
-          breadcrumb={[{ label: 'Dashboard', icon: Home }, { label: 'Brand' }]}
+          breadcrumb={[{ label: 'Workshop', icon: Home }, { label: 'Brand' }]}
         />
         <Link to="/admin/brand/new" className="sm:ml-auto">
           <Button variant="emerald" size="md" leftIcon={Tag}>

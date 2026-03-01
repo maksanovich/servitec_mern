@@ -30,7 +30,7 @@ export function ModelsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
           title="Models - DIGITALSERVER TECHNICAL SERVICE"
-          breadcrumb={[{ label: 'Dashboard', icon: Home }, { label: 'Model' }]}
+          breadcrumb={[{ label: 'Workshop', icon: Home }, { label: 'Models' }]}
         />
         <Link to="/admin/model/new" className="sm:ml-auto">
           <Button variant="emerald" size="md" leftIcon={Box}>

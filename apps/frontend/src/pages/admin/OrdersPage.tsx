@@ -44,7 +44,7 @@ export function OrdersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
           title="Orders - DIGITALSERVER TECHNICAL SERVICE"
-          breadcrumb={[{ label: 'Dashboard', icon: Home }, { label: 'Order' }]}
+          breadcrumb={[{ label: 'Operations', icon: Home }, { label: 'Orders' }]}
         />
         <Link to="/admin/order/new">
           <Button

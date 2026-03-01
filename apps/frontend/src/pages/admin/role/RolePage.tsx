@@ -1,6 +1,6 @@
 import { useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Home, Shield, Plus, FileText, FileSpreadsheet, LayoutGrid } from 'lucide-react';
+import { Home, Plus, FileText, FileSpreadsheet, LayoutGrid } from 'lucide-react';
 import { PageHeader, Card, Button, ButtonGroup } from '../../../components/ui';
 import {
   DataTableWithToolbar,
@@ -35,7 +35,7 @@ export function RolePage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
           title="Roles - DIGITALSERVER TECHNICAL SERVICE"
-          breadcrumb={[{ label: 'Dashboard', icon: Home }, { label: 'Role', icon: Shield }]}
+          breadcrumb={[{ label: 'System', icon: Home }, { label: 'Role' }]}
         />
         <Link to="/admin/roles/new" className="sm:ml-auto">
           <Button variant="emerald" size="md" leftIcon={Plus}>

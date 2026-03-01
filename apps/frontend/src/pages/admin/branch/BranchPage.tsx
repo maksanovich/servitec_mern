@@ -35,7 +35,7 @@ export function BranchPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
           title="Branch - DIGITALSERVER TECHNICAL SERVICE"
-          breadcrumb={[{ label: 'Dashboard', icon: Home }, { label: 'Branch' }]}
+          breadcrumb={[{ label: 'System', icon: Home }, { label: 'Branch' }]}
         />
         <Link to="/admin/branch/new" className="sm:ml-auto">
           <Button variant="emerald" size="md" leftIcon={Plus}>

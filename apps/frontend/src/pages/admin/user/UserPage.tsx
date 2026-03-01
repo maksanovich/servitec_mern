@@ -35,7 +35,7 @@ export function UserPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
           title="Users - DIGITALSERVER TECHNICAL SERVICE"
-          breadcrumb={[{ label: 'Dashboard', icon: Home }, { label: 'User' }]}
+          breadcrumb={[{ label: 'System', icon: Home }, { label: 'User' }]}
         />
         <Link to="/admin/users/new" className="sm:ml-auto">
           <Button variant="emerald" size="md" leftIcon={Plus}>
