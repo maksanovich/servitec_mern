@@ -14,6 +14,7 @@ import { NewOrderPage } from './pages/admin/NewOrderPage';
 import { AdminPlaceholder } from './pages/admin/AdminPlaceholder';
 import { CompanyPage } from './pages/admin/company/CompanyPage';
 import { BranchPage } from './pages/admin/branch/BranchPage';
+import { RolePage } from './pages/admin/role/RolePage';
 import { UserPage } from './pages/admin/user/UserPage';
 import { CustomersPage } from './pages/admin/CustomersPage';
 import { BrandsPage } from './pages/admin/BrandsPage';
@@ -64,7 +65,8 @@ function App() {
         <Route path="branch" element={<BranchPage />} />
         <Route path="branch/new" element={<AdminPlaceholder title="New Branch" />} />
         <Route path="users" element={<UserPage />} />
-        <Route path="roles" element={<AdminPlaceholder title="Roles" />} />
+        <Route path="roles" element={<RolePage />} />
+        <Route path="roles/new" element={<AdminPlaceholder title="New Role" />} />
         <Route path="docs" element={<AdminPlaceholder title="Documentation" />} />
         </Route>
         <Route path="/admin/dashboard" element={<Navigate to="/admin" replace />} />
