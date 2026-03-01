@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown, Pencil } from 'lucide-react';
 import { Badge } from '../../../components/ui';
 import type { TableColumn } from '../../../components/datatable';
@@ -34,6 +35,8 @@ function CustomerAvatar({ src }: { src?: string }) {
 const actionBtnClass =
   'p-1.5 rounded text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200 transition-colors';
 
+const MENU_WIDTH = 160;
+
 function onEdit(customer: Customer) {
   console.log('Edit customer', customer);
 }
@@ -48,19 +51,47 @@ function openWhatsApp(customer: Customer) {
 
 function ActionDropdown({ customer }: { customer: Customer }) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (!open || !buttonRef.current) {
+      setPosition(null);
+      return;
+    }
+    const rect = buttonRef.current.getBoundingClientRect();
+    setPosition({ top: rect.bottom + 4, left: rect.right - MENU_WIDTH });
+  }, [open]);
+
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      const target = e.target as Node;
+      if (open && buttonRef.current && !buttonRef.current.contains(target) && menuRef.current && !menuRef.current.contains(target)) setOpen(false);
     }
     if (open) {
       document.addEventListener('click', handleClickOutside);
       return () => document.removeEventListener('click', handleClickOutside);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleScrollOrResize() {
+      setOpen(false);
+    }
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    window.addEventListener('resize', handleScrollOrResize);
+    return () => {
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+    };
+  }, [open]);
+
   return (
-    <div className="relative inline-block" ref={ref}>
+    <div className="relative inline-block">
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={actionBtnClass}
@@ -70,10 +101,12 @@ function ActionDropdown({ customer }: { customer: Customer }) {
       >
         <ChevronDown className="w-4 h-4" />
       </button>
-      {open && (
+      {open && position && createPortal(
         <div
-          className="absolute right-0 top-full z-10 mt-1 min-w-[160px] rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-lg py-1"
+          ref={menuRef}
           role="menu"
+          className="fixed z-[9999] min-w-[160px] rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-lg py-1"
+          style={{ top: position.top, left: position.left }}
         >
           <button
             type="button"
@@ -92,7 +125,8 @@ function ActionDropdown({ customer }: { customer: Customer }) {
             </svg>
             WhatsApp
           </button>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
