@@ -123,8 +123,8 @@ export function AdminLayout() {
           </Link>
         </div>
         <nav className="flex-1 overflow-y-auto py-4 px-2">
-          {navGroups.map((group) => (
-            <div key={group.label || 'main'} className="mb-4">
+          {navGroups.map((group, index) => (
+            <div key={group.label ?? `nav-group-${index}`} className="mb-4">
               {group.label && !sidebarCollapsed && (
                 <div className="px-3 py-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   {group.label}
