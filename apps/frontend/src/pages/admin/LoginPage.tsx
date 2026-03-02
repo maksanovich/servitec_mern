@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { Button } from '../../components/ui';
 
 const DEFAULT_EMAIL = 'admin@servitec.local';
 const DEFAULT_PASSWORD = 'superadmin123';
@@ -78,13 +79,14 @@ export function LoginPage() {
                 autoComplete="current-password"
               />
             </div>
-            <button
+            <Button
               type="submit"
+              className="w-full"
+              isLoading={loading}
               disabled={loading}
-              className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
             >
-              {loading ? 'Signing in...' : 'Sign in'}
-            </button>
+              Sign in
+            </Button>
           </form>
           <p className="text-slate-500 text-xs mt-4 text-center">
             Default: {DEFAULT_EMAIL} / {DEFAULT_PASSWORD}

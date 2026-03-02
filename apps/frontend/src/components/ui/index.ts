@@ -19,3 +19,5 @@ export { PageHeader } from './PageHeader';
 export { KpiCard } from './KpiCard';
 export { Pagination } from './Pagination';
 export { Modal } from './Modal';
+export { Loader, PageLoader } from './Loader';
+export { ConfirmDialog } from './ConfirmDialog';
