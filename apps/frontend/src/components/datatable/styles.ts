@@ -67,6 +67,7 @@ export const darkStyles = {
     style: {
       width: '100%',
       tableLayout: 'fixed' as const,
+      backgroundColor: darkHeadBg,
     },
   },
   tableWrapper: {
@@ -123,6 +124,11 @@ export const darkStyles = {
   paginationRowsPerPage: {
     style: {
       paddingLeft: '0',
+    },
+  },
+  noData: {
+    style: {
+      backgroundColor: darkHeadBg,
     },
   },
 };

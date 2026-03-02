@@ -1,3 +1,3 @@
 export type { Branch } from './types';
-export { sampleBranch } from './sampleBranch';
-export { branchColumns } from './branchColumns';
+export { branchColumns, getBranchColumns } from './branchColumns';
+export { BranchFormModal } from './BranchFormModal';

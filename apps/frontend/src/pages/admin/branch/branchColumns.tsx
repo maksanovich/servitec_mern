@@ -10,15 +10,20 @@ const actionBtnClass =
 
 const MENU_WIDTH = 160;
 
-function onEdit(branch: Branch) {
-  console.log('Edit branch', branch);
+export interface BranchColumnActions {
+  onEdit: (branch: Branch) => void;
+  onDelete: (branch: Branch) => void;
 }
 
-function onDelete(branch: Branch) {
-  console.log('Delete branch', branch);
-}
-
-function ActionDropdown({ branch }: { branch: Branch }) {
+function ActionDropdown({
+  branch,
+  onEdit,
+  onDelete,
+}: {
+  branch: Branch;
+  onEdit: (branch: Branch) => void;
+  onDelete: (branch: Branch) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -125,62 +130,80 @@ const stateLabel: Record<Branch['state'], string> = {
   inactive: 'Inactive',
 };
 
-export const branchColumns: TableColumn<Branch>[] = [
-  {
-    id: 'branchName',
-    name: 'Branch Name',
-    selector: (row) => row.branchName,
-    sortable: true,
-    minWidth: '180px',
-    cell: (row) => (
-      <span className="text-slate-700 dark:text-slate-300">{row.branchName}</span>
-    ),
-  },
-  {
-    id: 'email',
-    name: 'Email',
-    selector: (row) => row.email,
-    sortable: true,
-    minWidth: '200px',
-    cell: (row) => (
-      <span className="text-slate-700 dark:text-slate-300">{row.email}</span>
-    ),
-  },
-  {
-    id: 'phone',
-    name: 'Phone',
-    selector: (row) => row.phone,
-    sortable: true,
-    width: '120px',
-    cell: (row) => (
-      <span className="text-slate-700 dark:text-slate-300">{row.phone}</span>
-    ),
-  },
-  {
-    id: 'address',
-    name: 'Address',
-    selector: (row) => row.address,
-    sortable: true,
-    minWidth: '220px',
-    cell: (row) => (
-      <span className="text-slate-700 dark:text-slate-300">{row.address}</span>
-    ),
-  },
-  {
-    id: 'state',
-    name: 'State',
-    selector: (row) => row.state,
-    sortable: true,
-    width: '100px',
-    cell: (row) => (
-      <Badge variant={stateVariant[row.state]}>{stateLabel[row.state]}</Badge>
-    ),
-  },
-  {
-    id: 'action',
-    name: 'Action',
-    sortable: false,
-    width: '80px',
-    cell: (row) => <ActionDropdown branch={row} />,
-  },
-];
+function getActionDropdown(actions: BranchColumnActions) {
+  return (row: Branch) => (
+    <ActionDropdown
+      branch={row}
+      onEdit={actions.onEdit}
+      onDelete={actions.onDelete}
+    />
+  );
+}
+
+export function getBranchColumns(actions: BranchColumnActions): TableColumn<Branch>[] {
+  return [
+    {
+      id: 'branchName',
+      name: 'Branch Name',
+      selector: (row) => row.branchName,
+      sortable: true,
+      minWidth: '180px',
+      cell: (row) => (
+        <span className="text-slate-700 dark:text-slate-300">{row.branchName}</span>
+      ),
+    },
+    {
+      id: 'email',
+      name: 'Email',
+      selector: (row) => row.email,
+      sortable: true,
+      minWidth: '200px',
+      cell: (row) => (
+        <span className="text-slate-700 dark:text-slate-300">{row.email}</span>
+      ),
+    },
+    {
+      id: 'phone',
+      name: 'Phone',
+      selector: (row) => row.phone,
+      sortable: true,
+      width: '120px',
+      cell: (row) => (
+        <span className="text-slate-700 dark:text-slate-300">{row.phone}</span>
+      ),
+    },
+    {
+      id: 'address',
+      name: 'Address',
+      selector: (row) => row.address,
+      sortable: true,
+      minWidth: '220px',
+      cell: (row) => (
+        <span className="text-slate-700 dark:text-slate-300">{row.address}</span>
+      ),
+    },
+    {
+      id: 'state',
+      name: 'State',
+      selector: (row) => row.state,
+      sortable: true,
+      width: '100px',
+      cell: (row) => (
+        <Badge variant={stateVariant[row.state]}>{stateLabel[row.state]}</Badge>
+      ),
+    },
+    {
+      id: 'action',
+      name: 'Action',
+      sortable: false,
+      width: '80px',
+      cell: getActionDropdown(actions),
+    },
+  ];
+}
+
+/** Static columns for export (no action callbacks). */
+export const branchColumns: TableColumn<Branch>[] = getBranchColumns({
+  onEdit: () => {},
+  onDelete: () => {},
+});
