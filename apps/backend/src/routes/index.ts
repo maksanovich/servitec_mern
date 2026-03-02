@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authRoutes } from './auth.js';
+import { branchRoutes } from './branches.js';
 import { companyRoutes } from './company.js';
 import { roleRoutes } from './roles.js';
 import { userRoutes } from './users.js';
@@ -7,6 +8,7 @@ import { userRoutes } from './users.js';
 const apiRouter = Router();
 
 apiRouter.use('/auth', authRoutes);
+apiRouter.use('/branches', branchRoutes);
 apiRouter.use('/company', companyRoutes);
 apiRouter.use('/roles', roleRoutes);
 apiRouter.use('/users', userRoutes);

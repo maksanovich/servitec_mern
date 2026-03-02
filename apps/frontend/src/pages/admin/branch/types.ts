@@ -1,8 +1,2 @@
-export interface Branch {
-  id: string;
-  branchName: string;
-  email: string;
-  phone: string;
-  address: string;
-  state: 'active' | 'inactive';
-}
+/** Branch as returned by branches API. Align with api/branches.ts Branch. */
+export type { Branch } from '../../../api/branches';

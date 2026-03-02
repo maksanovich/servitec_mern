@@ -186,7 +186,7 @@ export function getUserColumns(actions: UserColumnActions): TableColumn<User>[] 
     name: 'Name',
     selector: (row) => row.name,
     sortable: true,
-    minWidth: '160px',
+    minWidth: '80px',
     cell: (row) => (
       <span className="text-slate-700 dark:text-slate-300">{row.name}</span>
     ),
@@ -196,7 +196,7 @@ export function getUserColumns(actions: UserColumnActions): TableColumn<User>[] 
     name: 'Identification',
     selector: (row) => row.identification ?? '',
     sortable: true,
-    width: '140px',
+    minWidth: '150px',
     cell: (row) => (
       <span className="text-slate-700 dark:text-slate-300 font-mono text-sm">
         {row.identification || '—'}
@@ -208,7 +208,7 @@ export function getUserColumns(actions: UserColumnActions): TableColumn<User>[] 
     name: 'E-mail',
     selector: (row) => row.email,
     sortable: true,
-    minWidth: '200px',
+    minWidth: '150px',
     cell: (row) => (
       <span className="text-slate-700 dark:text-slate-300">{row.email}</span>
     ),
@@ -218,7 +218,7 @@ export function getUserColumns(actions: UserColumnActions): TableColumn<User>[] 
     name: 'Phone',
     selector: (row) => row.phone,
     sortable: true,
-    width: '120px',
+    minWidth: '250px',
     cell: (row) => (
       <span className="text-slate-700 dark:text-slate-300">{row.phone}</span>
     ),
@@ -228,7 +228,7 @@ export function getUserColumns(actions: UserColumnActions): TableColumn<User>[] 
     name: 'Role',
     selector: (row) => row.role?.name ?? '',
     sortable: true,
-    width: '120px',
+    minWidth: '250px',
     cell: (row) => (
       <Badge variant="warning">{row.role?.name ?? '—'}</Badge>
     ),
