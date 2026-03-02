@@ -6,6 +6,7 @@ export interface LoginResponse {
     id: string;
     email: string;
     name: string;
+    phone?: string;
     role: string;
   };
 }
@@ -14,6 +15,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
+  phone?: string;
   role: string;
 }
 
@@ -40,4 +42,21 @@ export async function me(token: string): Promise<{ user: User }> {
     throw new Error(data.error || 'Failed to fetch user');
   }
   return data;
+}
+
+export async function updateProfile(
+  token: string,
+  data: { name?: string; phone?: string }
+): Promise<{ user: User }> {
+  const res = await apiFetch('/auth/profile', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+    token,
+  });
+  const result = await res.json();
+  if (!res.ok) {
+    throw new Error(result.error || 'Failed to update profile');
+  }
+  return result;
 }
