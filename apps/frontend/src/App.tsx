@@ -16,6 +16,7 @@ import { OrdersPage } from './pages/admin/OrdersPage';
 import { NewOrderPage } from './pages/admin/NewOrderPage';
 
 import { AdminPlaceholder } from './pages/admin/AdminPlaceholder';
+import { ProfilePage } from './pages/admin/ProfilePage';
 
 import { CompanyPage } from './pages/admin/CompanyPage';
 import { BranchPage } from './pages/admin/BranchPage';
@@ -51,7 +52,7 @@ function App() {
             }
           >
             <Route index element={<DashboardPage />} />
-            <Route path="profile" element={<AdminPlaceholder title="Profile" />} />
+            <Route path="profile" element={<ProfilePage />} />
             <Route path="config" element={<AdminPlaceholder title="Configuration" />} />
             <Route path="activity" element={<AdminPlaceholder title="Activity" />} />
             <Route path="order" element={<OrdersPage />} />

@@ -33,6 +33,7 @@ export async function login(req: Request, res: Response): Promise<Response | voi
         id: user._id,
         email: user.email,
         name: user.name,
+        phone: user.phone ?? '',
         role: user.role,
       },
     });
@@ -47,8 +48,40 @@ export async function me(req: AuthRequest, res: Response): Promise<Response | vo
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const user = await User.findById(req.user._id).select('-password');
     if (!user) return res.status(404).json({ error: 'User not found' });
-    res.json({ user });
+    res.json({
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        phone: user.phone ?? '',
+        role: user.role,
+      },
+    });
   } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+}
+
+export async function updateProfile(req: AuthRequest, res: Response): Promise<Response | void> {
+  try {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const { name, phone } = req.body as { name?: string; phone?: string };
+    const user = await User.findById(req.user._id).select('-password');
+    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (name !== undefined) user.name = String(name).trim();
+    if (phone !== undefined) user.phone = String(phone).trim();
+    await user.save();
+    res.json({
+      user: {
+        id: user._id,
+        email: user.email,
+        name: user.name,
+        phone: user.phone ?? '',
+        role: user.role,
+      },
+    });
+  } catch (err) {
+    console.error('Update profile error:', err);
     res.status(500).json({ error: 'Server error' });
   }
 }
