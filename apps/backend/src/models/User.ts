@@ -1,4 +1,4 @@
-import mongoose, { Document, Model } from 'mongoose';
+import mongoose, { Document, Model, Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 export interface IUser extends Document {
@@ -6,7 +6,7 @@ export interface IUser extends Document {
   password: string;
   name: string;
   phone?: string;
-  role: 'admin' | 'super_admin' | 'cashier' | 'technician' | 'outsourced';
+  role: Types.ObjectId;
   comparePassword(candidate: string): Promise<boolean>;
 }
 
@@ -34,9 +34,9 @@ const userSchema = new mongoose.Schema<IUser>(
       default: '',
     },
     role: {
-      type: String,
-      enum: ['admin', 'super_admin', 'cashier', 'technician', 'outsourced'],
-      default: 'admin',
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Role',
+      required: true,
     },
   },
   { timestamps: true }

@@ -1,5 +1,11 @@
 import { apiFetch } from './client';
 
+export interface UserRole {
+  id: string;
+  slug: string;
+  name: string;
+}
+
 export interface LoginResponse {
   token: string;
   user: {
@@ -7,7 +13,7 @@ export interface LoginResponse {
     email: string;
     name: string;
     phone?: string;
-    role: string;
+    role: UserRole | null;
   };
 }
 
@@ -16,7 +22,13 @@ export interface User {
   email: string;
   name: string;
   phone?: string;
-  role: string;
+  role: UserRole | null;
+}
+
+/** Display string for user role (name or slug with underscores replaced) */
+export function roleDisplay(role: UserRole | null | undefined): string {
+  if (!role) return 'User';
+  return role.name || role.slug.replace(/_/g, ' ') || 'User';
 }
 
 export async function login(
