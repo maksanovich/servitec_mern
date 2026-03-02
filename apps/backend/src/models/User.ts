@@ -5,8 +5,11 @@ export interface IUser extends Document {
   email: string;
   password: string;
   name: string;
+  identification?: string;
   phone?: string;
+  avatar?: string;
   role: Types.ObjectId;
+  state: 'active' | 'inactive';
   comparePassword(candidate: string): Promise<boolean>;
 }
 
@@ -29,7 +32,16 @@ const userSchema = new mongoose.Schema<IUser>(
       type: String,
       default: '',
     },
+    identification: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     phone: {
+      type: String,
+      default: '',
+    },
+    avatar: {
       type: String,
       default: '',
     },
@@ -37,6 +49,11 @@ const userSchema = new mongoose.Schema<IUser>(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Role',
       required: true,
+    },
+    state: {
+      type: String,
+      enum: ['active', 'inactive'],
+      default: 'active',
     },
   },
   { timestamps: true }

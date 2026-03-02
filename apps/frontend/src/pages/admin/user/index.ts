@@ -1,4 +1,3 @@
 export type { User } from './types';
-export { sampleUser } from './sampleUser';
-export { userColumns } from './userColumns';
-export { UserPage } from '../UserPage';
+export { getUserColumns, userColumns, type UserColumnActions } from './userColumns';
+export { UserFormModal } from './UserFormModal';
