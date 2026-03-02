@@ -11,19 +11,28 @@ const actionBtnClass =
 
 const MENU_WIDTH = 180;
 
-function onEdit(user: User) {
-  console.log('Edit user', user);
+export interface UserColumnActions {
+  onEdit: (user: User) => void;
+  onDelete: (user: User) => void;
+  onAssignBranch?: (user: User) => void;
+  /** When true, Delete is disabled (e.g. for super admin users). */
+  isDeleteDisabled?: (user: User) => boolean;
 }
 
-function onDelete(user: User) {
-  console.log('Delete user', user);
-}
-
-function onAssignBranch(user: User) {
-  console.log('Assign branch to user', user);
-}
-
-function ActionDropdown({ user }: { user: User }) {
+function ActionDropdown({
+  user,
+  onEdit,
+  onDelete,
+  onAssignBranch,
+  isDeleteDisabled,
+}: {
+  user: User;
+  onEdit: (user: User) => void;
+  onDelete: (user: User) => void;
+  onAssignBranch?: (user: User) => void;
+  isDeleteDisabled?: (user: User) => boolean;
+}) {
+  const deleteDisabled = !!isDeleteDisabled?.(user);
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -103,20 +112,24 @@ function ActionDropdown({ user }: { user: User }) {
             >
               <Pencil className="w-4 h-4" /> Edit
             </button>
+            {onAssignBranch && (
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
+                onClick={() => {
+                  onAssignBranch(user);
+                  setOpen(false);
+                }}
+              >
+                <GitBranch className="w-4 h-4" /> Assign branch
+              </button>
+            )}
             <button
               type="button"
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
+              disabled={deleteDisabled}
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent dark:disabled:hover:bg-transparent"
               onClick={() => {
-                onAssignBranch(user);
-                setOpen(false);
-              }}
-            >
-              <GitBranch className="w-4 h-4" /> Assign branch
-            </button>
-            <button
-              type="button"
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-              onClick={() => {
+                if (deleteDisabled) return;
                 onDelete(user);
                 setOpen(false);
               }}
@@ -130,32 +143,32 @@ function ActionDropdown({ user }: { user: User }) {
   );
 }
 
-function UserAvatar({ src }: { src?: string }) {
-  const [failed, setFailed] = useState(false);
-  const url = src && !failed ? src : noImageUrl;
+function UserAvatar({ src }: { src?: string | null }) {
   return (
     <img
-      src={url}
+      src={src && src.trim() ? src : noImageUrl}
       alt=""
       width={40}
       height={40}
       className="size-10 rounded-full object-cover bg-slate-100 dark:bg-slate-700"
-      onError={() => setFailed(true)}
     />
   );
 }
 
-const stateVariant: Record<User['state'], 'success' | 'error'> = {
-  active: 'success',
-  inactive: 'error',
-};
+function getActionDropdown(actions: UserColumnActions) {
+  return (row: User) => (
+    <ActionDropdown
+      user={row}
+      onEdit={actions.onEdit}
+      onDelete={actions.onDelete}
+      onAssignBranch={actions.onAssignBranch}
+      isDeleteDisabled={actions.isDeleteDisabled}
+    />
+  );
+}
 
-const stateLabel: Record<User['state'], string> = {
-  active: 'Active',
-  inactive: 'Inactive',
-};
-
-export const userColumns: TableColumn<User>[] = [
+export function getUserColumns(actions: UserColumnActions): TableColumn<User>[] {
+  return [
   {
     id: 'image',
     name: 'Image',
@@ -164,38 +177,30 @@ export const userColumns: TableColumn<User>[] = [
     width: '80px',
     cell: (row) => (
       <div className="flex items-center">
-        <UserAvatar src={row.image} />
+        <UserAvatar src={row.avatar} />
       </div>
     ),
   },
   {
-    id: 'id',
-    name: 'ID',
-    selector: (row) => row.id,
-    sortable: true,
-    width: '120px',
-    cell: (row) => (
-      <span className="text-slate-700 dark:text-slate-300 font-mono text-sm">{row.id}</span>
-    ),
-  },
-  {
-    id: 'names',
-    name: 'Names',
-    selector: (row) => row.names,
+    id: 'name',
+    name: 'Name',
+    selector: (row) => row.name,
     sortable: true,
     minWidth: '160px',
     cell: (row) => (
-      <span className="text-slate-700 dark:text-slate-300">{row.names}</span>
+      <span className="text-slate-700 dark:text-slate-300">{row.name}</span>
     ),
   },
   {
-    id: 'surnames',
-    name: 'Surnames',
-    selector: (row) => row.surnames,
+    id: 'identification',
+    name: 'Identification',
+    selector: (row) => row.identification ?? '',
     sortable: true,
-    minWidth: '160px',
+    width: '140px',
     cell: (row) => (
-      <span className="text-slate-700 dark:text-slate-300">{row.surnames}</span>
+      <span className="text-slate-700 dark:text-slate-300 font-mono text-sm">
+        {row.identification || '—'}
+      </span>
     ),
   },
   {
@@ -221,21 +226,23 @@ export const userColumns: TableColumn<User>[] = [
   {
     id: 'role',
     name: 'Role',
-    selector: (row) => row.role,
+    selector: (row) => row.role?.name ?? '',
     sortable: true,
     width: '120px',
     cell: (row) => (
-      <Badge variant="warning">{row.role}</Badge>
+      <Badge variant="warning">{row.role?.name ?? '—'}</Badge>
     ),
   },
   {
     id: 'state',
-    name: 'State',
+    name: 'Status',
     selector: (row) => row.state,
     sortable: true,
     width: '100px',
     cell: (row) => (
-      <Badge variant={stateVariant[row.state]}>{stateLabel[row.state]}</Badge>
+      <Badge variant={row.state === 'active' ? 'success' : 'error'}>
+        {row.state === 'active' ? 'Active' : 'Inactive'}
+      </Badge>
     ),
   },
   {
@@ -243,6 +250,13 @@ export const userColumns: TableColumn<User>[] = [
     name: 'Action',
     sortable: false,
     width: '80px',
-    cell: (row) => <ActionDropdown user={row} />,
+    cell: getActionDropdown(actions),
   },
-];
+  ];
+}
+
+/** Static columns for export (no action callbacks). */
+export const userColumns: TableColumn<User>[] = getUserColumns({
+  onEdit: () => {},
+  onDelete: () => {},
+});
