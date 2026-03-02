@@ -3,6 +3,7 @@ import cors from 'cors';
 import { config } from './config/index.js';
 import { connectDB } from './db/connection.js';
 import { seedAdminIfNeeded } from './db/seedAdmin.js';
+import { seedRolesIfNeeded } from './db/seedRoles.js';
 import { apiRouter } from './routes/index.js';
 
 const app = express();
@@ -23,6 +24,7 @@ app.get('/health', (req, res) => {
 
 // Connect DB, seed admin if needed, start server
 connectDB()
+  .then(() => seedRolesIfNeeded())
   .then(() => seedAdminIfNeeded())
   .then(() => {
     app.listen(PORT, () => {

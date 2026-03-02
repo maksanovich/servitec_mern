@@ -3,7 +3,7 @@ import { useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
 const DEFAULT_EMAIL = 'admin@servitec.local';
-const DEFAULT_PASSWORD = 'admin123';
+const DEFAULT_PASSWORD = 'superadmin123';
 
 export function LoginPage() {
   const [email, setEmail] = useState(DEFAULT_EMAIL);

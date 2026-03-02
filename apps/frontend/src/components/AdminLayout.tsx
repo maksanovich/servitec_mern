@@ -208,7 +208,7 @@ export function AdminLayout() {
                   <div className="text-sm font-medium text-slate-900 dark:text-white">
                     {user?.name || user?.email || 'Administrator'}
                   </div>
-                  <div className="text-xs text-slate-500 capitalize">{user?.role || 'Admin'}</div>
+                  <div className="text-xs text-slate-500 capitalize">{user?.role?.name || user?.role?.slug?.replace(/_/g, ' ') || 'Admin'}</div>
                 </div>
               )}
               <div className="relative overflow-visible" ref={profileDropdownRef}>

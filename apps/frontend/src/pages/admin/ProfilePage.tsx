@@ -164,7 +164,7 @@ export function ProfilePage() {
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{user.email}</p>
               <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium capitalize">
                 <Shield className="w-3.5 h-3.5" />
-                {user.role || 'User'}
+                {user.role?.name || user.role?.slug?.replace(/_/g, ' ') || 'User'}
               </div>
             </div>
           </CardContent>
@@ -201,7 +201,7 @@ export function ProfilePage() {
             <DetailRow
               icon={Shield}
               label="Role"
-              value={user.role ? String(user.role).replace(/_/g, ' ') : '—'}
+              value={user.role ? (user.role.name || user.role.slug.replace(/_/g, ' ')) : '—'}
             />
             {userMessage && (
               <p
@@ -234,7 +234,7 @@ export function ProfilePage() {
         <CardContent className="pt-0">
           <p className="text-sm text-slate-600 dark:text-slate-300">
             Your role (
-            <span className="font-medium capitalize">{user.role || 'user'}</span>) determines which
+            <span className="font-medium capitalize">{user.role?.name || user.role?.slug?.replace(/_/g, ' ') || 'user'}</span>) determines which
             areas of the admin panel you can access. Contact an administrator to change your role
             or permissions.
           </p>
