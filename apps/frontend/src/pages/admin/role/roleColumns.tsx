@@ -10,15 +10,16 @@ const actionBtnClass =
 
 const MENU_WIDTH = 160;
 
-function onEdit(role: Role) {
-  console.log('Edit role', role);
+export interface RoleColumnActions {
+  onEdit: (role: Role) => void;
+  onDelete: (role: Role) => void;
 }
 
-function onDelete(role: Role) {
-  console.log('Delete role', role);
-}
-
-function ActionDropdown({ role }: { role: Role }) {
+function ActionDropdown({
+  role,
+  onEdit,
+  onDelete,
+}: { role: Role } & RoleColumnActions) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -125,44 +126,60 @@ const stateLabel: Record<Role['state'], string> = {
   inactive: 'Inactive',
 };
 
-export const roleColumns: TableColumn<Role>[] = [
-  {
-    id: 'role',
-    name: 'Role',
-    selector: (row) => row.role,
-    sortable: true,
-    minWidth: '160px',
-    cell: (row) => (
-      <span className="text-slate-700 dark:text-slate-300">{row.role}</span>
-    ),
-  },
-  {
-    id: 'description',
-    name: 'Description',
-    selector: (row) => row.description,
-    sortable: true,
-    minWidth: '220px',
-    cell: (row) => (
-      <span className="text-slate-700 dark:text-slate-300">
-        {row.description || '—'}
-      </span>
-    ),
-  },
-  {
-    id: 'state',
-    name: 'State',
-    selector: (row) => row.state,
-    sortable: true,
-    width: '100px',
-    cell: (row) => (
-      <Badge variant={stateVariant[row.state]}>{stateLabel[row.state]}</Badge>
-    ),
-  },
-  {
-    id: 'action',
-    name: 'Action',
-    sortable: false,
-    width: '80px',
-    cell: (row) => <ActionDropdown role={row} />,
-  },
-];
+export function getRoleColumns(actions: RoleColumnActions): TableColumn<Role>[] {
+  return [
+    {
+      id: 'name',
+      name: 'Name',
+      selector: (row) => row.name,
+      sortable: true,
+      minWidth: '160px',
+      cell: (row) => (
+        <span className="text-slate-700 dark:text-slate-300">{row.name}</span>
+      ),
+    },
+    {
+      id: 'slug',
+      name: 'Slug',
+      selector: (row) => row.slug,
+      sortable: true,
+      minWidth: '120px',
+      cell: (row) => (
+        <span className="text-slate-600 dark:text-slate-400 font-mono text-sm">
+          {row.slug}
+        </span>
+      ),
+    },
+    {
+      id: 'description',
+      name: 'Description',
+      selector: (row) => row.description,
+      sortable: true,
+      minWidth: '220px',
+      cell: (row) => (
+        <span className="text-slate-700 dark:text-slate-300">
+          {row.description || '—'}
+        </span>
+      ),
+    },
+    {
+      id: 'state',
+      name: 'State',
+      selector: (row) => row.state,
+      sortable: true,
+      width: '100px',
+      cell: (row) => (
+        <Badge variant={stateVariant[row.state]}>{stateLabel[row.state]}</Badge>
+      ),
+    },
+    {
+      id: 'action',
+      name: 'Action',
+      sortable: false,
+      width: '80px',
+      cell: (row) => (
+        <ActionDropdown role={row} onEdit={actions.onEdit} onDelete={actions.onDelete} />
+      ),
+    },
+  ];
+}

@@ -1,6 +1,7 @@
 export interface Role {
   id: string;
-  role: string;
+  name: string;
+  slug: string;
   description: string;
   state: 'active' | 'inactive';
 }

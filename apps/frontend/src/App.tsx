@@ -74,7 +74,6 @@ function App() {
             <Route path="branch/new" element={<AdminPlaceholder title="New Branch" />} />
             <Route path="users" element={<UserPage />} />
             <Route path="roles" element={<RolePage />} />
-            <Route path="roles/new" element={<AdminPlaceholder title="New Role" />} />
             <Route path="docs" element={<AdminPlaceholder title="Documentation" />} />
           </Route>
           <Route path="/admin/dashboard" element={<Navigate to="/admin" replace />} />

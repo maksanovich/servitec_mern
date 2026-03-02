@@ -1,3 +1,3 @@
 export type { Role } from './types';
-export { sampleRole } from './sampleRole';
-export { roleColumns } from './roleColumns';
+export { getRoleColumns, type RoleColumnActions } from './roleColumns';
+export { RoleFormModal } from './RoleFormModal';

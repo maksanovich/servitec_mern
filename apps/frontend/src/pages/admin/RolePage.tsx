@@ -1,19 +1,39 @@
-import { useRef, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { Home, Plus, FileText, FileSpreadsheet, LayoutGrid } from 'lucide-react';
-import { PageHeader, Card, Button, ButtonGroup } from '../../components/ui';
+import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
+import { Home, Plus } from 'lucide-react';
+import { PageHeader, Card, Button } from '../../components/ui';
 import {
   DataTableWithToolbar,
   type DataTableFilterState,
-  exportTableToPDF,
-  exportTableToExcel,
 } from '../../components/datatable';
-import { sampleRole, roleColumns, type Role } from './role/index';
-
-const exportOptions = { title: 'Role', filename: 'role' };
+import { useAuth } from '../../contexts/AuthContext';
+import * as rolesApi from '../../api/roles';
+import type { Role } from '../../api/roles';
+import { getRoleColumns, RoleFormModal } from './role/index';
 
 export function RolePage() {
+  const { token } = useAuth();
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState<Role | null>(null);
   const filteredDataRef = useRef<Role[]>([]);
+
+  const fetchRoles = useCallback(async () => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const { roles: list } = await rolesApi.getRoles(token);
+      setRoles(list);
+    } catch {
+      setRoles([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    fetchRoles();
+  }, [fetchRoles]);
 
   const onFilteredDataChange = useCallback(
     (_filters: DataTableFilterState, filteredData: Role[]) => {
@@ -22,10 +42,56 @@ export function RolePage() {
     []
   );
 
-  const exportPDF = () =>
-    exportTableToPDF(roleColumns, filteredDataRef.current, exportOptions);
-  const exportExcel = () =>
-    exportTableToExcel(roleColumns, filteredDataRef.current, exportOptions);
+  const openNewModal = useCallback(() => {
+    setEditingRole(null);
+    setModalOpen(true);
+  }, []);
+
+  const openEditModal = useCallback((role: Role) => {
+    setEditingRole(role);
+    setModalOpen(true);
+  }, []);
+
+  const handleDelete = useCallback(
+    async (role: Role) => {
+      if (!token) return;
+      if (!window.confirm(`Delete role "${role.name}"?`)) return;
+      try {
+        await rolesApi.deleteRole(token, role.id);
+        await fetchRoles();
+      } catch (err) {
+        alert((err as Error).message);
+      }
+    },
+    [token, fetchRoles]
+  );
+
+  const handleFormSubmit = async (data: {
+    name: string;
+    slug: string;
+    description: string;
+    state: 'active' | 'inactive';
+  }) => {
+    if (!token) return;
+    if (editingRole) {
+      await rolesApi.updateRole(token, editingRole.id, data);
+    } else {
+      await rolesApi.createRole(token, data);
+    }
+  };
+
+  const columnActions = useMemo(
+    () => ({
+      onEdit: openEditModal,
+      onDelete: handleDelete,
+    }),
+    [openEditModal, handleDelete]
+  );
+
+  const columns = useMemo(
+    () => getRoleColumns(columnActions),
+    [columnActions]
+  );
 
   return (
     <div className="space-y-4">
@@ -34,54 +100,47 @@ export function RolePage() {
           title="Roles - DIGITALSERVER TECHNICAL SERVICE"
           breadcrumb={[{ label: 'System', icon: Home }, { label: 'Role' }]}
         />
-        <Link to="/admin/roles/new" className="sm:ml-auto">
-          <Button variant="emerald" size="md" leftIcon={Plus}>
-            New Role
-          </Button>
-        </Link>
+        <Button
+          variant="emerald"
+          size="md"
+          leftIcon={Plus}
+          onClick={openNewModal}
+          className="sm:ml-auto"
+        >
+          New Role
+        </Button>
       </div>
 
       <Card className="overflow-hidden">
         <DataTableWithToolbar<Role>
-          data={sampleRole}
-          columns={roleColumns}
-          searchFields={['role', 'description']}
+          data={roles}
+          columns={columns}
+          searchFields={['name', 'slug', 'description']}
           searchPlaceholder="Look for:"
           pageSizeOptions={[10, 25, 50, 100]}
           defaultPageSize={10}
           onFilteredDataChange={onFilteredDataChange}
-          rightContent={
-            <ButtonGroup>
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={FileSpreadsheet}
-                onClick={exportExcel}
-                title="Export Excel"
-                className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
-                aria-label="Export Excel"
-              />
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={FileText}
-                onClick={exportPDF}
-                title="Export PDF"
-                className="p-2 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20"
-                aria-label="Export PDF"
-              />
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={LayoutGrid}
-                title="Columns"
-                className="p-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20"
-                aria-label="Columns"
-              />
-            </ButtonGroup>
+          noDataComponent={
+            loading ? (
+              <div className="py-12 text-center text-slate-500 dark:text-slate-400">
+                Loading...
+              </div>
+            ) : (
+              <div className="py-12 text-center text-slate-500 dark:text-slate-400">
+                No data available in this table.
+              </div>
+            )
           }
         />
       </Card>
+
+      <RoleFormModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        role={editingRole}
+        onSuccess={fetchRoles}
+        onSubmit={handleFormSubmit}
+      />
     </div>
   );
 }

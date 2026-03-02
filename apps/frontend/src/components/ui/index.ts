@@ -18,3 +18,4 @@ export {
 export { PageHeader } from './PageHeader';
 export { KpiCard } from './KpiCard';
 export { Pagination } from './Pagination';
+export { Modal } from './Modal';
