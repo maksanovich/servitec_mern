@@ -5,9 +5,9 @@ import { Badge } from '../../../components/ui';
 import type { TableColumn } from '../../../components/datatable';
 import type { Company } from './types';
 
-import defaultLogo from '../../../assets/logo.svg';
+import defaultLogo from '../../../assets/images/logo.png';
 
-const logoSize = 48;
+const logoSize = 150;
 const logoClass = 'object-contain bg-slate-100 dark:bg-slate-700 rounded';
 
 function CompanyLogo({ src }: { src?: string }) {
@@ -39,11 +39,17 @@ const actionBtnClass =
 
 const MENU_WIDTH = 160;
 
-function onEdit(company: Company) {
-  console.log('Edit company', company);
+export interface CompanyColumnActions {
+  onEdit: (company: Company) => void;
 }
 
-function ActionDropdown({ company }: { company: Company }) {
+function ActionDropdown({
+  company,
+  onEdit,
+}: {
+  company: Company;
+  onEdit: (company: Company) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -140,7 +146,9 @@ const stateLabel: Record<string, string> = {
   inactive: 'Inactive',
 };
 
-export const companyColumns: TableColumn<Company>[] = [
+const companyColumnDefs = (
+  actions: CompanyColumnActions
+): TableColumn<Company>[] => [
   {
     id: 'ruc',
     name: 'RUC',
@@ -198,7 +206,7 @@ export const companyColumns: TableColumn<Company>[] = [
     name: 'Logo',
     selector: () => '',
     sortable: false,
-    width: '100px',
+    width: '200px',
     cell: (row) => <CompanyLogo src={row.logo} />,
   },
   {
@@ -216,6 +224,14 @@ export const companyColumns: TableColumn<Company>[] = [
     name: 'Action',
     sortable: false,
     width: '80px',
-    cell: (row) => <ActionDropdown company={row} />,
+    cell: (row) => <ActionDropdown company={row} onEdit={actions.onEdit} />,
   },
 ];
+
+export function getCompanyColumns(actions: CompanyColumnActions): TableColumn<Company>[] {
+  return companyColumnDefs(actions);
+}
+
+export const companyColumns: TableColumn<Company>[] = companyColumnDefs({
+  onEdit: () => {},
+});

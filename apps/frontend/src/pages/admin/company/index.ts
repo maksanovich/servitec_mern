@@ -1,3 +1,3 @@
 export type { Company } from './types';
-export { sampleCompany } from './sampleCompany';
-export { companyColumns } from './companyColumns';
+export { getCompanyColumns, companyColumns, type CompanyColumnActions } from './companyColumns';
+export { CompanyFormModal } from './CompanyFormModal';

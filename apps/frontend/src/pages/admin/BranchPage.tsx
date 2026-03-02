@@ -1,5 +1,5 @@
 import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
-import { Home, FileText, FileSpreadsheet, LayoutGrid, Plus } from 'lucide-react';
+import { Home, FileText, FileSpreadsheet, Plus } from 'lucide-react';
 import { PageHeader, Card, Button, ButtonGroup, Loader, ConfirmDialog } from '../../components/ui';
 import {
   DataTableWithToolbar,
@@ -180,14 +180,6 @@ export function BranchPage() {
                 title="Export PDF"
                 className="p-2 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20"
                 aria-label="Export PDF"
-              />
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={LayoutGrid}
-                title="Columns"
-                className="p-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20"
-                aria-label="Columns"
               />
             </ButtonGroup>
           }

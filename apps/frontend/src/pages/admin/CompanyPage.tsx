@@ -1,5 +1,5 @@
-import { useRef, useCallback } from 'react';
-import { Home, FileText, FileSpreadsheet, LayoutGrid } from 'lucide-react';
+import { useRef, useCallback, useState } from 'react';
+import { Home, FileText, FileSpreadsheet } from 'lucide-react';
 import { PageHeader, Card, ButtonGroup, Button } from '../../components/ui';
 import {
   DataTableWithToolbar,
@@ -7,14 +7,23 @@ import {
   exportTableToPDF,
   exportTableToExcel,
 } from '../../components/datatable';
+import { useAuth } from '../../contexts/AuthContext';
+import { useCompany } from '../../contexts/CompanyContext';
+import * as companyApi from '../../api/company';
 import type { Company } from './company/types';
-import { sampleCompany } from './company/sampleCompany';
-import { companyColumns } from './company/companyColumns';
+import { getCompanyColumns, companyColumns, CompanyFormModal } from './company';
 
 const exportOptions = { title: 'Company', filename: 'company' };
 
 export function CompanyPage() {
+  const { token } = useAuth();
+  const { company, refetchCompany } = useCompany();
   const filteredDataRef = useRef<Company[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingCompany, setEditingCompany] = useState<Company | null>(null);
+
+  const tableData = company ? [company] : [];
+
 
   const onFilteredDataChange = useCallback(
     (_filters: DataTableFilterState, filteredData: Company[]) => {
@@ -28,6 +37,29 @@ export function CompanyPage() {
   const exportExcel = () =>
     exportTableToExcel(companyColumns, filteredDataRef.current, exportOptions);
 
+  const openEditModal = useCallback((c: Company) => {
+    setEditingCompany(c);
+    setModalOpen(true);
+  }, []);
+
+  const columns = useRef(getCompanyColumns({ onEdit: openEditModal })).current;
+
+  const handleCompanySubmit = async (data: {
+    companyName: string;
+    ruc: string;
+    web: string;
+    phone: string;
+    email: string;
+    address: string;
+    googleMaps: string;
+    companyInformation: string;
+    logo?: string;
+  }) => {
+    if (!token) return;
+    await companyApi.updateCompany(token, data);
+    await refetchCompany();
+  };
+
   return (
     <div className="space-y-4">
       <PageHeader
@@ -37,8 +69,8 @@ export function CompanyPage() {
 
       <Card className="overflow-hidden">
         <DataTableWithToolbar<Company>
-          data={sampleCompany}
-          columns={companyColumns}
+          data={tableData}
+          columns={columns}
           searchFields={['ruc', 'companyName', 'email', 'phone', 'address']}
           searchPlaceholder="Look for:"
           pageSizeOptions={[10, 25, 50, 100]}
@@ -64,18 +96,21 @@ export function CompanyPage() {
                 className="p-2 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20"
                 aria-label="Export PDF"
               />
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={LayoutGrid}
-                title="Columns"
-                className="p-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20"
-                aria-label="Columns"
-              />
             </ButtonGroup>
           }
         />
       </Card>
+
+      <CompanyFormModal
+        open={modalOpen}
+        onClose={() => {
+          setModalOpen(false);
+          setEditingCompany(null);
+        }}
+        company={editingCompany}
+        onSuccess={() => {}}
+        onSubmit={handleCompanySubmit}
+      />
     </div>
   );
 }

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import logoUrl from '../assets/images/logo.png';
 import { useAuth } from '../contexts/AuthContext';
+import { useCompany } from '../contexts/CompanyContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Input } from './ui';
 import {
@@ -86,6 +87,7 @@ export function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { company } = useCompany();
   const { isDark, toggleTheme } = useTheme();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
@@ -117,7 +119,11 @@ export function AdminLayout() {
       >
         <div className={`border-b border-slate-200 dark:border-slate-700 flex items-center ${sidebarCollapsed ? 'p-3 justify-center' : 'p-4'}`}>
           <Link to="/admin" className="flex justify-center w-full text-slate-900 dark:text-white font-semibold">
-            <img src={logoUrl} alt="Digitalserver" className="h-auto w-44 object-contain" />
+            <img
+              src={company?.logo?.trim() || logoUrl}
+              alt={company?.companyName || 'Company'}
+              className="h-auto w-44 object-contain"
+            />
           </Link>
         </div>
         <nav className="flex-1 overflow-y-auto py-4 px-2">
@@ -158,14 +164,14 @@ export function AdminLayout() {
         </nav>
       </aside>
 
-      {/* Main content - offset by sidebar width */}
+      {/* Main content - offset by sidebar width; min-h-0 so only main scrolls */}
       <div
-        className={`flex-1 flex flex-col min-w-0 transition-[margin] duration-150 ${
+        className={`flex-1 flex flex-col min-h-0 min-w-0 transition-[margin] duration-150 ${
           sidebarCollapsed ? 'ml-20' : 'ml-64'
         }`}
       >
-        {/* Header */}
-        <header className="relative z-30 overflow-visible h-14 flex-shrink-0 bg-white/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 gap-4 backdrop-blur-sm">
+        {/* Header - fixed at top when scrolling */}
+        <header className="sticky top-0 z-30 overflow-visible h-14 flex-shrink-0 bg-white/80 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between px-4 gap-4 backdrop-blur-sm">
           <div className="flex items-center gap-3 flex-1 max-w-xl">
             <button
               type="button"
