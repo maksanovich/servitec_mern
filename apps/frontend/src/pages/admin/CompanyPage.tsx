@@ -1,54 +1,45 @@
 import { useRef, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { Home, FileText, FileSpreadsheet, LayoutGrid, Plus } from 'lucide-react';
-import { PageHeader, Card, Button, ButtonGroup } from '../../../components/ui';
+import { Home, FileText, FileSpreadsheet, LayoutGrid } from 'lucide-react';
+import { PageHeader, Card, ButtonGroup, Button } from '../../components/ui';
 import {
   DataTableWithToolbar,
   type DataTableFilterState,
   exportTableToPDF,
   exportTableToExcel,
-  exportTableToCSV,
-} from '../../../components/datatable';
-import { sampleBranch, branchColumns, type Branch } from './index';
+} from '../../components/datatable';
+import type { Company } from './company/types';
+import { sampleCompany } from './company/sampleCompany';
+import { companyColumns } from './company/companyColumns';
 
-const exportOptions = { title: 'Branch', filename: 'branch' };
+const exportOptions = { title: 'Company', filename: 'company' };
 
-export function BranchPage() {
-  const filteredDataRef = useRef<Branch[]>([]);
+export function CompanyPage() {
+  const filteredDataRef = useRef<Company[]>([]);
 
   const onFilteredDataChange = useCallback(
-    (_filters: DataTableFilterState, filteredData: Branch[]) => {
+    (_filters: DataTableFilterState, filteredData: Company[]) => {
       filteredDataRef.current = filteredData;
     },
     []
   );
 
   const exportPDF = () =>
-    exportTableToPDF(branchColumns, filteredDataRef.current, exportOptions);
+    exportTableToPDF(companyColumns, filteredDataRef.current, exportOptions);
   const exportExcel = () =>
-    exportTableToExcel(branchColumns, filteredDataRef.current, exportOptions);
-  const exportCSV = () =>
-    exportTableToCSV(branchColumns, filteredDataRef.current, exportOptions);
+    exportTableToExcel(companyColumns, filteredDataRef.current, exportOptions);
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <PageHeader
-          title="Branch - DIGITALSERVER TECHNICAL SERVICE"
-          breadcrumb={[{ label: 'System', icon: Home }, { label: 'Branch' }]}
-        />
-        <Link to="/admin/branch/new" className="sm:ml-auto">
-          <Button variant="emerald" size="md" leftIcon={Plus}>
-            New Branch
-          </Button>
-        </Link>
-      </div>
+      <PageHeader
+        title="Company - DIGITALSERVER TECHNICAL SERVICE"
+        breadcrumb={[{ label: 'System', icon: Home }, { label: 'Company' }]}
+      />
 
       <Card className="overflow-hidden">
-        <DataTableWithToolbar<Branch>
-          data={sampleBranch}
-          columns={branchColumns}
-          searchFields={['branchName', 'email', 'phone', 'address']}
+        <DataTableWithToolbar<Company>
+          data={sampleCompany}
+          columns={companyColumns}
+          searchFields={['ruc', 'companyName', 'email', 'phone', 'address']}
           searchPlaceholder="Look for:"
           pageSizeOptions={[10, 25, 50, 100]}
           defaultPageSize={10}

@@ -1,15 +1,14 @@
 import { useRef, useCallback } from 'react';
 import { Home, DollarSign, FileText, FileSpreadsheet, LayoutGrid } from 'lucide-react';
-import { PageHeader, KpiCard, Card, Button, ButtonGroup } from '../../../components/ui';
+import { PageHeader, KpiCard, Card, Button, ButtonGroup } from '../../components/ui';
 import {
   DataTableWithToolbar,
   type DataTableFilterState,
   exportTableToPDF,
   exportTableToExcel,
-  exportTableToCSV,
-} from '../../../components/datatable';
-import { incomeColumns } from './incomeColumns';
-import type { DailyIncomeEntry } from './types';
+} from '../../components/datatable';
+import { incomeColumns } from './income/incomeColumns';
+import type { DailyIncomeEntry } from './income/types';
 
 const revenueKpis = [
   { label: 'Income', value: '$0.00', sublabel: 'Daily' as const, icon: DollarSign },
@@ -47,8 +46,6 @@ export function IncomePage() {
     exportTableToPDF(incomeColumns, filteredDataRef.current, exportOptions);
   const exportExcel = () =>
     exportTableToExcel(incomeColumns, filteredDataRef.current, exportOptions);
-  const exportCSV = () =>
-    exportTableToCSV(incomeColumns, filteredDataRef.current, exportOptions);
 
   return (
     <div className="space-y-4">
