@@ -4,9 +4,13 @@ export interface Company {
   id: string;
   ruc: string;
   companyName: string;
+  web?: string;
   email: string;
   phone: string;
   address: string;
+  googleMaps?: string;
+  companyInformation?: string;
+  logo?: string;
   state: 'active' | 'inactive';
 }
 

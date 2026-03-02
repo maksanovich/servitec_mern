@@ -7,13 +7,14 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
 const sizeClasses = {
   sm: 'max-w-md',
   md: 'max-w-lg',
   lg: 'max-w-2xl',
+  xl: 'max-w-4xl max-h-[90vh] flex flex-col',
 };
 
 export function Modal({ open, onClose, title, children, size = 'md' }: ModalProps) {
@@ -48,10 +49,10 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
       onClick={handleOverlayClick}
     >
       <div
-        className={`w-full ${sizeClasses[size]} rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-xl`}
+        className={`w-full ${sizeClasses[size]} rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-xl ${size === 'xl' ? 'flex flex-col' : ''}`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-700">
+        <div className="flex shrink-0 items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-700">
           <h2 id="modal-title" className="text-lg font-semibold text-slate-900 dark:text-white">
             {title}
           </h2>
@@ -65,7 +66,9 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
             <X className="w-5 h-5" />
           </Button>
         </div>
-        <div className="p-5">{children}</div>
+        <div className={size === 'xl' ? 'flex-1 min-h-0 overflow-y-auto p-5' : 'p-5'}>
+          {children}
+        </div>
       </div>
     </div>
   );

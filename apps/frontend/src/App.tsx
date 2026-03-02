@@ -3,6 +3,7 @@ import { Layout } from './components/Layout';
 import { AdminLayout } from './components/AdminLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { AuthProvider } from './contexts/AuthContext';
+import { CompanyProvider } from './contexts/CompanyContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LandingPage } from './pages/LandingPage';
 import { BlogPage } from './pages/BlogPage';
@@ -48,7 +49,9 @@ function App() {
             path="/admin"
             element={
               <ProtectedRoute>
-                <AdminLayout />
+                <CompanyProvider>
+                  <AdminLayout />
+                </CompanyProvider>
               </ProtectedRoute>
             }
           >

@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { User as UserIcon, Mail, Shield, Hash, Phone, Save } from 'lucide-react';
+import { User as UserIcon, Mail, Shield, Hash, Save } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { PageHeader, Card, CardHeader, CardContent, Input, Button } from '../../components/ui';
 import { updateProfile } from '../../api/auth';
-import { getCompany, updateCompany, type Company } from '../../api/company';
-import { sampleCompany } from './company/sampleCompany';
+import { getCompany, updateCompany } from '../../api/company';
 
 function DetailRow({
   icon: Icon,
@@ -47,7 +46,6 @@ export function ProfilePage() {
   const [userSaving, setUserSaving] = useState(false);
   const [userMessage, setUserMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const [company, setCompany] = useState<Company | null>(null);
   const [companyForm, setCompanyForm] = useState(defaultCompanyForm);
   const [companySaving, setCompanySaving] = useState(false);
   const [companyMessage, setCompanyMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -64,7 +62,6 @@ export function ProfilePage() {
     getCompany(token)
       .then(({ company: c }) => {
         if (c) {
-          setCompany(c);
           setCompanyForm({
             companyName: c.companyName || '',
             ruc: c.ruc || '',
@@ -73,25 +70,11 @@ export function ProfilePage() {
             address: c.address || '',
           });
         } else {
-          const fallback = sampleCompany[0];
-          setCompanyForm({
-            companyName: fallback?.companyName ?? '',
-            ruc: fallback?.ruc ?? '',
-            email: fallback?.email ?? '',
-            phone: fallback?.phone ?? '',
-            address: fallback?.address ?? '',
-          });
+          setCompanyForm(defaultCompanyForm);
         }
       })
       .catch(() => {
-        const fallback = sampleCompany[0];
-        setCompanyForm({
-          companyName: fallback?.companyName ?? '',
-          ruc: fallback?.ruc ?? '',
-          email: fallback?.email ?? '',
-          phone: fallback?.phone ?? '',
-          address: fallback?.address ?? '',
-        });
+        setCompanyForm(defaultCompanyForm);
       });
   }, [token]);
 
@@ -115,14 +98,13 @@ export function ProfilePage() {
     setCompanySaving(true);
     setCompanyMessage(null);
     try {
-      const { company: updated } = await updateCompany(token, {
+      await updateCompany(token, {
         companyName: companyForm.companyName.trim(),
         ruc: companyForm.ruc.trim(),
         email: companyForm.email.trim(),
         phone: companyForm.phone.trim(),
         address: companyForm.address.trim(),
       });
-      setCompany(updated);
       setCompanyMessage({ type: 'success', text: 'Company updated.' });
     } catch (e) {
       setCompanyMessage({ type: 'error', text: (e as Error).message });
