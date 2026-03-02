@@ -1,54 +1,51 @@
 import { useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Home, FileText, FileSpreadsheet, LayoutGrid, Plus } from 'lucide-react';
-import { PageHeader, Card, Button, ButtonGroup } from '../../../components/ui';
+import { Home, Plus, FileText, FileSpreadsheet, LayoutGrid } from 'lucide-react';
+import { PageHeader, Card, Button, ButtonGroup } from '../../components/ui';
 import {
   DataTableWithToolbar,
   type DataTableFilterState,
   exportTableToPDF,
   exportTableToExcel,
-  exportTableToCSV,
-} from '../../../components/datatable';
-import { sampleUser, userColumns, type User } from './index';
+} from '../../components/datatable';
+import { sampleRole, roleColumns, type Role } from './role/index';
 
-const exportOptions = { title: 'Users', filename: 'users' };
+const exportOptions = { title: 'Role', filename: 'role' };
 
-export function UserPage() {
-  const filteredDataRef = useRef<User[]>([]);
+export function RolePage() {
+  const filteredDataRef = useRef<Role[]>([]);
 
   const onFilteredDataChange = useCallback(
-    (_filters: DataTableFilterState, filteredData: User[]) => {
+    (_filters: DataTableFilterState, filteredData: Role[]) => {
       filteredDataRef.current = filteredData;
     },
     []
   );
 
   const exportPDF = () =>
-    exportTableToPDF(userColumns, filteredDataRef.current, exportOptions);
+    exportTableToPDF(roleColumns, filteredDataRef.current, exportOptions);
   const exportExcel = () =>
-    exportTableToExcel(userColumns, filteredDataRef.current, exportOptions);
-  const exportCSV = () =>
-    exportTableToCSV(userColumns, filteredDataRef.current, exportOptions);
+    exportTableToExcel(roleColumns, filteredDataRef.current, exportOptions);
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
-          title="Users - DIGITALSERVER TECHNICAL SERVICE"
-          breadcrumb={[{ label: 'System', icon: Home }, { label: 'User' }]}
+          title="Roles - DIGITALSERVER TECHNICAL SERVICE"
+          breadcrumb={[{ label: 'System', icon: Home }, { label: 'Role' }]}
         />
-        <Link to="/admin/users/new" className="sm:ml-auto">
+        <Link to="/admin/roles/new" className="sm:ml-auto">
           <Button variant="emerald" size="md" leftIcon={Plus}>
-            New User
+            New Role
           </Button>
         </Link>
       </div>
 
       <Card className="overflow-hidden">
-        <DataTableWithToolbar<User>
-          data={sampleUser}
-          columns={userColumns}
-          searchFields={['id', 'names', 'surnames', 'email', 'phone', 'role']}
+        <DataTableWithToolbar<Role>
+          data={sampleRole}
+          columns={roleColumns}
+          searchFields={['role', 'description']}
           searchPlaceholder="Look for:"
           pageSizeOptions={[10, 25, 50, 100]}
           defaultPageSize={10}

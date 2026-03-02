@@ -1,13 +1,12 @@
 import { useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Home, Box, FileText, FileSpreadsheet, Download } from 'lucide-react';
+import { Home, Box, FileText, FileSpreadsheet } from 'lucide-react';
 import { PageHeader, Card, Button, ButtonGroup } from '../../components/ui';
 import {
   DataTableWithToolbar,
   type DataTableFilterState,
   exportTableToPDF,
   exportTableToExcel,
-  exportTableToCSV,
 } from '../../components/datatable';
 import { sampleModels, modelsColumns } from './models';
 import type { Model } from './models';
@@ -23,7 +22,6 @@ export function ModelsPage() {
 
   const exportPDF = () => exportTableToPDF(modelsColumns, filteredDataRef.current, exportOptions);
   const exportExcel = () => exportTableToExcel(modelsColumns, filteredDataRef.current, exportOptions);
-  const exportCSV = () => exportTableToCSV(modelsColumns, filteredDataRef.current, exportOptions);
 
   return (
     <div className="space-y-4">
@@ -67,15 +65,6 @@ export function ModelsPage() {
                 title="Export Excel"
                 className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
                 aria-label="Export Excel"
-              />
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={Download}
-                onClick={exportCSV}
-                title="Export CSV"
-                className="p-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20"
-                aria-label="Export CSV"
               />
             </ButtonGroup>
           }

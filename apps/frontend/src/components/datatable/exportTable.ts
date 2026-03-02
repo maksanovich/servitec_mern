@@ -59,28 +59,3 @@ export function exportTableToExcel<T>(
   XLSX.writeFile(wb, `${filename}.xlsx`);
 }
 
-/**
- * Export table data to CSV (download).
- */
-export function exportTableToCSV<T>(
-  columns: TableColumn<T>[],
-  data: T[],
-  options: ExportTableOptions = {}
-): void {
-  const { filename = 'export' } = options;
-  const escape = (v: string) => {
-    const s = String(v);
-    if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-    return s;
-  };
-  const header = columns.map((c) => escape((c.name as string) || '')).join(',');
-  const rows = data.map((row) => getRowValues(row, columns).map(escape).join(','));
-  const csv = [header, ...rows].join('\r\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `${filename}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-}

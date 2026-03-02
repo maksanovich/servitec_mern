@@ -1,13 +1,12 @@
 import { useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { Home, FileText, FileSpreadsheet, Download, Plus, Minus } from 'lucide-react';
+import { Home, FileText, FileSpreadsheet, Plus, Minus } from 'lucide-react';
 import { PageHeader, Card, Button, ButtonGroup } from '../../components/ui';
 import {
   DataTableWithToolbar,
   type DataTableFilterState,
   exportTableToPDF,
   exportTableToExcel,
-  exportTableToCSV,
 } from '../../components/datatable';
 import {
   sampleServicesSpareParts,
@@ -27,7 +26,6 @@ export function ServicesSparePartsPage() {
 
   const exportPDF = () => exportTableToPDF(servicesColumns, filteredDataRef.current, exportOptions);
   const exportExcel = () => exportTableToExcel(servicesColumns, filteredDataRef.current, exportOptions);
-  const exportCSV = () => exportTableToCSV(servicesColumns, filteredDataRef.current, exportOptions);
 
   return (
     <div className="space-y-4">
@@ -74,15 +72,6 @@ export function ServicesSparePartsPage() {
                 title="Export PDF"
                 className="p-2 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20"
                 aria-label="Export PDF"
-              />
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={Download}
-                onClick={exportCSV}
-                title="Export CSV"
-                className="p-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20"
-                aria-label="Export CSV"
               />
             </ButtonGroup>
           }
