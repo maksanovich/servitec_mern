@@ -1,6 +1,6 @@
 import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
 import { Home, Plus } from 'lucide-react';
-import { PageHeader, Card, Button } from '../../components/ui';
+import { PageHeader, Card, Button, Loader, ConfirmDialog } from '../../components/ui';
 import {
   DataTableWithToolbar,
   type DataTableFilterState,
@@ -16,6 +16,9 @@ export function RolePage() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<Role | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const filteredDataRef = useRef<Role[]>([]);
 
   const fetchRoles = useCallback(async () => {
@@ -52,19 +55,35 @@ export function RolePage() {
     setModalOpen(true);
   }, []);
 
-  const handleDelete = useCallback(
-    async (role: Role) => {
-      if (!token) return;
-      if (!window.confirm(`Delete role "${role.name}"?`)) return;
+  const handleDeleteClick = useCallback((role: Role) => {
+    setDeleteError(null);
+    setDeleteConfirm(role);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(
+    async () => {
+      if (!token || !deleteConfirm) return;
+      setDeleteLoading(true);
+      setDeleteError(null);
       try {
-        await rolesApi.deleteRole(token, role.id);
+        await rolesApi.deleteRole(token, deleteConfirm.id);
+        setDeleteConfirm(null);
         await fetchRoles();
       } catch (err) {
-        alert((err as Error).message);
+        setDeleteError((err as Error).message);
+      } finally {
+        setDeleteLoading(false);
       }
     },
-    [token, fetchRoles]
+    [token, deleteConfirm, fetchRoles]
   );
+
+  const handleDeleteCancel = useCallback(() => {
+    if (!deleteLoading) {
+      setDeleteConfirm(null);
+      setDeleteError(null);
+    }
+  }, [deleteLoading]);
 
   const handleFormSubmit = async (data: {
     name: string;
@@ -83,9 +102,9 @@ export function RolePage() {
   const columnActions = useMemo(
     () => ({
       onEdit: openEditModal,
-      onDelete: handleDelete,
+      onDelete: handleDeleteClick,
     }),
-    [openEditModal, handleDelete]
+    [openEditModal, handleDeleteClick]
   );
 
   const columns = useMemo(
@@ -122,8 +141,9 @@ export function RolePage() {
           onFilteredDataChange={onFilteredDataChange}
           noDataComponent={
             loading ? (
-              <div className="py-12 text-center text-slate-500 dark:text-slate-400">
-                Loading...
+              <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
+                <Loader size="md" />
+                <span className="text-sm">Loading…</span>
               </div>
             ) : (
               <div className="py-12 text-center text-slate-500 dark:text-slate-400">
@@ -140,6 +160,23 @@ export function RolePage() {
         role={editingRole}
         onSuccess={fetchRoles}
         onSubmit={handleFormSubmit}
+      />
+
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Delete role"
+        message={
+          deleteConfirm
+            ? `Are you sure you want to delete "${deleteConfirm.name}"? This action cannot be undone.`
+            : ''
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        isLoading={deleteLoading}
+        error={deleteError}
       />
     </div>
   );

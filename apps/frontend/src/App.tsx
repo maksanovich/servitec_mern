@@ -31,6 +31,7 @@ import { ProductsPage } from './pages/admin/ProductsPage';
 
 import { ServicesSparePartsPage } from './pages/admin/ServicesSparePartsPage';
 import { IncomePage } from './pages/admin/IncomePage';
+import { NotFoundPage } from './pages/NotFoundPage';
 
 function App() {
   return (
@@ -78,6 +79,7 @@ function App() {
           </Route>
           <Route path="/admin/dashboard" element={<Navigate to="/admin" replace />} />
           <Route path="/admin/workshop-config" element={<Navigate to="/admin/clients" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </ThemeProvider>
     </AuthProvider>
