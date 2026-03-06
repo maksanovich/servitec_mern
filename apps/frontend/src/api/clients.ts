@@ -60,3 +60,48 @@ export async function getClients(
   }
   return data;
 }
+
+/** Allowed fields when admin edits a client */
+export interface UpdateClientPayload {
+  razonsocial?: string;
+  nombrecomercial?: string;
+  email?: string;
+  telefono1?: string;
+  telefono2?: string;
+  telefono3?: string;
+  estado?: boolean;
+  identificacion?: string;
+}
+
+export async function updateClient(
+  token: string | null,
+  clientesid: number,
+  payload: UpdateClientPayload
+): Promise<Client> {
+  if (!token) throw new Error('Not authenticated');
+  const res = await apiFetch(`/clients/${clientesid}`, {
+    method: 'PATCH',
+    token,
+    body: JSON.stringify(payload),
+    headers: { 'Content-Type': 'application/json' },
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to update client');
+  }
+  return data;
+}
+
+export async function deleteClient(
+  token: string | null,
+  clientesid: number
+): Promise<void> {
+  if (!token) throw new Error('Not authenticated');
+  const res = await apiFetch(`/clients/${clientesid}`, {
+    method: 'DELETE',
+    token,
+  });
+  if (res.status === 204) return;
+  const data = await res.json().catch(() => ({}));
+  throw new Error(data.error || 'Failed to delete client');
+}

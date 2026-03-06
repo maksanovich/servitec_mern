@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Home, UserPlus } from 'lucide-react';
-import { PageHeader, Card, Button, Loader } from '../../components/ui';
+import { PageHeader, Card, Button, Loader, ConfirmDialog } from '../../components/ui';
 import { DataTable, DataTableToolbar, DataTablePagination } from '../../components/datatable';
 import { useAuth } from '../../contexts/AuthContext';
-import { getClients } from '../../api/clients';
-import { clientsColumns } from './customers';
+import { getClients, updateClient, deleteClient } from '../../api/clients';
+import type { Client } from '../../api/clients';
+import { getClientsColumns } from './customers/customersColumns';
+import { ClientEditModal } from './customers/ClientEditModal';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 const DEFAULT_PAGE_SIZE = 10;
@@ -20,6 +22,11 @@ export function CustomersPage() {
   const [searchInput, setSearchInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editClient, setEditClient] = useState<Client | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<Client | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const fetchClients = useCallback(async () => {
     if (!token) return;
@@ -63,6 +70,53 @@ export function CustomersPage() {
     setPageSize(newSize);
     setPage(1);
   }, []);
+
+  const handleEditClient = useCallback((client: Client) => {
+    setEditClient(client);
+    setEditModalOpen(true);
+  }, []);
+
+  const handleEditSuccess = useCallback(() => {
+    fetchClients();
+  }, [fetchClients]);
+
+  const handleEditSubmit = useCallback(
+    async (clientesid: number, payload: Parameters<typeof updateClient>[2]) => {
+      if (!token) return;
+      await updateClient(token, clientesid, payload);
+    },
+    [token]
+  );
+
+  const handleDeleteClick = useCallback((client: Client) => {
+    setDeleteError(null);
+    setDeleteConfirm(client);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(
+    async () => {
+      if (!token || !deleteConfirm) return;
+      setDeleteLoading(true);
+      setDeleteError(null);
+      try {
+        await deleteClient(token, deleteConfirm.clientesid);
+        setDeleteConfirm(null);
+        await fetchClients();
+      } catch (err) {
+        setDeleteError((err as Error).message);
+      } finally {
+        setDeleteLoading(false);
+      }
+    },
+    [token, deleteConfirm, fetchClients]
+  );
+
+  const handleDeleteCancel = useCallback(() => {
+    if (!deleteLoading) {
+      setDeleteConfirm(null);
+      setDeleteError(null);
+    }
+  }, [deleteLoading]);
 
   return (
     <div className="space-y-4">
@@ -109,7 +163,7 @@ export function CustomersPage() {
           </div>
           <DataTable
             className="w-full max-w-full"
-            columns={clientsColumns}
+            columns={getClientsColumns(handleEditClient, handleDeleteClick)}
             data={clients}
             pagination
             paginationServer
@@ -130,6 +184,29 @@ export function CustomersPage() {
           />
         </div>
       </Card>
+      <ClientEditModal
+        open={editModalOpen}
+        onClose={() => { setEditModalOpen(false); setEditClient(null); }}
+        client={editClient}
+        onSuccess={handleEditSuccess}
+        onSubmit={handleEditSubmit}
+      />
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Delete client"
+        message={
+          deleteConfirm
+            ? `Are you sure you want to delete "${deleteConfirm.razonsocial || deleteConfirm.nombrecomercial || deleteConfirm.clientescodigo}"? This will remove the client from this system.`
+            : ''
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        isLoading={deleteLoading}
+        error={deleteError}
+      />
     </div>
   );
 }
