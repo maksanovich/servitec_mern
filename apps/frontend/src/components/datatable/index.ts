@@ -1,4 +1,5 @@
 export { DataTable } from './DataTable';
+export { TableProgress } from './TableProgress';
 export type { DataTableProps, TableColumn, SortDirection } from './DataTable';
 export { DataTableToolbar, formatDateLabel } from './DataTableToolbar';
 export type { DataTableToolbarProps } from './DataTableToolbar';

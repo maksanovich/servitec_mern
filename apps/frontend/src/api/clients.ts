@@ -3,6 +3,7 @@ import { apiFetch } from './client';
 export interface Client {
   clientesid: number;
   clientescodigo: string;
+  estado: boolean;
   codigocontable: string;
   clientes_gruposid: number;
   provinciasid: string;

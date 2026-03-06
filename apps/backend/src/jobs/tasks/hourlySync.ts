@@ -18,6 +18,7 @@ export async function runHourlySync(): Promise<void> {
           {
             clientesid: c.clientesid,
             clientescodigo: c.clientescodigo ?? '',
+            estado: c.estado ?? true,
             codigocontable: c.codigocontable ?? '',
             clientes_gruposid: c.clientes_gruposid ?? 0,
             provinciasid: c.provinciasid ?? '',
@@ -35,6 +36,8 @@ export async function runHourlySync(): Promise<void> {
             telefono1: c.telefono1 ?? '',
             telefono2: c.telefono2 ?? '',
             telefono3: c.telefono3 ?? '',
+            formasdepagoid: c.formasdepagoid ?? 0,
+            tarifasid: c.tarifasid ?? 0,
             vendedoresid: c.vendedoresid ?? 0,
             cobradoresid: c.cobradoresid ?? 0,
             creditocupo: c.creditocupo ?? 0,

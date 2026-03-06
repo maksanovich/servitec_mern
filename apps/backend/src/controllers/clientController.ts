@@ -7,6 +7,7 @@ const MAX_LIMIT = 100;
 function toResponse(doc: {
   clientesid: number;
   clientescodigo: string;
+  estado: boolean;
   codigocontable: string;
   clientes_gruposid: number;
   provinciasid: string;
@@ -24,6 +25,8 @@ function toResponse(doc: {
   telefono1: string;
   telefono2: string;
   telefono3: string;
+  formasdepagoid: number;
+  tarifasid: number;
   vendedoresid: number;
   cobradoresid: number;
   creditocupo: number;
@@ -34,6 +37,7 @@ function toResponse(doc: {
   return {
     clientesid: doc.clientesid,
     clientescodigo: doc.clientescodigo ?? '',
+    estado: doc.estado ?? true,
     codigocontable: doc.codigocontable ?? '',
     clientes_gruposid: doc.clientes_gruposid ?? 0,
     provinciasid: doc.provinciasid ?? '',
@@ -51,6 +55,8 @@ function toResponse(doc: {
     telefono1: doc.telefono1 ?? '',
     telefono2: doc.telefono2 ?? '',
     telefono3: doc.telefono3 ?? '',
+    formasdepagoid: doc.formasdepagoid ?? 0,
+    tarifasid: doc.tarifasid ?? 0,
     vendedoresid: doc.vendedoresid ?? 0,
     cobradoresid: doc.cobradoresid ?? 0,
     creditocupo: doc.creditocupo ?? 0,

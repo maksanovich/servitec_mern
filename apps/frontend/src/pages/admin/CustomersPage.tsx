@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Home, UserPlus } from 'lucide-react';
-import { PageHeader, Card, Button } from '../../components/ui';
+import { PageHeader, Card, Button, Loader } from '../../components/ui';
 import { DataTable, DataTableToolbar, DataTablePagination } from '../../components/datatable';
 import { useAuth } from '../../contexts/AuthContext';
 import { getClients } from '../../api/clients';
@@ -92,12 +92,25 @@ export function CustomersPage() {
             {error}
           </div>
         )}
-        <div className="pb-5 w-full min-w-0 overflow-x-hidden overflow-hidden">
+        <div className="pb-5 w-full min-w-0 overflow-x-hidden overflow-hidden relative min-h-[280px]">
+          <div
+            aria-hidden={!loading}
+            aria-live="polite"
+            className="absolute inset-0 z-10 flex items-center justify-center bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-[2px] transition-opacity duration-200"
+            style={{
+              opacity: loading ? 1 : 0,
+              pointerEvents: loading ? 'auto' : 'none',
+            }}
+          >
+            <div className="flex flex-col items-center gap-3">
+              <Loader size="lg" />
+              <span className="text-sm text-slate-500 dark:text-slate-400 animate-pulse">Loading…</span>
+            </div>
+          </div>
           <DataTable
             className="w-full max-w-full"
             columns={clientsColumns}
             data={clients}
-            progressPending={loading}
             pagination
             paginationServer
             paginationTotalRows={total}

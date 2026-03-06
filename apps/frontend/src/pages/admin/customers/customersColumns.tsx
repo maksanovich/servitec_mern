@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Pencil } from 'lucide-react';
 import { type TableColumn } from '../../../components/datatable';
+import { Badge } from '../../../components/ui';
 import type { Client } from '../../../api/clients';
 
 const actionBtnClass =
@@ -118,7 +119,9 @@ export const clientsColumns: TableColumn<Client>[] = [
     sortable: true,
     width: '130px',
     cell: (row) => (
-      <span className="text-slate-700 dark:text-slate-300 font-mono text-sm">{row.clientescodigo || '—'}</span>
+      <span className="font-mono text-sm px-2 py-0.5 rounded bg-slate-100 text-slate-700 dark:bg-slate-700/50 dark:text-slate-300">
+        {row.clientescodigo || '—'}
+      </span>
     ),
   },
   {
@@ -189,6 +192,18 @@ export const clientsColumns: TableColumn<Client>[] = [
     width: '140px',
     cell: (row) => (
       <span className="text-slate-700 dark:text-slate-300">{formatDate(row.fechacreacion) || '—'}</span>
+    ),
+  },
+  {
+    id: 'estado',
+    name: 'Status',
+    selector: (row) => row.estado,
+    sortable: true,
+    width: '100px',
+    cell: (row) => (
+      <Badge variant={row.estado ? 'success' : 'error'}>
+        {row.estado ? 'Active' : 'Inactive'}
+      </Badge>
     ),
   },
   {
