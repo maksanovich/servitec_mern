@@ -5,6 +5,7 @@ import { connectDB } from './db/connection.js';
 import { seedAdminIfNeeded } from './db/seedAdmin.js';
 import { seedRolesIfNeeded } from './db/seedRoles.js';
 import { apiRouter } from './routes/index.js';
+import { startScheduler } from './jobs/index.js';
 
 const app = express();
 const PORT = config.port;
@@ -27,6 +28,7 @@ connectDB()
   .then(() => seedRolesIfNeeded())
   .then(() => seedAdminIfNeeded())
   .then(() => {
+    startScheduler();
     app.listen(PORT, () => {
       console.log(`Backend running at http://localhost:${PORT}`);
     });
