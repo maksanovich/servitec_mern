@@ -3,6 +3,7 @@ import mongoose, { Document, Model } from 'mongoose';
 export interface IClient extends Document {
   clientesid: number;
   clientescodigo: string;
+  estado: boolean;
   codigocontable: string;
   clientes_gruposid: number;
   provinciasid: string;
@@ -20,6 +21,8 @@ export interface IClient extends Document {
   telefono1: string;
   telefono2: string;
   telefono3: string;
+  formasdepagoid: number;
+  tarifasid: number;
   vendedoresid: number;
   cobradoresid: number;
   creditocupo: number;
@@ -32,6 +35,7 @@ const clientSchema = new mongoose.Schema<IClient>(
   {
     clientesid: { type: Number, required: true, unique: true },
     clientescodigo: { type: String, default: '' },
+    estado: { type: Boolean, default: true },
     codigocontable: { type: String, default: '' },
     clientes_gruposid: { type: Number, default: 0 },
     provinciasid: { type: String, default: '' },
@@ -49,6 +53,8 @@ const clientSchema = new mongoose.Schema<IClient>(
     telefono1: { type: String, default: '' },
     telefono2: { type: String, default: '' },
     telefono3: { type: String, default: '' },
+    formasdepagoid: { type: Number, default: 0 },
+    tarifasid: { type: Number, default: 0 },
     vendedoresid: { type: Number, default: 0 },
     cobradoresid: { type: Number, default: 0 },
     creditocupo: { type: Number, default: 0 },

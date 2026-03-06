@@ -78,7 +78,7 @@ export function DataTableToolbar({
           </div>
         )}
       </div>
-      {(dateRangeLabel || rightContent) && (
+      {(showSearch || dateRangeLabel || rightContent) && (
         <div className="ml-auto flex flex-wrap items-center gap-3">
           {showSearch && (
             <div className="flex items-center gap-2">
