@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { Home, UserPlus } from 'lucide-react';
 import { PageHeader, Card, Button, Loader, ConfirmDialog } from '../../components/ui';
 import { DataTable, DataTableToolbar, DataTablePagination } from '../../components/datatable';
@@ -102,9 +103,12 @@ export function CustomersPage() {
       try {
         await deleteClient(token, deleteConfirm.clientesid);
         setDeleteConfirm(null);
+        toast.success('Client deleted successfully');
         await fetchClients();
       } catch (err) {
-        setDeleteError((err as Error).message);
+        const message = (err as Error).message;
+        setDeleteError(message);
+        toast.error('Delete failed', { description: message });
       } finally {
         setDeleteLoading(false);
       }
@@ -209,7 +213,7 @@ export function CustomersPage() {
         title="Delete client"
         message={
           deleteConfirm
-            ? `Are you sure you want to delete "${deleteConfirm.razonsocial || deleteConfirm.nombrecomercial || deleteConfirm.clientescodigo}"? This will remove the client from this system.`
+            ? `Are you sure you want to delete "${deleteConfirm.razonsocial || deleteConfirm.nombrecomercial || deleteConfirm.clientescodigo}"? This will remove the client from this system and from Perseo. This action cannot be undone.`
             : ''
         }
         confirmLabel="Delete"

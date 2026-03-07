@@ -163,3 +163,39 @@ export async function editClient(clientes: PerseoClientEditPayload): Promise<Edi
     }
     return { ok: false, error: errorMessage };
 }
+
+export type PerseoClientDeletePayload = {
+    clientesid: number;
+    empresaid?: number;
+    usuarioid?: number;
+};
+
+export type DeleteClientResult = { ok: true } | { ok: false; error: string };
+
+export async function deleteClient(payload: PerseoClientDeletePayload): Promise<DeleteClientResult> {
+    const body: Record<string, unknown> = {
+        api_key: process.env.PERSEO_API ?? "",
+        clientesid: payload.clientesid,
+    };
+    if (payload.empresaid != null) body.empresaid = payload.empresaid;
+    if (payload.usuarioid != null) body.usuarioid = payload.usuarioid;
+
+    const res = await fetch(`${process.env.PERSEO_DATA_C3_APP}clientes_eliminar`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+    });
+    if (res.ok) return { ok: true };
+    const text = await res.text();
+    let errorMessage = `Perseo clientes_eliminar failed (${res.status})`;
+    if (text) {
+        try {
+            const data = JSON.parse(text) as { message?: string; error?: string };
+            const msg = data.message ?? data.error;
+            if (typeof msg === "string" && msg) errorMessage = msg;
+        } catch {
+            errorMessage = text.slice(0, 200);
+        }
+    }
+    return { ok: false, error: errorMessage };
+}

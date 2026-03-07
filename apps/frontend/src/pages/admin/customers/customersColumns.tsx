@@ -21,7 +21,9 @@ function openWhatsApp(client: Client) {
 
 function formatDate(date: string) {
   if (!date) return '—';
-  return date.split('T')[0];
+  if (date.includes('T')) return date.split('T')[0];
+  const m = date.match(/^(\d{4})(\d{2})(\d{2})/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : date;
 }
 
 function ActionDropdown({

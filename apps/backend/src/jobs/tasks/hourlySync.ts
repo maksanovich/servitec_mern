@@ -1,6 +1,15 @@
 const perseoService = await import('../../services/perseoService.js');
 const { Client } = await import('../../models/Client.js');
 
+function toISODate(value: string): string {
+  if (!value) return '';
+  if (value.includes('T')) return value;
+  const m = value.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})$/);
+  if (!m) return value;
+  const [, y, mo, d, h, min, s] = m;
+  return `${y}-${mo}-${d}T${h}:${min}:${s}.000Z`;
+}
+
 export async function runHourlySync(): Promise<void> {
   const start = Date.now();
   console.log('[Cron] Hourly sync started');
@@ -42,8 +51,8 @@ export async function runHourlySync(): Promise<void> {
             cobradoresid: c.cobradoresid ?? 0,
             creditocupo: c.creditocupo ?? 0,
             creditodias: c.creditodias ?? 0,
-            fechamodificacion: c.fechamodificacion ?? '',
-            fechacreacion: c.fechacreacion ?? '',
+            fechamodificacion: toISODate(c.fechamodificacion ?? ''),
+            fechacreacion: toISODate(c.fechacreacion ?? ''),
           },
           { upsert: true, new: true }
         );
