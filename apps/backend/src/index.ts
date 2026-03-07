@@ -29,8 +29,9 @@ connectDB()
   .then(() => seedAdminIfNeeded())
   .then(() => {
     startScheduler();
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {
       console.log(`Backend running at http://localhost:${PORT}`);
+      console.log(`  (Network: http://45.89.126.242:${PORT})`);
     });
   })
   .catch((err) => {

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronDown, Pencil } from 'lucide-react';
+import { ChevronDown, Pencil, Trash2 } from 'lucide-react';
 import { type TableColumn } from '../../../components/datatable';
 import { Badge } from '../../../components/ui';
 import type { Client } from '../../../api/clients';
@@ -9,10 +9,6 @@ const actionBtnClass =
   'p-1.5 rounded text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200 transition-colors';
 
 const MENU_WIDTH = 160;
-
-function onEdit(client: Client) {
-  console.log('Edit client', client);
-}
 
 function openWhatsApp(client: Client) {
   const phone = client.telefono1 || client.telefono2 || client.telefono3 || '';
@@ -28,7 +24,15 @@ function formatDate(date: string) {
   return date.split('T')[0];
 }
 
-function ActionDropdown({ client }: { client: Client }) {
+function ActionDropdown({
+  client,
+  onEdit,
+  onDelete,
+}: {
+  client: Client;
+  onEdit: (client: Client) => void;
+  onDelete: (client: Client) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -104,6 +108,13 @@ function ActionDropdown({ client }: { client: Client }) {
             </svg>
             WhatsApp
           </button>
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+            onClick={() => { onDelete(client); setOpen(false); }}
+          >
+            <Trash2 className="w-4 h-4" /> Delete
+          </button>
         </div>,
         document.body
       )}
@@ -111,7 +122,11 @@ function ActionDropdown({ client }: { client: Client }) {
   );
 }
 
-export const clientsColumns: TableColumn<Client>[] = [
+export function getClientsColumns(
+  onEdit: (client: Client) => void,
+  onDelete: (client: Client) => void
+): TableColumn<Client>[] {
+  return [
   {
     id: 'clientescodigo',
     name: 'Code',
@@ -211,6 +226,10 @@ export const clientsColumns: TableColumn<Client>[] = [
     name: 'Action',
     sortable: false,
     width: '80px',
-    cell: (row) => <ActionDropdown client={row} />,
+    cell: (row) => <ActionDropdown client={row} onEdit={onEdit} onDelete={onDelete} />,
   },
 ];
+}
+
+/** Default columns with no-op edit/delete (use getClientsColumns(onEdit, onDelete) when needed) */
+export const clientsColumns = getClientsColumns(() => {}, () => {});
