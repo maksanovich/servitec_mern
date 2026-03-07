@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import { Home, UserPlus } from 'lucide-react';
 import { PageHeader, Card, Button, Loader, ConfirmDialog } from '../../components/ui';
 import { DataTable, DataTableToolbar, DataTablePagination } from '../../components/datatable';
@@ -8,6 +7,7 @@ import { getClients, updateClient, deleteClient } from '../../api/clients';
 import type { Client } from '../../api/clients';
 import { getClientsColumns } from './customers/customersColumns';
 import { ClientEditModal } from './customers/ClientEditModal';
+import { ClientCreateModal } from './customers/ClientCreateModal';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 const DEFAULT_PAGE_SIZE = 10;
@@ -24,6 +24,7 @@ export function CustomersPage() {
   const [error, setError] = useState<string | null>(null);
   const [editClient, setEditClient] = useState<Client | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<Client | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -125,11 +126,15 @@ export function CustomersPage() {
           title="Clients - DIGITALSERVER TECHNICAL SERVICE"
           breadcrumb={[{ label: 'Workshop', icon: Home }, { label: 'Clients' }]}
         />
-        <Link to="/admin/clients/new" className="sm:ml-auto">
-          <Button variant="emerald" size="md" leftIcon={UserPlus}>
-            New Customer
-          </Button>
-        </Link>
+        <Button
+          variant="emerald"
+          size="md"
+          leftIcon={UserPlus}
+          onClick={() => setCreateModalOpen(true)}
+          className="sm:ml-auto"
+        >
+          New Customer
+        </Button>
       </div>
 
       <Card className="overflow-hidden">
@@ -190,6 +195,12 @@ export function CustomersPage() {
         client={editClient}
         onSuccess={handleEditSuccess}
         onSubmit={handleEditSubmit}
+      />
+      <ClientCreateModal
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+        onSuccess={fetchClients}
+        token={token}
       />
       <ConfirmDialog
         open={!!deleteConfirm}

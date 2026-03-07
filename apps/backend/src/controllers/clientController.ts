@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { Client } from '../models/Client.js';
-import { editClient, type PerseoClientEditPayload } from '../services/perseoService.js';
+import { editClient, createClient as perseoCreateClient, type PerseoClientEditPayload, type PerseoClientCreatePayload } from '../services/perseoService.js';
 
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 100;
@@ -67,6 +67,114 @@ function toResponse(doc: {
   };
 }
 
+const CREATE_BODY_KEYS = ['razonsocial', 'direccion', 'identificacion', 'email', 'telefono1', 'nombrecomercial'] as const;
+
+function toPerseoCreatePayload(body: Record<string, unknown>): PerseoClientCreatePayload {
+  const now = nowPerseoDate();
+  return {
+    clientesid: 0,
+    clientescodigo: '',
+    codigocontable: '',
+    clientes_gruposid: 1,
+    provinciasid: '',
+    ciudadesid: '',
+    razonsocial: String(body.razonsocial ?? '').trim(),
+    parroquiasid: '',
+    clientes_zonasid: 1,
+    clientes_rutasid: 1,
+    nombrecomercial: String(body.nombrecomercial ?? '').trim(),
+    direccion: String(body.direccion ?? '').trim(),
+    identificacion: String(body.identificacion ?? '').trim(),
+    tipoidentificacion: 'C',
+    email: String(body.email ?? '').trim(),
+    telefono1: String(body.telefono1 ?? '').trim(),
+    telefono2: '',
+    telefono3: '',
+    vendedoresid: 1,
+    cobradoresid: 1,
+    creditocupo: 0,
+    creditodias: 0,
+    estado: true,
+    tarifasid: 1,
+    forma_pago_empresaid: 1,
+    ordenvisita: 0,
+    latitud: '',
+    longitud: '',
+    usuariocreacion: 'PERSEO',
+    fechacreacion: now,
+    fechamodificacion: now,
+  };
+}
+
+export async function createClient(req: Request, res: Response): Promise<Response | void> {
+  try {
+    const body = req.body as Record<string, unknown>;
+    const updates: Record<string, unknown> = {};
+    for (const key of CREATE_BODY_KEYS) {
+      if (body[key] !== undefined) {
+        updates[key] = typeof body[key] === 'string' ? String(body[key]).trim() : body[key];
+      }
+    }
+    const razonsocial = String(updates.razonsocial ?? '').trim();
+    if (!razonsocial) {
+      return res.status(400).json({ error: 'razonsocial is required' });
+    }
+
+    const identificacion = String(updates.identificacion ?? '').trim();
+    if (identificacion && !/^\d+$/.test(identificacion)) {
+      return res.status(400).json({ error: 'identificacion must contain only digits' });
+    }
+
+    const telefono1 = String(updates.telefono1 ?? '').trim();
+    if (telefono1 && !/^\d+$/.test(telefono1)) {
+      return res.status(400).json({ error: 'telefono1 must contain only digits' });
+    }
+
+    const perseoPayload = toPerseoCreatePayload({ ...body, ...updates });
+    const result = await perseoCreateClient(perseoPayload);
+    if (!result.ok) {
+      return res.status(502).json({ error: result.error || 'Perseo create failed. Please try again later.' });
+    }
+
+    const doc = await Client.create({
+      clientesid: result.clientesid_nuevo,
+      clientescodigo: result.clientes_codigo,
+      estado: true,
+      codigocontable: '',
+      clientes_gruposid: 1,
+      provinciasid: '',
+      provincia: '',
+      ciudadesid: '',
+      ciudad: '',
+      razonsocial: perseoPayload.razonsocial,
+      parroquiasid: '',
+      clientes_zonasid: 1,
+      nombrecomercial: perseoPayload.nombrecomercial,
+      direccion: perseoPayload.direccion,
+      identificacion: perseoPayload.identificacion,
+      tipoidentificacion: 'C',
+      email: perseoPayload.email,
+      telefono1: perseoPayload.telefono1,
+      telefono2: '',
+      telefono3: '',
+      formasdepagoid: 1,
+      tarifasid: 1,
+      vendedoresid: 1,
+      cobradoresid: 1,
+      creditocupo: 0,
+      creditodias: 0,
+      fechamodificacion: perseoPayload.fechamodificacion,
+      fechacreacion: perseoPayload.fechacreacion,
+    });
+
+    return res.status(201).json(toResponse(doc.toObject() as Parameters<typeof toResponse>[0]));
+  } catch (err) {
+    console.error('Create client error:', err);
+    const message = err instanceof Error ? err.message : 'Server error';
+    return res.status(500).json({ error: message });
+  }
+}
+
 export async function getClients(req: Request, res: Response): Promise<Response | void> {
   try {
     const page = Math.max(1, parseInt(String(req.query.page), 10) || 1);
@@ -94,7 +202,7 @@ export async function getClients(req: Request, res: Response): Promise<Response 
 
     const [clients, total] = await Promise.all([
       Client.find(filter)
-        .sort({ clientesid: 1 })
+        .sort({ fechacreacion: -1 })
         .skip((page - 1) * limit)
         .limit(limit)
         .lean(),
@@ -113,7 +221,6 @@ export async function getClients(req: Request, res: Response): Promise<Response 
   }
 }
 
-/** Allowed fields when admin edits a client (also synced to Perseo) */
 const EDITABLE_FIELDS = [
   'razonsocial',
   'nombrecomercial',
@@ -121,7 +228,6 @@ const EDITABLE_FIELDS = [
   'telefono1',
   'telefono2',
   'telefono3',
-  'estado',
   'identificacion',
 ] as const;
 
@@ -183,16 +289,24 @@ export async function updateClient(req: Request, res: Response): Promise<Respons
     const updates: Record<string, unknown> = {};
     for (const key of EDITABLE_FIELDS) {
       if (body[key] !== undefined) {
-        if (key === 'estado') {
-          updates[key] = Boolean(body[key]);
-        } else {
-          updates[key] = typeof body[key] === 'string' ? String(body[key]).trim() : body[key];
-        }
+        updates[key] = typeof body[key] === 'string' ? String(body[key]).trim() : body[key];
       }
     }
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ error: 'No editable fields provided' });
     }
+
+    const identificacionVal = String(updates.identificacion ?? '').trim();
+    if (identificacionVal && !/^\d+$/.test(identificacionVal)) {
+      return res.status(400).json({ error: 'identificacion must contain only digits' });
+    }
+    for (const key of ['telefono1', 'telefono2', 'telefono3'] as const) {
+      const val = String(updates[key] ?? '').trim();
+      if (val && !/^\d+$/.test(val)) {
+        return res.status(400).json({ error: `${key} must contain only digits` });
+      }
+    }
+
     updates.fechamodificacion = nowPerseoDate();
 
     const current = await Client.findOne({ clientesid: id }).lean();

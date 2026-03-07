@@ -61,7 +61,33 @@ export async function getClients(
   return data;
 }
 
-/** Allowed fields when admin edits a client */
+export interface CreateClientPayload {
+  razonsocial: string;
+  direccion?: string;
+  identificacion?: string;
+  email?: string;
+  telefono1?: string;
+  nombrecomercial?: string;
+}
+
+export async function createClient(
+  token: string | null,
+  payload: CreateClientPayload
+): Promise<Client> {
+  if (!token) throw new Error('Not authenticated');
+  const res = await apiFetch('/clients', {
+    method: 'POST',
+    token,
+    body: JSON.stringify(payload),
+    headers: { 'Content-Type': 'application/json' },
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to create client');
+  }
+  return data;
+}
+
 export interface UpdateClientPayload {
   razonsocial?: string;
   nombrecomercial?: string;

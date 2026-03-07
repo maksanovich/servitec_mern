@@ -39,9 +39,19 @@ export function ClientEditModal({
     }
   }, [open, client]);
 
+  const onlyDigits = (value: string) => value.replace(/\D/g, '');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!client) return;
+    if (identificacion.trim() && !/^\d+$/.test(identificacion.trim())) {
+      setError('ID number must contain only digits');
+      return;
+    }
+    if (telefono1.trim() && !/^\d+$/.test(telefono1.trim())) {
+      setError('Phone must contain only digits');
+      return;
+    }
     setError(null);
     setSaving(true);
     try {
@@ -58,7 +68,7 @@ export function ClientEditModal({
     } catch (err) {
       const message = (err as Error).message;
       setError(message);
-      toast.error(message);
+      toast.error('Update failed', { description: message });
     } finally {
       setSaving(false);
     }
@@ -94,9 +104,10 @@ export function ClientEditModal({
             ID number
           </label>
           <Input
+            inputMode="numeric"
             value={identificacion}
-            onChange={(e) => setIdentificacion(e.target.value)}
-            placeholder="Identification number"
+            onChange={(e) => setIdentificacion(onlyDigits(e.target.value))}
+            placeholder="Digits only"
           />
         </div>
         <div>
@@ -115,9 +126,10 @@ export function ClientEditModal({
             Phone
           </label>
           <Input
+            inputMode="numeric"
             value={telefono1}
-            onChange={(e) => setTelefono1(e.target.value)}
-            placeholder="Phone number"
+            onChange={(e) => setTelefono1(onlyDigits(e.target.value))}
+            placeholder="Digits only"
           />
         </div>
         {error && (

@@ -62,7 +62,6 @@ function App() {
             <Route path="order" element={<OrdersPage />} />
             <Route path="order/new" element={<NewOrderPage />} />
             <Route path="clients" element={<CustomersPage />} />
-            <Route path="clients/new" element={<AdminPlaceholder title="New Customer" />} />
             <Route path="brand" element={<BrandsPage />} />
             <Route path="brand/new" element={<AdminPlaceholder title="New Brand" />} />
             <Route path="models" element={<ModelsPage />} />
