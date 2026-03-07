@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { Client } from '../models/Client.js';
-import { editClient, createClient as perseoCreateClient, type PerseoClientEditPayload, type PerseoClientCreatePayload } from '../services/perseoService.js';
+import { editClient, createClient as perseoCreateClient, deleteClient as perseoDeleteClient, type PerseoClientEditPayload, type PerseoClientCreatePayload } from '../services/perseoService.js';
 
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 100;
@@ -232,14 +232,7 @@ const EDITABLE_FIELDS = [
 ] as const;
 
 function nowPerseoDate(): string {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  const h = String(d.getHours()).padStart(2, '0');
-  const min = String(d.getMinutes()).padStart(2, '0');
-  const s = String(d.getSeconds()).padStart(2, '0');
-  return `${y}${m}${day}${h}${min}${s}`;
+  return new Date().toISOString();
 }
 
 function toPerseoPayload(doc: IClientDoc): PerseoClientEditPayload {
@@ -347,6 +340,13 @@ export async function deleteClient(req: Request, res: Response): Promise<Respons
     const id = parseInt(String(req.params.id), 10);
     if (Number.isNaN(id)) {
       return res.status(400).json({ error: 'Invalid client id' });
+    }
+    const perseoResult = await perseoDeleteClient({ clientesid: id });
+    if (!perseoResult.ok) {
+      console.warn('[deleteClient] Perseo clientes_eliminar failed for clientesid=', id, perseoResult.error);
+      return res.status(502).json({
+        error: perseoResult.error || 'Perseo delete failed. Please try again later.',
+      });
     }
     const result = await Client.deleteOne({ clientesid: id });
     if (result.deletedCount === 0) {
