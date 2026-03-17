@@ -10,15 +10,16 @@ const actionBtnClass =
 
 const MENU_WIDTH = 160;
 
-function onEdit(brand: Brand) {
-  console.log('Edit brand', brand);
+export interface BrandColumnActions {
+  onEdit: (brand: Brand) => void;
+  onDelete: (brand: Brand) => void;
 }
 
-function onDelete(brand: Brand) {
-  console.log('Delete brand', brand);
-}
-
-function ActionDropdown({ brand }: { brand: Brand }) {
+function ActionDropdown({
+  brand,
+  onEdit,
+  onDelete,
+}: { brand: Brand } & BrandColumnActions) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -70,30 +71,38 @@ function ActionDropdown({ brand }: { brand: Brand }) {
       >
         <ChevronDown className="w-4 h-4" />
       </button>
-      {open && position && createPortal(
-        <div
-          ref={menuRef}
-          role="menu"
-          className="fixed z-[9999] min-w-[160px] rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-lg py-1"
-          style={{ top: position.top, left: position.left }}
-        >
-          <button
-            type="button"
-            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
-            onClick={() => { onEdit(brand); setOpen(false); }}
+      {open &&
+        position &&
+        createPortal(
+          <div
+            ref={menuRef}
+            role="menu"
+            className="fixed z-[9999] min-w-[160px] rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-lg py-1"
+            style={{ top: position.top, left: position.left }}
           >
-            <Pencil className="w-4 h-4" /> Edit
-          </button>
-          <button
-            type="button"
-            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-            onClick={() => { onDelete(brand); setOpen(false); }}
-          >
-            <Trash2 className="w-4 h-4" /> Delete
-          </button>
-        </div>,
-        document.body
-      )}
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
+              onClick={() => {
+                onEdit(brand);
+                setOpen(false);
+              }}
+            >
+              <Pencil className="w-4 h-4" /> Edit
+            </button>
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+              onClick={() => {
+                onDelete(brand);
+                setOpen(false);
+              }}
+            >
+              <Trash2 className="w-4 h-4" /> Delete
+            </button>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }
@@ -108,7 +117,8 @@ const stateLabel: Record<string, string> = {
   inactive: 'Inactive',
 };
 
-export const brandsColumns: TableColumn<Brand>[] = [
+export function getBrandColumns(actions: BrandColumnActions): TableColumn<Brand>[] {
+  return [
   {
     id: 'name',
     name: 'Brand',
@@ -134,6 +144,15 @@ export const brandsColumns: TableColumn<Brand>[] = [
     name: 'Action',
     sortable: false,
     width: '80px',
-    cell: (row) => <ActionDropdown brand={row} />,
+    cell: (row) => (
+      <ActionDropdown brand={row} onEdit={actions.onEdit} onDelete={actions.onDelete} />
+    ),
   },
-];
+  ];
+}
+
+/** Static columns for export (no action callbacks). */
+export const brandsColumns: TableColumn<Brand>[] = getBrandColumns({
+  onEdit: () => {},
+  onDelete: () => {},
+});

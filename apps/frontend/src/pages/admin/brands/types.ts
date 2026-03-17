@@ -1,5 +1,2 @@
-export interface Brand {
-  id: string;
-  name: string;
-  state: 'active' | 'inactive';
-}
+/** Brand as returned by brands API. Align with api/brands.ts Brand. */
+export type { Brand } from '../../../api/brands';
