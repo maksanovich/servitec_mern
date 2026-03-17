@@ -5,20 +5,17 @@ import { Badge } from '../../../components/ui';
 import type { TableColumn } from '../../../components/datatable';
 import type { Model } from './types';
 
+export interface ModelColumnActions {
+  onEdit: (model: Model) => void;
+  onDelete: (model: Model) => void;
+}
+
 const actionBtnClass =
   'p-1.5 rounded text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200 transition-colors';
 
 const MENU_WIDTH = 160;
 
-function onEdit(model: Model) {
-  console.log('Edit model', model);
-}
-
-function onDelete(model: Model) {
-  console.log('Delete model', model);
-}
-
-function ActionDropdown({ model }: { model: Model }) {
+function ActionDropdown({ model, actions }: { model: Model; actions: ModelColumnActions }) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -80,14 +77,14 @@ function ActionDropdown({ model }: { model: Model }) {
           <button
             type="button"
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
-            onClick={() => { onEdit(model); setOpen(false); }}
+            onClick={() => { actions.onEdit(model); setOpen(false); }}
           >
             <Pencil className="w-4 h-4" /> Edit
           </button>
           <button
             type="button"
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-            onClick={() => { onDelete(model); setOpen(false); }}
+            onClick={() => { actions.onDelete(model); setOpen(false); }}
           >
             <Trash2 className="w-4 h-4" /> Delete
           </button>
@@ -108,7 +105,7 @@ const stateLabel: Record<string, string> = {
   inactive: 'Inactive',
 };
 
-export const modelsColumns: TableColumn<Model>[] = [
+export const getModelsColumns = (actions: ModelColumnActions): TableColumn<Model>[] => [
   {
     id: 'brand',
     name: 'Brand',
@@ -144,6 +141,11 @@ export const modelsColumns: TableColumn<Model>[] = [
     name: 'Action',
     sortable: false,
     width: '80px',
-    cell: (row) => <ActionDropdown model={row} />,
+    cell: (row) => <ActionDropdown model={row} actions={actions} />,
   },
 ];
+
+export const modelsColumns: TableColumn<Model>[] = getModelsColumns({
+  onEdit: () => {},
+  onDelete: () => {},
+});

@@ -1,0 +1,119 @@
+import { useState, useEffect } from 'react';
+import { Save } from 'lucide-react';
+import { Modal, Input, Button, Select } from '../../../components/ui';
+import type { Brand } from './types';
+
+const stateOptions = [
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+];
+
+interface BrandFormModalProps {
+  open: boolean;
+  onClose: () => void;
+  brand: Brand | null;
+  onSuccess: () => void;
+  onSubmit: (data: { name: string; state: 'active' | 'inactive' }) => Promise<void>;
+}
+
+export function BrandFormModal({
+  open,
+  onClose,
+  brand,
+  onSuccess,
+  onSubmit,
+}: BrandFormModalProps) {
+  const [name, setName] = useState('');
+  const [state, setState] = useState<'active' | 'inactive'>('active');
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const isEdit = !!brand;
+
+  useEffect(() => {
+    if (open) {
+      if (brand) {
+        setName(brand.name);
+        setState(brand.state ?? 'active');
+      } else {
+        setName('');
+        setState('active');
+      }
+      setError(null);
+    }
+  }, [open, brand]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      setError('Brand name is required.');
+      return;
+    }
+    setError(null);
+    setSaving(true);
+    try {
+      await onSubmit({
+        name: trimmedName,
+        state,
+      });
+      onSuccess();
+      onClose();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={isEdit ? 'Edit brand' : 'New brand'}
+      size="md"
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+            Brand name
+          </label>
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. DELL"
+            required
+          />
+        </div>
+        <div>
+          <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+            Status
+          </label>
+          <Select
+            options={stateOptions}
+            value={state}
+            onChange={(e) => setState(e.target.value as 'active' | 'inactive')}
+          />
+        </div>
+        {error && (
+          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        )}
+        <div className="flex justify-end gap-2 pt-2">
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="emerald"
+            leftIcon={Save}
+            disabled={saving}
+            isLoading={saving}
+          >
+            {isEdit ? 'Save' : 'Create'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
