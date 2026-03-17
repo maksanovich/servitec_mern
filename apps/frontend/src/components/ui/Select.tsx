@@ -22,6 +22,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500
           transition-colors
           disabled:opacity-50 disabled:cursor-not-allowed
+          w-full
           ${className}
         `}
         {...props}
