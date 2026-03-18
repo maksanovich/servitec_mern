@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Home,
@@ -23,12 +23,21 @@ import {
   Button,
   Input,
   Select,
+  SearchableSelect,
   DatePicker,
 } from '../../components/ui';
 import { DataTableWithToolbar } from '../../components/datatable';
 import type { TableColumn } from 'react-data-table-component';
 import type { SelectOption } from '../../components/ui';
 import { sampleServicesSpareParts, type ServiceSparePart } from './orders/servicesSpareParts';
+import { useAuth } from '../../contexts/AuthContext';
+import { getBranches } from '../../api/branches';
+import { getClients } from '../../api/clients';
+import { getBrands } from '../../api/brands';
+import { getModels } from '../../api/models';
+import { getAccessories, type Accessory } from '../../api/accessories';
+import { getUsers, type User as ApiUser } from '../../api/users';
+import { createOrder } from '../../api/orders';
 
 const PRODUCT_OPTIONS: SelectOption[] = [
   { value: 'mainboard', label: 'MAINBOARD' },
@@ -38,30 +47,6 @@ const PRODUCT_OPTIONS: SelectOption[] = [
   { value: 'printer', label: 'PRINTER' },
   { value: 'computer', label: 'COMPUTER' },
   { value: 'equipment', label: 'EQUIPMENT' },
-];
-
-const BRANCH_OPTIONS: SelectOption[] = [
-  { value: 'digitalserver', label: 'DIGITALSERVER' },
-  { value: 'freedom', label: 'FREEDOM' },
-];
-
-const CUSTOMER_OPTIONS: SelectOption[] = [
-  { value: '1', label: 'CARLOS STEVE TORRES MACIAS' },
-  { value: '2', label: 'MARIA LOPEZ GARCIA' },
-  { value: '3', label: 'JUAN PEREZ' },
-];
-
-const BRAND_OPTIONS: SelectOption[] = [
-  { value: 'dell', label: 'DELL' },
-  { value: 'asus', label: 'ASUS' },
-  { value: 'lenovo', label: 'LENOVO' },
-  { value: 'hp', label: 'HP' },
-];
-
-const MODEL_OPTIONS: SelectOption[] = [
-  { value: '15-da0013la', label: '15-DA0013LA' },
-  { value: 'g50-30', label: 'G50-30' },
-  { value: '80xr', label: '80XR' },
 ];
 
 const AREA_OPTIONS: SelectOption[] = [
@@ -76,10 +61,12 @@ const STATE_AREA_OPTIONS: SelectOption[] = [
   { value: 'warehouse', label: 'Warehouse' },
 ];
 
-const TECHNICIAN_OPTIONS: SelectOption[] = [
-  { value: '1', label: 'BYRON BRIONES RIVAS (0922594478)' },
-  { value: '2', label: 'JORGE FERNANDO CARPIO LIBERIO' },
-];
+function isTechnicianUser(u: ApiUser) {
+  const slug = (u.role?.slug ?? '').toLowerCase();
+  const name = (u.role?.name ?? '').toLowerCase();
+  // Be defensive: accept common variants.
+  return slug === 'technician' || slug.includes('tech') || name.includes('technician') || name.includes('tech');
+}
 
 const PRIORITY_OPTIONS: SelectOption[] = [
   { value: 'low', label: 'Low' },
@@ -92,13 +79,6 @@ const YES_NO_OPTIONS: SelectOption[] = [
   { value: 'no', label: 'No' },
   { value: 'yes', label: 'Yes' },
 ];
-
-const ACCESSORIES = [
-  { id: 'suitcase', label: 'SUITCASE' },
-  { id: 'case', label: 'CASE' },
-  { id: 'charger', label: 'CHARGER' },
-  { id: 'none', label: 'NONE' },
-] as const;
 
 export interface BudgetLineItem {
   id: string;
@@ -124,6 +104,18 @@ function wrapWithIcon(Icon: typeof Building2, children: React.ReactNode) {
 
 export function NewOrderPage() {
   const navigate = useNavigate();
+  const { token } = useAuth();
+
+  const [branchOptions, setBranchOptions] = useState<SelectOption[]>([]);
+  const [customerOptions, setCustomerOptions] = useState<SelectOption[]>([]);
+  const [customerQuery, setCustomerQuery] = useState('');
+  const [customerLoading, setCustomerLoading] = useState(false);
+  const [brandOptions, setBrandOptions] = useState<SelectOption[]>([]);
+  const [allModels, setAllModels] = useState<Array<{ brand: string; model: string }>>([]);
+  const [accessoriesData, setAccessoriesData] = useState<Accessory[]>([]);
+  const [technicianOptions, setTechnicianOptions] = useState<SelectOption[]>([]);
+  const [submitError, setSubmitError] = useState('');
+
   const [branch, setBranch] = useState('');
   const [customer, setCustomer] = useState('');
   const [brand, setBrand] = useState('');
@@ -132,7 +124,7 @@ export function NewOrderPage() {
   const [product, setProduct] = useState('');
   const [area, setArea] = useState('entrance');
   const [stateArea, setStateArea] = useState('income');
-  const [technician, setTechnician] = useState('1');
+  const [technician, setTechnician] = useState('');
   const [priority, setPriority] = useState('normal');
   const [equipmentCondition, setEquipmentCondition] = useState('');
   const [technicalReport, setTechnicalReport] = useState('');
@@ -144,6 +136,196 @@ export function NewOrderPage() {
   const [accessories, setAccessories] = useState<Record<string, boolean>>({});
   const [budgetLines, setBudgetLines] = useState<BudgetLineItem[]>([]);
   const [branchError, setBranchError] = useState('');
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const [{ branches }, clientsResp, { brands }, { models }, { accessories }, { users }] = await Promise.all([
+          getBranches(token),
+          getClients(token, { page: 1, limit: 100 }),
+          getBrands(token),
+          getModels(token),
+          getAccessories(token),
+          getUsers(token),
+        ]);
+
+        if (!mounted) return;
+
+        setBranchOptions(
+          branches
+            .filter((b) => b.state !== 'inactive')
+            .map((b) => ({ value: b.branchName, label: b.branchName }))
+        );
+        setCustomerOptions(
+          clientsResp.clients
+            .filter((c) => c.estado !== false)
+            .map((c) => {
+              const baseLabel = c.razonsocial || c.nombrecomercial || String(c.clientesid);
+              const idLabel = String(c.identificacion ?? '').trim();
+              const label = idLabel ? `${baseLabel} — ${idLabel}` : baseLabel;
+              const searchText = [
+                c.razonsocial,
+                c.nombrecomercial,
+                c.identificacion,
+                c.tipoidentificacion,
+                c.email,
+                c.telefono1,
+                c.telefono2,
+                c.telefono3,
+                c.direccion,
+                c.ciudad,
+                c.provincia,
+                c.clientescodigo,
+              ]
+                .filter(Boolean)
+                .join(' ');
+              return { value: String(c.clientesid), label, searchText };
+            })
+        );
+        setBrandOptions(
+          brands
+            .filter((b) => b.state !== 'inactive')
+            .map((b) => ({ value: b.name, label: b.name }))
+        );
+        setAllModels(
+          models
+            .filter((m) => m.state !== 'inactive')
+            .map((m) => ({
+              brand: String(m.brand ?? '').trim(),
+              model: String(m.model ?? '').trim(),
+            }))
+            .filter((m) => m.brand && m.model)
+        );
+        setAccessoriesData(accessories.filter((a) => a.state !== 'inactive'));
+
+        const activeUsers = (users ?? []).filter((u) => u.state !== 'inactive');
+        const technicians = activeUsers.filter(isTechnicianUser);
+        const list = (technicians.length ? technicians : activeUsers)
+          .map((u) => {
+            const baseLabel = (u.name || u.email || u.id).trim();
+            const idLabel = String(u.identification ?? '').trim();
+            const label = idLabel ? `${baseLabel} (${idLabel})` : baseLabel;
+            return { value: u.id, label };
+          })
+          .sort((a, b) => a.label.localeCompare(b.label));
+
+        setTechnicianOptions(list);
+      } catch (e) {
+        console.error(e);
+        if (mounted) {
+          setBranchOptions([]);
+          setCustomerOptions([]);
+          setBrandOptions([]);
+          setAllModels([]);
+          setAccessoriesData([]);
+          setTechnicianOptions([]);
+        }
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [token]);
+
+  useEffect(() => {
+    // If no technician selected yet, default to first available option.
+    if (technician) return;
+    if (technicianOptions.length === 0) return;
+    setTechnician(technicianOptions[0].value);
+  }, [technician, technicianOptions]);
+
+  useEffect(() => {
+    if (!token) return;
+    let mounted = true;
+    const q = customerQuery.trim();
+
+    const t = setTimeout(async () => {
+      setCustomerLoading(true);
+      try {
+        const clientsResp = await getClients(token, {
+          page: 1,
+          limit: q ? 50 : 100,
+          search: q ? q : undefined,
+        });
+
+        if (!mounted) return;
+        setCustomerOptions(
+          clientsResp.clients
+            .filter((c) => c.estado !== false)
+            .map((c) => {
+              const baseLabel = c.razonsocial || c.nombrecomercial || String(c.clientesid);
+              const idLabel = String(c.identificacion ?? '').trim();
+              const label = idLabel ? `${baseLabel} (${idLabel})` : baseLabel;
+              const searchText = [
+                c.razonsocial,
+                c.nombrecomercial,
+                c.identificacion,
+                c.tipoidentificacion,
+                c.email,
+                c.telefono1,
+                c.telefono2,
+                c.telefono3,
+                c.direccion,
+                c.ciudad,
+                c.provincia,
+                c.clientescodigo,
+              ]
+                .filter(Boolean)
+                .join(' ');
+              return { value: String(c.clientesid), label, searchText };
+            })
+        );
+      } catch (e) {
+        console.error(e);
+        if (mounted) setCustomerOptions([]);
+      } finally {
+        if (mounted) setCustomerLoading(false);
+      }
+    }, 300);
+
+    return () => {
+      mounted = false;
+      clearTimeout(t);
+    };
+  }, [customerQuery, token]);
+
+  const normalizeKey = useCallback((s: string) => s.trim().toLowerCase(), []);
+
+  const modelOptions: SelectOption[] = useMemo(() => {
+    const brandKey = normalizeKey(brand);
+    const filtered = brandKey
+      ? allModels.filter((m) => normalizeKey(m.brand) === brandKey)
+      : allModels;
+
+    const unique = new Map<string, string>();
+    for (const m of filtered) {
+      const label = m.model;
+      const key = normalizeKey(label);
+      if (!unique.has(key)) unique.set(key, label);
+    }
+
+    return Array.from(unique.values())
+      .sort((a, b) => a.localeCompare(b))
+      .map((label) => ({ value: label, label }));
+  }, [allModels, brand, normalizeKey]);
+
+  const accessoryOptions = useMemo(() => {
+    const filtered = branch ? accessoriesData.filter((a) => a.branch === branch) : accessoriesData;
+    const unique = new Map<string, string>();
+    for (const a of filtered) {
+      const key = a.artifact;
+      if (!unique.has(key)) unique.set(key, key);
+    }
+    return Array.from(unique.values()).sort().map((label) => ({ id: label, label }));
+  }, [accessoriesData, branch]);
+
+  useEffect(() => {
+    // reset model selection if brand changes and selected model isn't valid anymore
+    if (!model) return;
+    const stillValid = allModels.some((m) => m.model === model && (!brand || m.brand === brand));
+    if (!stillValid) setModel('');
+  }, [brand, model, allModels]);
 
   const totalBudget = useMemo(
     () => budgetLines.reduce((sum, line) => sum + line.total, 0),
@@ -192,15 +374,57 @@ export function NewOrderPage() {
     setAccessories((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!branch) {
       setBranchError('Required Branch');
       return;
     }
     setBranchError('');
-    // TODO: submit to API
-    navigate('/admin/order');
+    setSubmitError('');
+    try {
+      const payload = {
+        branch,
+        clientId: parseInt(customer, 10),
+        brand,
+        model,
+        series,
+        type: product,
+        area: area as any,
+        state: stateArea as any,
+        technician,
+        priority: priority as any,
+        equipmentCondition,
+        technicalReport,
+        diagnosis,
+        warranty,
+        password,
+        fianceeDate,
+        advancement: advancement === '' ? 0 : Number(advancement),
+        accessories: Object.entries(accessories)
+          .filter(([, v]) => v)
+          .map(([k]) => k),
+        budgetLines: budgetLines.map((l) => ({
+          serviceId: l.serviceId,
+          name: l.name,
+          price: l.price,
+          amount: l.amount,
+          total: l.total,
+        })),
+      };
+
+      if (!payload.clientId || Number.isNaN(payload.clientId)) throw new Error('Customer is required');
+      if (!payload.brand) throw new Error('Brand is required');
+      if (!payload.model) throw new Error('Model is required');
+      if (!payload.series) throw new Error('Series is required');
+      if (!payload.type) throw new Error('Product is required');
+
+      await createOrder(token, payload as any);
+      navigate('/admin/order');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to submit order';
+      setSubmitError(message);
+    }
   };
 
   const handleCancel = () => {
@@ -255,12 +479,12 @@ export function NewOrderPage() {
                 <label className={labelClass()}>Branch <span className="text-red-500 dark:text-red-400">*</span></label>
                 {wrapWithIcon(
                   Building2,
-                  <Select
-                    options={BRANCH_OPTIONS}
+                  <SearchableSelect
+                    options={branchOptions}
                     placeholder="-- Select --"
                     value={branch}
-                    onChange={(e) => setBranch(e.target.value)}
-                    className={`w-full ${branchError ? 'border-red-500' : ''}`}
+                    onValueChange={setBranch}
+                    buttonClassName={`${branchError ? 'border-red-500' : ''}`}
                   />
                 )}
                 {branchError && (
@@ -271,12 +495,14 @@ export function NewOrderPage() {
                 <label className={labelClass()}>Customer <span className="text-red-500 dark:text-red-400">*</span></label>
                 {wrapWithIcon(
                   User,
-                  <Select
-                    options={CUSTOMER_OPTIONS}
+                  <SearchableSelect
+                    options={customerOptions}
                     placeholder="-- Select --"
                     value={customer}
-                    onChange={(e) => setCustomer(e.target.value)}
-                    className="w-full"
+                    onValueChange={setCustomer}
+                    onQueryChange={setCustomerQuery}
+                    filterOptions={false}
+                    emptyText={customerLoading ? 'Loading…' : 'No results'}
                   />
                 )}
               </div>
@@ -284,12 +510,11 @@ export function NewOrderPage() {
                 <label className={labelClass()}>Brand <span className="text-red-500 dark:text-red-400">*</span></label>
                 {wrapWithIcon(
                   Tag,
-                  <Select
-                    options={BRAND_OPTIONS}
+                  <SearchableSelect
+                    options={brandOptions}
                     placeholder="-- Select --"
                     value={brand}
-                    onChange={(e) => setBrand(e.target.value)}
-                    className="w-full"
+                    onValueChange={setBrand}
                   />
                 )}
               </div>
@@ -297,27 +522,22 @@ export function NewOrderPage() {
                 <label className={labelClass()}>Model <span className="text-red-500 dark:text-red-400">*</span></label>
                 {wrapWithIcon(
                   Cpu,
-                  <Select
-                    options={MODEL_OPTIONS}
+                  <SearchableSelect
+                    options={modelOptions}
                     placeholder="-- Select --"
                     value={model}
-                    onChange={(e) => setModel(e.target.value)}
-                    className="w-full"
+                    onValueChange={setModel}
                   />
                 )}
               </div>
               <div>
                 <label className={labelClass()}>Series <span className="text-red-500 dark:text-red-400">*</span></label>
-                {wrapWithIcon(
-                  Hash,
-                  <Select
-                    options={[{ value: 'tzy241545', label: 'TZY241545' }, { value: 'pf01mup5', label: 'PF01MUP5' }]}
-                    placeholder="-- Select --"
-                    value={series}
-                    onChange={(e) => setSeries(e.target.value)}
-                    className="w-full"
-                  />
-                )}
+                <Input
+                  leftIcon={Hash}
+                  value={series}
+                  onChange={(e) => setSeries(e.target.value)}
+                  placeholder="Serial / Series"
+                />
               </div>
               <div>
                 <label className={labelClass()}>Product <span className="text-red-500 dark:text-red-400">*</span></label>
@@ -366,7 +586,7 @@ export function NewOrderPage() {
                 {wrapWithIcon(
                   User,
                   <Select
-                    options={TECHNICIAN_OPTIONS}
+                    options={technicianOptions}
                     value={technician}
                     onChange={(e) => setTechnician(e.target.value)}
                     className="w-full"
@@ -470,7 +690,7 @@ export function NewOrderPage() {
             <div>
               <label className={labelClass()}>Accessories <span className="text-red-500 dark:text-red-400">*</span></label>
               <div className="flex flex-wrap gap-4 pt-2">
-                {ACCESSORIES.map(({ id, label }) => (
+                {accessoryOptions.map(({ id, label }) => (
                   <label key={id} className="flex items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
@@ -568,6 +788,12 @@ export function NewOrderPage() {
             </CardContent>
           </Card>
         </div>
+
+        {submitError && (
+          <div className="rounded-lg border border-red-200 dark:border-red-900/40 bg-red-50/50 dark:bg-red-950/20 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+            {submitError}
+          </div>
+        )}
 
         <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
           <Button type="button" variant="red" size="md" onClick={handleCancel} leftIcon={X}>

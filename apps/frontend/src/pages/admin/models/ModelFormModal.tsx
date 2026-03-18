@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Save } from 'lucide-react';
-import { Modal, Input, Button, Select } from '../../../components/ui';
+import { Modal, Input, Button, Select, SearchableSelect } from '../../../components/ui';
 import type { Model } from './types';
 import { useAuth } from '../../../contexts/AuthContext';
 import type { Brand } from '../../../api/brands';
@@ -109,13 +109,12 @@ export function ModelFormModal({
             <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
               Brand
             </label>
-            <Select
+            <SearchableSelect
               options={brands.map((b) => ({ value: b.name, label: b.name }))}
               value={brand}
-              onChange={(e) => setBrand(e.target.value)}
+              onValueChange={setBrand}
               placeholder={brandsLoading ? 'Loading brands…' : 'Select brand'}
               disabled={brandsLoading || brands.length === 0}
-              required
             />
             {brandsError && (
               <p className="mt-1 text-xs text-red-600 dark:text-red-400">

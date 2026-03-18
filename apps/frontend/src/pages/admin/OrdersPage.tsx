@@ -1,4 +1,4 @@
-import { useMemo, useRef, useCallback, useState } from 'react';
+import { useMemo, useRef, useCallback, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Home, Wrench, FileText, FileSpreadsheet } from 'lucide-react';
 import { PageHeader, Card, Button, ButtonGroup } from '../../components/ui';
@@ -12,23 +12,42 @@ import {
   type Order,
   type OrderArea,
   AREA_TABS,
-  sampleOrders,
   ordersColumns,
 } from './orders';
 import { OrderExpandedRow } from './orders/OrderExpandedRow';
 import { Plus, Minus } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
+import { getOrders } from '../../api/orders';
 
 export type { Order, OrderArea };
 
 const exportOptions = { title: 'Orders', filename: 'orders' };
 
 export function OrdersPage() {
+  const { token } = useAuth();
   const [activeArea, setActiveArea] = useState<OrderArea>('waiting-parts');
   const filteredDataRef = useRef<Order[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const { orders: list } = await getOrders(token, { limit: 200 });
+        if (mounted) setOrders(list as unknown as Order[]);
+      } catch (e) {
+        console.error(e);
+        if (mounted) setOrders([]);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [token]);
 
   const dataByArea = useMemo(() => {
-    return sampleOrders.filter((o) => o.area === activeArea);
-  }, [activeArea]);
+    return orders.filter((o) => o.area === activeArea);
+  }, [activeArea, orders]);
 
   const onFilteredDataChange = useCallback((_filters: DataTableFilterState, filteredData: Order[]) => {
     filteredDataRef.current = filteredData;

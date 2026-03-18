@@ -1,6 +1,7 @@
 export { Card, CardHeader, CardContent } from './Card';
 export { Select } from './Select';
 export type { SelectOption } from './Select';
+export { SearchableSelect } from './SearchableSelect';
 export { Input } from './Input';
 export { DatePicker } from './DatePicker';
 export { DateRangePicker } from './DateRangePicker';
