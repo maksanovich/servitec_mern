@@ -1,4 +1,4 @@
 export type { Accessory } from './types';
-export { sampleAccessories } from './sampleAccessories';
-export { accessoriesColumns } from './accessoriesColumns';
+export { accessoriesColumns, getAccessoriesColumns } from './accessoriesColumns';
 export { ExpandableAccessoryRow } from './ExpandableAccessoryRow';
+export { AccessoryFormModal } from './AccessoryFormModal';

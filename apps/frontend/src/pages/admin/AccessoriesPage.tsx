@@ -1,27 +1,117 @@
-import { useRef, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
 import { Home, FileText, FileSpreadsheet, Plus } from 'lucide-react';
-import { PageHeader, Card, Button, ButtonGroup } from '../../components/ui';
+import { PageHeader, Card, Button, ButtonGroup, Loader, ConfirmDialog } from '../../components/ui';
 import {
   DataTableWithToolbar,
   type DataTableFilterState,
   exportTableToPDF,
   exportTableToExcel,
 } from '../../components/datatable';
-import { sampleAccessories, accessoriesColumns } from './accessories';
+import { useAuth } from '../../contexts/AuthContext';
+import * as accessoriesApi from '../../api/accessories';
+import { getAccessoriesColumns, AccessoryFormModal } from './accessories';
 import type { Accessory } from './accessories';
 
 const exportOptions = { title: 'Accessories', filename: 'accessories' };
 
 export function AccessoriesPage() {
+  const { token } = useAuth();
+  const [accessories, setAccessories] = useState<Accessory[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingAccessory, setEditingAccessory] = useState<Accessory | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<Accessory | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const filteredDataRef = useRef<Accessory[]>([]);
+
+  const fetchAccessories = useCallback(async () => {
+    if (!token) return;
+    setLoading(true);
+    try {
+      const { accessories: list } = await accessoriesApi.getAccessories(token);
+      setAccessories(list);
+    } catch {
+      setAccessories([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    fetchAccessories();
+  }, [fetchAccessories]);
 
   const onFilteredDataChange = useCallback((_filters: DataTableFilterState, filteredData: Accessory[]) => {
     filteredDataRef.current = filteredData;
   }, []);
 
-  const exportPDF = () => exportTableToPDF(accessoriesColumns, filteredDataRef.current, exportOptions);
-  const exportExcel = () => exportTableToExcel(accessoriesColumns, filteredDataRef.current, exportOptions);
+  const handleDeleteClick = useCallback((accessory: Accessory) => {
+    setDeleteError(null);
+    setDeleteConfirm(accessory);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!token || !deleteConfirm) return;
+    setDeleteLoading(true);
+    setDeleteError(null);
+    try {
+      await accessoriesApi.deleteAccessory(token, deleteConfirm.id);
+      setDeleteConfirm(null);
+      await fetchAccessories();
+    } catch (err) {
+      setDeleteError((err as Error).message);
+    } finally {
+      setDeleteLoading(false);
+    }
+  }, [token, deleteConfirm, fetchAccessories]);
+
+  const handleDeleteCancel = useCallback(() => {
+    if (!deleteLoading) {
+      setDeleteConfirm(null);
+      setDeleteError(null);
+    }
+  }, [deleteLoading]);
+
+  const openNewModal = useCallback(() => {
+    setEditingAccessory(null);
+    setModalOpen(true);
+  }, []);
+
+  const openEditModal = useCallback((accessory: Accessory) => {
+    setEditingAccessory(accessory);
+    setModalOpen(true);
+  }, []);
+
+  const handleFormSubmit = async (data: { branch: string; artifact: string; state: 'active' | 'inactive' }) => {
+    if (!token) return;
+    if (editingAccessory) {
+      await accessoriesApi.updateAccessory(token, editingAccessory.id, {
+        branch: data.branch,
+        artifact: data.artifact,
+        state: data.state,
+      });
+    } else {
+      await accessoriesApi.createAccessory(token, {
+        branch: data.branch,
+        artifact: data.artifact,
+        state: data.state,
+      });
+    }
+  };
+
+  const columnActions = useMemo(
+    () => ({
+      onEdit: openEditModal,
+      onDelete: handleDeleteClick,
+    }),
+    [openEditModal, handleDeleteClick]
+  );
+
+  const columns = useMemo(() => getAccessoriesColumns(columnActions), [columnActions]);
+
+  const exportPDF = () => exportTableToPDF(columns, filteredDataRef.current, exportOptions);
+  const exportExcel = () => exportTableToExcel(columns, filteredDataRef.current, exportOptions);
 
   return (
     <div className="space-y-4">
@@ -30,17 +120,21 @@ export function AccessoriesPage() {
           title="Accessories - DIGITALSERVER TECHNICAL SERVICE"
           breadcrumb={[{ label: 'Workshop', icon: Home }, { label: 'Accessories' }]}
         />
-        <Link to="/admin/accessories/new" className="sm:ml-auto">
-          <Button variant="emerald" size="md" leftIcon={Plus}>
-            New Accessory
-          </Button>
-        </Link>
+        <Button
+          variant="emerald"
+          size="md"
+          leftIcon={Plus}
+          onClick={openNewModal}
+          className="sm:ml-auto"
+        >
+          New Accessory
+        </Button>
       </div>
 
       <Card className="overflow-hidden">
         <DataTableWithToolbar<Accessory>
-          data={sampleAccessories}
-          columns={accessoriesColumns}
+          data={accessories}
+          columns={columns}
           searchFields={['branch', 'artifact']}
           searchPlaceholder="Look for:"
           pageSizeOptions={[10, 25, 50, 100]}
@@ -51,25 +145,62 @@ export function AccessoriesPage() {
               <Button
                 variant="secondary"
                 size="sm"
-                leftIcon={FileSpreadsheet}
-                onClick={exportExcel}
-                title="Export Excel"
-                className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
-                aria-label="Export Excel"
-              />
-              <Button
-                variant="secondary"
-                size="sm"
                 leftIcon={FileText}
                 onClick={exportPDF}
                 title="Export PDF"
                 className="p-2 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20"
                 aria-label="Export PDF"
               />
+              <Button
+                variant="secondary"
+                size="sm"
+                leftIcon={FileSpreadsheet}
+                onClick={exportExcel}
+                title="Export Excel"
+                className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
+                aria-label="Export Excel"
+              />
             </ButtonGroup>
+          }
+          noDataComponent={
+            loading ? (
+              <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
+                <Loader size="md" />
+                <span className="text-sm">Loading…</span>
+              </div>
+            ) : (
+              <div className="py-12 text-center text-slate-500 dark:text-slate-400">
+                No data available in this table.
+              </div>
+            )
           }
         />
       </Card>
+
+      <AccessoryFormModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        accessory={editingAccessory}
+        onSuccess={fetchAccessories}
+        onSubmit={handleFormSubmit}
+      />
+
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Delete accessory"
+        message={
+          deleteConfirm
+            ? `Are you sure you want to delete "${deleteConfirm.branch} - ${deleteConfirm.artifact}"? This action cannot be undone.`
+            : ''
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        isLoading={deleteLoading}
+        error={deleteError}
+      />
     </div>
   );
 }

@@ -10,15 +10,12 @@ const actionBtnClass =
 
 const MENU_WIDTH = 160;
 
-function onEdit(accessory: Accessory) {
-  console.log('Edit accessory', accessory);
+export interface AccessoryColumnActions {
+  onEdit: (accessory: Accessory) => void;
+  onDelete: (accessory: Accessory) => void;
 }
 
-function onDelete(accessory: Accessory) {
-  console.log('Delete accessory', accessory);
-}
-
-function ActionDropdown({ accessory }: { accessory: Accessory }) {
+function ActionDropdown({ accessory, actions }: { accessory: Accessory; actions: AccessoryColumnActions }) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -80,14 +77,14 @@ function ActionDropdown({ accessory }: { accessory: Accessory }) {
           <button
             type="button"
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
-            onClick={() => { onEdit(accessory); setOpen(false); }}
+            onClick={() => { actions.onEdit(accessory); setOpen(false); }}
           >
             <Pencil className="w-4 h-4" /> Edit
           </button>
           <button
             type="button"
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"
-            onClick={() => { onDelete(accessory); setOpen(false); }}
+            onClick={() => { actions.onDelete(accessory); setOpen(false); }}
           >
             <Trash2 className="w-4 h-4" /> Delete
           </button>
@@ -108,7 +105,7 @@ const stateLabel: Record<string, string> = {
   inactive: 'Inactive',
 };
 
-export const accessoriesColumns: TableColumn<Accessory>[] = [
+export const getAccessoriesColumns = (actions: AccessoryColumnActions): TableColumn<Accessory>[] => [
   {
     id: 'branch',
     name: 'Branch',
@@ -144,6 +141,11 @@ export const accessoriesColumns: TableColumn<Accessory>[] = [
     name: 'Action',
     sortable: false,
     width: '80px',
-    cell: (row) => <ActionDropdown accessory={row} />,
+    cell: (row) => <ActionDropdown accessory={row} actions={actions} />,
   },
 ];
+
+export const accessoriesColumns: TableColumn<Accessory>[] = getAccessoriesColumns({
+  onEdit: () => {},
+  onDelete: () => {},
+});
