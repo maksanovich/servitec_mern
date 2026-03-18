@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Save } from 'lucide-react';
-import { Modal, Input, Button, Select } from '../../../components/ui';
+import { Modal, Input, Button, Select, SearchableSelect } from '../../../components/ui';
 import { useAuth } from '../../../contexts/AuthContext';
 import type { Branch } from '../../../api/branches';
 import * as branchesApi from '../../../api/branches';
@@ -103,13 +103,12 @@ export function AccessoryFormModal({
             <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
               Branch
             </label>
-            <Select
+            <SearchableSelect
               options={branches.map((b) => ({ value: b.branchName, label: b.branchName }))}
               value={branch}
-              onChange={(e) => setBranch(e.target.value)}
+              onValueChange={setBranch}
               placeholder={branchesLoading ? 'Loading branches…' : 'Select branch'}
               disabled={branchesLoading || branches.length === 0}
-              required
             />
             {branchesError && (
               <p className="mt-1 text-xs text-red-600 dark:text-red-400">{branchesError}</p>

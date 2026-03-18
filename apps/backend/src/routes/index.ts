@@ -8,6 +8,7 @@ import { userRoutes } from './users.js';
 import { brandRoutes } from './brands.js';
 import { modelRoutes } from './models.js';
 import { accessoryRoutes } from './accessories.js';
+import { orderRoutes } from './orders.js';
 
 const apiRouter = Router();
 
@@ -20,6 +21,7 @@ apiRouter.use('/users', userRoutes);
 apiRouter.use('/brands', brandRoutes);
 apiRouter.use('/models', modelRoutes);
 apiRouter.use('/accessories', accessoryRoutes);
+apiRouter.use('/orders', orderRoutes);
 
 apiRouter.get('/', (req, res) => {
   res.json({ message: 'Servitec API', version: '1.0.0' });
