@@ -1,5 +1,5 @@
 import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
-import { Home, Box, FileText, FileSpreadsheet, Plus } from 'lucide-react';
+import { Home, FileText, FileSpreadsheet, Plus } from 'lucide-react';
 import { PageHeader, Card, Button, ButtonGroup, Loader, ConfirmDialog } from '../../components/ui';
 import {
   DataTableWithToolbar,

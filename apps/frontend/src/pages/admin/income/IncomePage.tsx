@@ -1,0 +1,2 @@
+export { IncomePage } from '../IncomePage';
+
