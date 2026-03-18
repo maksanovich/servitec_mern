@@ -3,6 +3,7 @@ import { forwardRef, SelectHTMLAttributes } from 'react';
 export interface SelectOption {
   value: string;
   label: string;
+  searchText?: string;
 }
 
 interface SelectProps extends Omit<SelectHTMLAttributes<HTMLSelectElement>, 'children'> {

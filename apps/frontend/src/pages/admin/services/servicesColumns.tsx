@@ -10,15 +10,16 @@ const actionBtnClass =
 
 const MENU_WIDTH = 160;
 
-function onEdit(item: ServiceSparePartItem) {
-  console.log('Edit service/spare part', item);
+export interface ServiceSparePartColumnActions {
+  onEdit: (item: ServiceSparePartItem) => void;
+  onDelete: (item: ServiceSparePartItem) => void;
 }
 
-function onDelete(item: ServiceSparePartItem) {
-  console.log('Delete service/spare part', item);
-}
-
-function ActionDropdown({ item }: { item: ServiceSparePartItem }) {
+function ActionDropdown({
+  item,
+  onEdit,
+  onDelete,
+}: { item: ServiceSparePartItem } & ServiceSparePartColumnActions) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -122,84 +123,92 @@ function formatPrice(price: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(price);
 }
 
-export const servicesColumns: TableColumn<ServiceSparePartItem>[] = [
-  {
-    id: 'branch',
-    name: 'Branch',
-    selector: (row) => row.branch,
-    sortable: true,
-    minWidth: '160px',
-    cell: (row) => (
-      <span className="text-slate-700 dark:text-slate-300">{row.branch}</span>
-    ),
-  },
-  {
-    id: 'type',
-    name: 'Type',
-    selector: (row) => row.type,
-    sortable: true,
-    minWidth: '120px',
-    cell: (row) => (
-      <Badge variant={typeVariant[row.type]}>{typeLabel[row.type]}</Badge>
-    ),
-  },
-  {
-    id: 'name',
-    name: 'Service / Spare Parts',
-    selector: (row) => row.name,
-    sortable: true,
-    minWidth: '200px',
-    cell: (row) => (
-      <span className="text-slate-700 dark:text-slate-300">{row.name}</span>
-    ),
-  },
-  {
-    id: 'amount',
-    name: 'Amount',
-    selector: (row) => row.amount,
-    sortable: true,
-    width: '100px',
-    cell: (row) => (
-      <span className="text-slate-700 dark:text-slate-300">{row.amount}</span>
-    ),
-  },
-  {
-    id: 'price',
-    name: 'Price',
-    selector: (row) => row.price,
-    sortable: true,
-    width: '100px',
-    cell: (row) => (
-      <span className="text-slate-700 dark:text-slate-300">{formatPrice(row.price)}</span>
-    ),
-  },
-  {
-    id: 'details',
-    name: 'Details',
-    selector: (row) => row.details,
-    sortable: true,
-    minWidth: '220px',
-    cell: (row) => (
-      <span className="text-slate-700 dark:text-slate-300 line-clamp-2" title={row.details}>
-        {row.details}
-      </span>
-    ),
-  },
-  {
-    id: 'state',
-    name: 'State',
-    selector: (row) => row.state,
-    sortable: true,
-    width: '100px',
-    cell: (row) => (
-      <Badge variant={stateVariant[row.state]}>{stateLabel[row.state]}</Badge>
-    ),
-  },
-  {
-    id: 'action',
-    name: 'Action',
-    sortable: false,
-    width: '80px',
-    cell: (row) => <ActionDropdown item={row} />,
-  },
-];
+export function getServicesColumns(actions: ServiceSparePartColumnActions): TableColumn<ServiceSparePartItem>[] {
+  return [
+    {
+      id: 'branch',
+      name: 'Branch',
+      selector: (row) => row.branch,
+      sortable: true,
+      width: '160px',
+      cell: (row) => (
+        <span className="text-slate-700 dark:text-slate-300">{row.branch}</span>
+      ),
+    },
+    {
+      id: 'type',
+      name: 'Type',
+      selector: (row) => row.type,
+      sortable: true,
+      width: '160px',
+      cell: (row) => (
+        <Badge variant={typeVariant[row.type]}>{typeLabel[row.type]}</Badge>
+      ),
+    },
+    {
+      id: 'name',
+      name: 'Service / Spare Parts',
+      selector: (row) => row.name,
+      sortable: true,
+      minWidth: '300px',
+      cell: (row) => (
+        <span className="text-slate-700 dark:text-slate-300">{row.name}</span>
+      ),
+    },
+    {
+      id: 'amount',
+      name: 'Amount',
+      selector: (row) => row.amount,
+      sortable: true,
+      width: '100px',
+      cell: (row) => (
+        <span className="text-slate-700 dark:text-slate-300">{row.amount}</span>
+      ),
+    },
+    {
+      id: 'price',
+      name: 'Price',
+      selector: (row) => row.price,
+      sortable: true,
+      width: '100px',
+      cell: (row) => (
+        <span className="text-slate-700 dark:text-slate-300">{formatPrice(row.price)}</span>
+      ),
+    },
+    {
+      id: 'details',
+      name: 'Details',
+      selector: (row) => row.details,
+      sortable: true,
+      minWidth: '220px',
+      cell: (row) => (
+        <span className="text-slate-700 dark:text-slate-300 line-clamp-2" title={row.details}>
+          {row.details}
+        </span>
+      ),
+    },
+    {
+      id: 'state',
+      name: 'State',
+      selector: (row) => row.state,
+      sortable: true,
+      width: '100px',
+      cell: (row) => (
+        <Badge variant={stateVariant[row.state]}>{stateLabel[row.state]}</Badge>
+      ),
+    },
+    {
+      id: 'action',
+      name: 'Action',
+      sortable: false,
+      width: '80px',
+      cell: (row) => <ActionDropdown item={row} onEdit={actions.onEdit} onDelete={actions.onDelete} />,
+    },
+  ];
+}
+
+/** Static columns for export (no action callbacks). */
+export const servicesColumns: TableColumn<ServiceSparePartItem>[] = getServicesColumns({
+  onEdit: () => {},
+  onDelete: () => {},
+});

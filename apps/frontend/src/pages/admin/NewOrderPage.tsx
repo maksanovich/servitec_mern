@@ -25,17 +25,19 @@ import {
   Select,
   SearchableSelect,
   DatePicker,
+  Loader,
 } from '../../components/ui';
 import { DataTableWithToolbar } from '../../components/datatable';
 import type { TableColumn } from 'react-data-table-component';
 import type { SelectOption } from '../../components/ui';
-import { sampleServicesSpareParts, type ServiceSparePart } from './orders/servicesSpareParts';
+import type { ServiceSparePartItem } from '../../api/servicesSpareParts';
 import { useAuth } from '../../contexts/AuthContext';
 import { getBranches } from '../../api/branches';
 import { getClients } from '../../api/clients';
 import { getBrands } from '../../api/brands';
 import { getModels } from '../../api/models';
 import { getAccessories, type Accessory } from '../../api/accessories';
+import { getServicesSpareParts } from '../../api/servicesSpareParts';
 import { getUsers, type User as ApiUser } from '../../api/users';
 import { createOrder } from '../../api/orders';
 
@@ -113,6 +115,8 @@ export function NewOrderPage() {
   const [brandOptions, setBrandOptions] = useState<SelectOption[]>([]);
   const [allModels, setAllModels] = useState<Array<{ brand: string; model: string }>>([]);
   const [accessoriesData, setAccessoriesData] = useState<Accessory[]>([]);
+  const [servicesData, setServicesData] = useState<ServiceSparePartItem[]>([]);
+  const [servicesLoading, setServicesLoading] = useState(false);
   const [technicianOptions, setTechnicianOptions] = useState<SelectOption[]>([]);
   const [submitError, setSubmitError] = useState('');
 
@@ -320,6 +324,11 @@ export function NewOrderPage() {
     return Array.from(unique.values()).sort().map((label) => ({ id: label, label }));
   }, [accessoriesData, branch]);
 
+  const availableServices = useMemo(() => {
+    const filtered = branch ? servicesData.filter((s) => s.branch === branch) : servicesData;
+    return filtered.filter((s) => s.state !== 'inactive');
+  }, [servicesData, branch]);
+
   useEffect(() => {
     // reset model selection if brand changes and selected model isn't valid anymore
     if (!model) return;
@@ -332,7 +341,7 @@ export function NewOrderPage() {
     [budgetLines]
   );
 
-  const addToBudget = useCallback((item: ServiceSparePart, amount: number = 1) => {
+  const addToBudget = useCallback((item: Pick<ServiceSparePartItem, 'id' | 'name' | 'price'>, amount: number = 1) => {
     const total = item.price * amount;
     setBudgetLines((prev) => {
       const existing = prev.find((l) => l.serviceId === item.id);
@@ -431,7 +440,7 @@ export function NewOrderPage() {
     navigate('/admin/order');
   };
 
-  const servicesColumns: TableColumn<ServiceSparePart>[] = useMemo(
+  const servicesColumns: TableColumn<ServiceSparePartItem>[] = useMemo(
     () => [
       { id: 'name', name: 'Service/Spare Parts', selector: (r) => r.name, sortable: true },
       { id: 'price', name: 'Price', selector: (r) => r.price, sortable: true, format: (r) => r.price.toFixed(2) },
@@ -457,6 +466,22 @@ export function NewOrderPage() {
     ],
     [addToBudget]
   );
+
+  useEffect(() => {
+    async function loadServices() {
+      if (!token) return;
+      setServicesLoading(true);
+      try {
+        const { items } = await getServicesSpareParts(token);
+        setServicesData(items);
+      } catch {
+        setServicesData([]);
+      } finally {
+        setServicesLoading(false);
+      }
+    }
+    loadServices();
+  }, [token]);
 
   return (
     <div className="space-y-4">
@@ -711,13 +736,25 @@ export function NewOrderPage() {
           <Card className="min-h-0 flex flex-col">
             <CardHeader title="Services / Spare Parts" />
             <CardContent className="p-0 flex-1 min-h-0">
-              <DataTableWithToolbar<ServiceSparePart>
-                data={sampleServicesSpareParts}
+              <DataTableWithToolbar<ServiceSparePartItem>
+                data={availableServices}
                 columns={servicesColumns}
                 searchFields={['name']}
                 searchPlaceholder="Search:"
                 pageSizeOptions={[10, 25, 50]}
                 defaultPageSize={10}
+                noDataComponent={
+                  servicesLoading ? (
+                    <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
+                      <Loader size="md" />
+                      <span className="text-sm">Loading…</span>
+                    </div>
+                  ) : (
+                    <div className="py-12 text-center text-slate-500 dark:text-slate-400">
+                      No services/spare parts found.
+                    </div>
+                  )
+                }
               />
             </CardContent>
           </Card>

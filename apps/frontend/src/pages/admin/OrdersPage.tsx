@@ -25,7 +25,7 @@ const exportOptions = { title: 'Orders', filename: 'orders' };
 
 export function OrdersPage() {
   const { token } = useAuth();
-  const [activeArea, setActiveArea] = useState<OrderArea>('waiting-parts');
+  const [activeArea, setActiveArea] = useState<OrderArea>('entrance');
   const filteredDataRef = useRef<Order[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
 
