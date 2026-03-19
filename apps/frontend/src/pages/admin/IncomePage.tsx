@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
 import { Home, DollarSign, FileText, FileSpreadsheet, LayoutGrid } from 'lucide-react';
 import { PageHeader, KpiCard, Card, Button, ButtonGroup } from '../../components/ui';
 import {
@@ -9,31 +9,145 @@ import {
 } from '../../components/datatable';
 import { incomeColumns } from './income/incomeColumns';
 import type { DailyIncomeEntry } from './income/types';
-
-const revenueKpis = [
-  { label: 'Income', value: '$0.00', sublabel: 'Daily' as const, icon: DollarSign },
-  { label: 'Weekly Income', value: '$0.00', sublabel: 'Total' as const, icon: DollarSign },
-  { label: 'Monthly Income', value: '$1650.00', sublabel: null, icon: DollarSign },
-  { label: 'Total Revenue', value: '$150.00', sublabel: null, icon: DollarSign },
-];
-
-const sampleDailyIncome: DailyIncomeEntry[] = [
-  { id: '1', date: '2026-02-28', user: 'Maria García', customer: 'Juan Pérez', order: 'ORD-2847' },
-  { id: '2', date: '2026-02-28', user: 'Carlos López', customer: 'Tech Solutions SAC', order: 'ORD-2848' },
-  { id: '3', date: '2026-02-27', user: 'Ana Martínez', customer: 'Edson Espinoza', order: 'ORD-2845' },
-  { id: '4', date: '2026-02-27', user: 'Maria García', customer: 'Joffre Murrieta', order: 'ORD-2846' },
-  { id: '5', date: '2026-02-26', user: 'Carlos López', customer: 'Xavier Medina', order: 'ORD-2842' },
-  { id: '6', date: '2026-02-26', user: 'Pedro Sánchez', customer: 'Ken Marcelino Ortiz', order: 'ORD-2843' },
-  { id: '7', date: '2026-02-25', user: 'Ana Martínez', customer: 'Corporación ABC', order: 'ORD-2839' },
-  { id: '8', date: '2026-02-25', user: 'Maria García', customer: 'Taller El Rápido', order: 'ORD-2840' },
-  { id: '9', date: '2026-02-24', user: 'Carlos López', customer: 'Juan Pérez', order: 'ORD-2836' },
-  { id: '10', date: '2026-02-24', user: 'Pedro Sánchez', customer: 'Tech Solutions SAC', order: 'ORD-2837' },
-];
+import { useAuth } from '../../contexts/AuthContext';
+import { getOrders, type OrderListItem } from '../../api/orders';
 
 const exportOptions = { title: 'Daily Income', filename: 'daily-income' };
 
 export function IncomePage() {
+  const { token } = useAuth();
+  const [orders, setOrders] = useState<OrderListItem[]>([]);
+  const [loading, setLoading] = useState(false);
   const filteredDataRef = useRef<DailyIncomeEntry[]>([]);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      if (!token) {
+        if (mounted) {
+          setOrders([]);
+        }
+        return;
+      }
+      setLoading(true);
+      try {
+        const { orders: list } = await getOrders(token, { limit: 200 });
+        if (mounted) {
+          setOrders(list);
+        }
+      } catch (err) {
+        console.error(err);
+        if (mounted) {
+          setOrders([]);
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [token]);
+
+  const { revenueKpis, dailyIncomeRows } = useMemo(() => {
+    if (!orders.length) {
+      return {
+        revenueKpis: [
+          { label: 'Income', value: '$0.00', sublabel: 'Daily' as const, icon: DollarSign },
+          { label: 'Weekly Income', value: '$0.00', sublabel: 'Total' as const, icon: DollarSign },
+          { label: 'Monthly Income', value: '$0.00', sublabel: null, icon: DollarSign },
+          { label: 'Total Revenue', value: '$0.00', sublabel: null, icon: DollarSign },
+        ],
+        dailyIncomeRows: [] as DailyIncomeEntry[],
+      };
+    }
+
+    const safeTotal = (v: unknown) => {
+      const n = Number(v);
+      return Number.isFinite(n) ? n : 0;
+    };
+
+    const today = new Date();
+    const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const startOfWeek = new Date(startOfToday);
+    startOfWeek.setDate(startOfToday.getDate() - 6);
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    let dailyIncome = 0;
+    let weeklyIncome = 0;
+    let monthlyIncome = 0;
+    let totalRevenue = 0;
+
+    const rows: DailyIncomeEntry[] = [];
+
+    const toDateOnly = (value?: string) => {
+      if (!value) return '-';
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return '-';
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    };
+
+    for (const o of orders) {
+      const amount = safeTotal(o.total);
+      totalRevenue += amount;
+
+      const createdAt = o.createdAt ? new Date(o.createdAt) : null;
+      if (createdAt && !Number.isNaN(createdAt.getTime())) {
+        if (createdAt >= startOfToday) {
+          dailyIncome += amount;
+        }
+        if (createdAt >= startOfWeek) {
+          weeklyIncome += amount;
+        }
+        if (createdAt >= startOfMonth) {
+          monthlyIncome += amount;
+        }
+
+        rows.push({
+          id: o.id,
+          date: toDateOnly(o.createdAt),
+          user: o.technical || '',
+          customer: o.customer,
+          order: o.no || o.code,
+        });
+      }
+    }
+
+    rows.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+
+    const kpis = [
+      { label: 'Income', value: `$${dailyIncome.toFixed(2)}`, sublabel: 'Daily' as const, icon: DollarSign },
+      {
+        label: 'Weekly Income',
+        value: `$${weeklyIncome.toFixed(2)}`,
+        sublabel: 'Total' as const,
+        icon: DollarSign,
+      },
+      {
+        label: 'Monthly Income',
+        value: `$${monthlyIncome.toFixed(2)}`,
+        sublabel: null,
+        icon: DollarSign,
+      },
+      {
+        label: 'Total Revenue',
+        value: `$${totalRevenue.toFixed(2)}`,
+        sublabel: null,
+        icon: DollarSign,
+      },
+    ];
+
+    return {
+      revenueKpis: kpis,
+      dailyIncomeRows: rows,
+    };
+  }, [orders]);
 
   const onFilteredDataChange = useCallback(
     (_filters: DataTableFilterState, filteredData: DailyIncomeEntry[]) => {
@@ -56,7 +170,13 @@ export function IncomePage() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {revenueKpis.map(({ label, value, sublabel, icon }) => (
-          <KpiCard key={label} label={label} value={value} sublabel={sublabel} icon={icon} />
+          <KpiCard
+            key={label}
+            label={label}
+            value={loading && value !== '$0.00' ? 'Loading…' : value}
+            sublabel={sublabel}
+            icon={icon}
+          />
         ))}
       </div>
 
@@ -67,7 +187,7 @@ export function IncomePage() {
           </h2>
         </div>
         <DataTableWithToolbar<DailyIncomeEntry>
-          data={sampleDailyIncome}
+          data={dailyIncomeRows}
           columns={incomeColumns}
           searchFields={['date', 'user', 'customer', 'order']}
           searchPlaceholder="Look for:"
