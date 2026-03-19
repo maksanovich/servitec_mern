@@ -18,6 +18,8 @@ export interface Order {
   customer: string;
   customerId: string;
   technical: string;
+  equipmentCondition: string;
+  technicalReport: string;
   total: number;
   branch: string;
 }

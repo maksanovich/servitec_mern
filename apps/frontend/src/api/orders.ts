@@ -17,6 +17,8 @@ export interface OrderListItem {
   customer: string;
   customerId: string;
   technical: string;
+  equipmentCondition: string;
+  technicalReport: string;
   total: number;
   branch: string;
 }
@@ -78,5 +80,107 @@ export async function createOrder(
     throw new Error(data.error || 'Failed to create order');
   }
   return data;
+}
+
+export interface OrderBudgetLine {
+  serviceId: string;
+  name: string;
+  price: number;
+  amount: number;
+  total: number;
+}
+
+export interface OrderDetail {
+  id: string;
+  no: string;
+  code: string;
+  createdAt?: string;
+  priority: OrderPriority;
+  state: OrderState;
+  area: OrderArea;
+  type: string;
+  branch: string;
+
+  clientId: number;
+  customer: string;
+  customerId: string;
+
+  brand: string;
+  model: string;
+  series: string;
+
+  technicianId: string;
+  technical?: string;
+
+  equipmentCondition: string;
+  technicalReport: string;
+  diagnosis: boolean;
+  warranty: boolean;
+  password: string;
+  fianceeDate: string;
+  advancement: number;
+
+  accessories: string[];
+  budgetLines: OrderBudgetLine[];
+  total: number;
+}
+
+export type UpdateOrderPayload = Partial<{
+  branch: string;
+  clientId: number;
+  brand: string;
+  model: string;
+  series: string;
+  type: string;
+  area: OrderArea;
+  state: OrderState;
+  technician: string;
+  priority: OrderPriority;
+  equipmentCondition: string;
+  technicalReport: string;
+  diagnosis: 'yes' | 'no' | boolean;
+  warranty: 'yes' | 'no' | boolean;
+  password: string;
+  fianceeDate: string;
+  advancement: number | string;
+  accessories: string[];
+  budgetLines: Array<{ serviceId: string; name: string; price: number; amount: number; total: number }>;
+}>;
+
+export async function getOrderById(
+  token: string | null,
+  id: string
+): Promise<{ order: OrderDetail }> {
+  if (!token) throw new Error('Not authenticated');
+  const res = await apiFetch(`/orders/${id}`, { token });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to fetch order');
+  return data;
+}
+
+export async function updateOrder(
+  token: string | null,
+  id: string,
+  payload: UpdateOrderPayload
+): Promise<{ order: OrderDetail }> {
+  if (!token) throw new Error('Not authenticated');
+  const res = await apiFetch(`/orders/${id}`, {
+    method: 'PATCH',
+    token,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to update order');
+  return data;
+}
+
+export async function deleteOrder(token: string | null, id: string): Promise<void> {
+  if (!token) throw new Error('Not authenticated');
+  const res = await apiFetch(`/orders/${id}`, { method: 'DELETE', token });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'Failed to delete order');
+  }
 }
 

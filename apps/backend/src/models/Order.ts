@@ -12,7 +12,7 @@ export interface IOrderBudgetLine {
   total: number;
 }
 
-export interface IOrder extends Document {
+export interface IOrder extends Omit<Document, 'model'> {
   no: string;
   code: string;
   priority: OrderPriority;

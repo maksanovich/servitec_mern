@@ -15,6 +15,7 @@ import { DashboardPage } from './pages/admin/DashboardPage';
 
 import { OrdersPage } from './pages/admin/OrdersPage';
 import { NewOrderPage } from './pages/admin/NewOrderPage';
+import { OrderPrintPage } from './pages/admin/OrderPrintPage';
 
 import { AdminPlaceholder } from './pages/admin/AdminPlaceholder';
 import { ProfilePage } from './pages/admin/ProfilePage';
@@ -44,6 +45,7 @@ function App() {
             <Route path="blog" element={<BlogPage />} />
             <Route path="track" element={<TrackPage />} />
           </Route>
+          <Route path="/admin/order/:id/print" element={<OrderPrintPage />} />
           <Route path="/admin/login" element={<LoginPage />} />
           <Route
             path="/admin"
@@ -61,6 +63,7 @@ function App() {
             <Route path="activity" element={<AdminPlaceholder title="Activity" />} />
             <Route path="order" element={<OrdersPage />} />
             <Route path="order/new" element={<NewOrderPage />} />
+            <Route path="order/:id/edit" element={<NewOrderPage />} />
             <Route path="clients" element={<CustomersPage />} />
             <Route path="brand" element={<BrandsPage />} />
             <Route path="brand/new" element={<AdminPlaceholder title="New Brand" />} />

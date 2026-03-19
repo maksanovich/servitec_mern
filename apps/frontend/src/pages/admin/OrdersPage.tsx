@@ -1,7 +1,7 @@
 import { useMemo, useRef, useCallback, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Home, Wrench, FileText, FileSpreadsheet } from 'lucide-react';
-import { PageHeader, Card, Button, ButtonGroup } from '../../components/ui';
+import { PageHeader, Card, Button, ButtonGroup, ConfirmDialog } from '../../components/ui';
 import {
   DataTableWithToolbar,
   type DataTableFilterState,
@@ -12,12 +12,12 @@ import {
   type Order,
   type OrderArea,
   AREA_TABS,
-  ordersColumns,
+  getOrdersColumns,
 } from './orders';
 import { OrderExpandedRow } from './orders/OrderExpandedRow';
 import { Plus, Minus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { getOrders } from '../../api/orders';
+import { deleteOrder, getOrders } from '../../api/orders';
 
 export type { Order, OrderArea };
 
@@ -28,6 +28,9 @@ export function OrdersPage() {
   const [activeArea, setActiveArea] = useState<OrderArea>('entrance');
   const filteredDataRef = useRef<Order[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [deleteConfirm, setDeleteConfirm] = useState<Order | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -53,8 +56,46 @@ export function OrdersPage() {
     filteredDataRef.current = filteredData;
   }, []);
 
-  const exportPDF = () => exportTableToPDF(ordersColumns, filteredDataRef.current, exportOptions);
-  const exportExcel = () => exportTableToExcel(ordersColumns, filteredDataRef.current, exportOptions);
+  const refetchOrders = useCallback(async () => {
+    try {
+      const { orders: list } = await getOrders(token, { limit: 200 });
+      setOrders(list as unknown as Order[]);
+    } catch (e) {
+      console.error(e);
+    }
+  }, [token]);
+
+  const handleDeleteClick = useCallback((order: Order) => {
+    setDeleteError(null);
+    setDeleteConfirm(order);
+  }, []);
+
+  const handleDeleteConfirm = useCallback(async () => {
+    if (!token || !deleteConfirm) return;
+    setDeleteLoading(true);
+    setDeleteError(null);
+    try {
+      await deleteOrder(token, deleteConfirm.id);
+      setDeleteConfirm(null);
+      await refetchOrders();
+    } catch (e) {
+      setDeleteError(e instanceof Error ? e.message : 'Failed to delete order');
+    } finally {
+      setDeleteLoading(false);
+    }
+  }, [token, deleteConfirm, refetchOrders]);
+
+  const handleDeleteCancel = useCallback(() => {
+    if (!deleteLoading) {
+      setDeleteConfirm(null);
+      setDeleteError(null);
+    }
+  }, [deleteLoading]);
+
+  const tableColumns = useMemo(() => getOrdersColumns(handleDeleteClick, deleteLoading), [handleDeleteClick, deleteLoading]);
+
+  const exportPDF = () => exportTableToPDF(tableColumns, filteredDataRef.current, exportOptions);
+  const exportExcel = () => exportTableToExcel(tableColumns, filteredDataRef.current, exportOptions);
 
   return (
     <div className="space-y-4">
@@ -98,7 +139,7 @@ export function OrdersPage() {
       <Card className="overflow-hidden">
         <DataTableWithToolbar<Order>
           data={dataByArea}
-          columns={ordersColumns}
+          columns={tableColumns}
           searchFields={['no', 'code', 'customer', 'technical', 'equipment', 'series', 'type', 'branch']}
           searchPlaceholder="Look for:"
           pageSizeOptions={[10, 25, 50, 100]}
@@ -134,6 +175,23 @@ export function OrdersPage() {
           }
         />
       </Card>
+
+      <ConfirmDialog
+        open={!!deleteConfirm}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Delete order"
+        message={
+          deleteConfirm
+            ? `Are you sure you want to delete "${deleteConfirm.no}"? This action cannot be undone.`
+            : ''
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        isLoading={deleteLoading}
+        error={deleteError}
+      />
     </div>
   );
 }

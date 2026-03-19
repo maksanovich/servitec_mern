@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   Home,
   Building2,
@@ -39,7 +39,7 @@ import { getModels } from '../../api/models';
 import { getAccessories, type Accessory } from '../../api/accessories';
 import { getServicesSpareParts } from '../../api/servicesSpareParts';
 import { getUsers, type User as ApiUser } from '../../api/users';
-import { createOrder } from '../../api/orders';
+import { createOrder, getOrderById, updateOrder } from '../../api/orders';
 
 const PRODUCT_OPTIONS: SelectOption[] = [
   { value: 'mainboard', label: 'MAINBOARD' },
@@ -54,13 +54,11 @@ const PRODUCT_OPTIONS: SelectOption[] = [
 const AREA_OPTIONS: SelectOption[] = [
   { value: 'entrance', label: 'Entrance Area' },
   { value: 'maintenance', label: 'Maintenance Area' },
-  { value: 'warehouse', label: 'Warehouse Area' },
 ];
 
 const STATE_AREA_OPTIONS: SelectOption[] = [
   { value: 'income', label: 'Income' },
   { value: 'maintenance', label: 'Maintenance' },
-  { value: 'warehouse', label: 'Warehouse' },
 ];
 
 function isTechnicianUser(u: ApiUser) {
@@ -107,6 +105,8 @@ function wrapWithIcon(Icon: typeof Building2, children: React.ReactNode) {
 export function NewOrderPage() {
   const navigate = useNavigate();
   const { token } = useAuth();
+  const { id } = useParams<{ id?: string }>();
+  const isEditMode = !!id;
 
   const [branchOptions, setBranchOptions] = useState<SelectOption[]>([]);
   const [customerOptions, setCustomerOptions] = useState<SelectOption[]>([]);
@@ -145,13 +145,16 @@ export function NewOrderPage() {
     let mounted = true;
     (async () => {
       try {
-        const [{ branches }, clientsResp, { brands }, { models }, { accessories }, { users }] = await Promise.all([
+        const orderPromise = isEditMode && id ? getOrderById(token, id) : Promise.resolve(null);
+
+        const [{ branches }, clientsResp, { brands }, { models }, { accessories }, { users }, orderResp] = await Promise.all([
           getBranches(token),
           getClients(token, { page: 1, limit: 100 }),
           getBrands(token),
           getModels(token),
           getAccessories(token),
           getUsers(token),
+          orderPromise,
         ]);
 
         if (!mounted) return;
@@ -215,6 +218,42 @@ export function NewOrderPage() {
           .sort((a, b) => a.label.localeCompare(b.label));
 
         setTechnicianOptions(list);
+
+        // Prefill form when editing an existing order.
+        if (orderResp?.order) {
+          const o = orderResp.order;
+          setBranch(o.branch ?? '');
+          setCustomer(String(o.clientId ?? ''));
+          setBrand(o.brand ?? '');
+          setModel(o.model ?? '');
+          setSeries(o.series ?? '');
+          setProduct(o.type ?? '');
+          setArea(o.area ?? 'entrance');
+          setStateArea(o.state ?? 'income');
+          setTechnician(o.technicianId ?? '');
+          setPriority(o.priority ?? 'normal');
+          setEquipmentCondition(o.equipmentCondition ?? '');
+          setTechnicalReport(o.technicalReport ?? '');
+          setDiagnosis(o.diagnosis ? 'yes' : 'no');
+          setWarranty(o.warranty ? 'yes' : 'no');
+          setPassword(o.password ?? '');
+          setFianceeDate(o.fianceeDate ?? '');
+          setAdvancement(String(o.advancement ?? 0));
+
+          const acc: Record<string, boolean> = {};
+          for (const artifact of o.accessories ?? []) acc[String(artifact)] = true;
+          setAccessories(acc);
+
+          const initialBudgetLines: BudgetLineItem[] = (o.budgetLines ?? []).map((l, idx) => ({
+            id: `budget-${l.serviceId}-${idx}`,
+            serviceId: l.serviceId,
+            name: l.name,
+            price: l.price,
+            amount: l.amount,
+            total: l.total,
+          }));
+          setBudgetLines(initialBudgetLines);
+        }
       } catch (e) {
         console.error(e);
         if (mounted) {
@@ -230,7 +269,7 @@ export function NewOrderPage() {
     return () => {
       mounted = false;
     };
-  }, [token]);
+  }, [token, id]);
 
   useEffect(() => {
     // If no technician selected yet, default to first available option.
@@ -332,6 +371,7 @@ export function NewOrderPage() {
   useEffect(() => {
     // reset model selection if brand changes and selected model isn't valid anymore
     if (!model) return;
+    if (!allModels.length) return;
     const stillValid = allModels.some((m) => m.model === model && (!brand || m.brand === brand));
     if (!stillValid) setModel('');
   }, [brand, model, allModels]);
@@ -428,7 +468,11 @@ export function NewOrderPage() {
       if (!payload.series) throw new Error('Series is required');
       if (!payload.type) throw new Error('Product is required');
 
-      await createOrder(token, payload as any);
+      if (isEditMode && id) {
+        await updateOrder(token, id, payload as any);
+      } else {
+        await createOrder(token, payload as any);
+      }
       navigate('/admin/order');
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to submit order';
@@ -490,7 +534,7 @@ export function NewOrderPage() {
         breadcrumb={[
           { label: 'Operations', icon: Home },
           { label: 'Orders' },
-          { label: 'New Order' },
+          { label: isEditMode ? 'Edit Order' : 'New Order' },
         ]}
       />
 
@@ -837,7 +881,7 @@ export function NewOrderPage() {
             Cancel
           </Button>
           <Button type="submit" variant="primary" size="md">
-            Submit
+            {isEditMode ? 'Update' : 'Submit'}
           </Button>
         </div>
       </form>
