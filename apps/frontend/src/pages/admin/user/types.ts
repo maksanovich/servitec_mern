@@ -6,6 +6,7 @@ export interface User {
   identification: string;
   phone: string;
   avatar?: string;
+  branch?: string;
   state: 'active' | 'inactive';
   role: { id: string; name: string; slug?: string } | null;
 }

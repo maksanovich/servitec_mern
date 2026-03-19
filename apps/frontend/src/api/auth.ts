@@ -22,6 +22,7 @@ export interface User {
   email: string;
   name: string;
   phone?: string;
+  branch?: string;
   role: UserRole | null;
 }
 

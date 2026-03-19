@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import type { AuthRequest } from '../middleware/auth.js';
 import { ServiceSparePart } from '../models/ServiceSparePart.js';
 
 function toResponse(item: any) {
@@ -14,9 +15,15 @@ function toResponse(item: any) {
   };
 }
 
-export async function getAllServicesSpareParts(_req: Request, res: Response): Promise<Response | void> {
+export async function getAllServicesSpareParts(req: Request, res: Response): Promise<Response | void> {
   try {
-    const items = await ServiceSparePart.find()
+    const authReq = req as AuthRequest;
+    const isAdmin = authReq.user?.role === 'admin';
+    const userBranch = isAdmin ? String(authReq.user?.branch ?? '').trim() : '';
+    if (isAdmin && !userBranch) return res.status(403).json({ error: 'Branch not assigned for this admin' });
+    const itemsQuery = isAdmin ? { branch: userBranch } : {};
+
+    const items = await ServiceSparePart.find(itemsQuery)
       .sort({ branch: 1, type: 1, name: 1 })
       .lean();
     res.json({ items: items.map(toResponse) });
@@ -28,9 +35,16 @@ export async function getAllServicesSpareParts(_req: Request, res: Response): Pr
 
 export async function getServiceSparePartById(req: Request, res: Response): Promise<Response | void> {
   try {
+    const authReq = req as AuthRequest;
     const { id } = req.params;
     const item = await ServiceSparePart.findById(id).lean();
     if (!item) return res.status(404).json({ error: 'Service/spare part not found' });
+    if (authReq.user?.role === 'admin') {
+      const userBranch = String(authReq.user?.branch ?? '').trim();
+      if (!userBranch || item.branch !== userBranch) {
+        return res.status(404).json({ error: 'Service/spare part not found' });
+      }
+    }
     res.json({ item: toResponse(item) });
   } catch (err) {
     console.error('Get service/spare part error:', err);
@@ -40,6 +54,7 @@ export async function getServiceSparePartById(req: Request, res: Response): Prom
 
 export async function createServiceSparePart(req: Request, res: Response): Promise<Response | void> {
   try {
+    const authReq = req as AuthRequest;
     const { branch, type, name, amount, price, details, state } = req.body as {
       branch: string;
       type: 'service' | 'replacement';
@@ -50,7 +65,15 @@ export async function createServiceSparePart(req: Request, res: Response): Promi
       state?: 'active' | 'inactive';
     };
 
-    const trimmedBranch = String(branch ?? '').trim();
+    let trimmedBranch = String(branch ?? '').trim();
+    if (authReq.user?.role === 'admin') {
+      const userBranch = String(authReq.user?.branch ?? '').trim();
+      if (!userBranch) return res.status(403).json({ error: 'Branch not assigned for this admin' });
+      if (trimmedBranch && trimmedBranch !== userBranch) {
+        return res.status(403).json({ error: 'Cannot create services for another branch' });
+      }
+      trimmedBranch = userBranch;
+    }
     const trimmedName = String(name ?? '').trim();
     const trimmedDetails = details != null ? String(details).trim() : '';
     const normalizedType = type === 'replacement' ? 'replacement' : 'service';
@@ -85,6 +108,7 @@ export async function createServiceSparePart(req: Request, res: Response): Promi
 
 export async function updateServiceSparePart(req: Request, res: Response): Promise<Response | void> {
   try {
+    const authReq = req as AuthRequest;
     const { id } = req.params;
     const { branch, type, name, amount, price, details, state } = req.body as {
       branch?: string;
@@ -99,7 +123,19 @@ export async function updateServiceSparePart(req: Request, res: Response): Promi
     const doc: any = await ServiceSparePart.findById(id);
     if (!doc) return res.status(404).json({ error: 'Service/spare part not found' });
 
-    if (branch !== undefined) doc.branch = String(branch).trim();
+    if (authReq.user?.role === 'admin') {
+      const userBranch = String(authReq.user?.branch ?? '').trim();
+      if (!userBranch || doc.branch !== userBranch) {
+        return res.status(404).json({ error: 'Service/spare part not found' });
+      }
+      // Prevent branch reassignment by admins.
+      doc.branch = userBranch;
+      if (branch !== undefined && String(branch).trim() !== userBranch) {
+        return res.status(403).json({ error: 'Cannot move service/spare part to another branch' });
+      }
+    } else if (branch !== undefined) {
+      doc.branch = String(branch).trim();
+    }
     if (type !== undefined) doc.type = type === 'replacement' ? 'replacement' : 'service';
     if (name !== undefined) doc.name = String(name).trim();
     if (amount !== undefined) doc.amount = Number(amount);
@@ -121,9 +157,17 @@ export async function updateServiceSparePart(req: Request, res: Response): Promi
 
 export async function deleteServiceSparePart(req: Request, res: Response): Promise<Response | void> {
   try {
+    const authReq = req as AuthRequest;
     const { id } = req.params;
-    const item = await ServiceSparePart.findByIdAndDelete(id);
+    const item = await ServiceSparePart.findById(id);
     if (!item) return res.status(404).json({ error: 'Service/spare part not found' });
+    if (authReq.user?.role === 'admin') {
+      const userBranch = String(authReq.user?.branch ?? '').trim();
+      if (!userBranch || item.branch !== userBranch) {
+        return res.status(404).json({ error: 'Service/spare part not found' });
+      }
+    }
+    await item.deleteOne();
     res.status(204).send();
   } catch (err) {
     console.error('Delete service/spare part error:', err);

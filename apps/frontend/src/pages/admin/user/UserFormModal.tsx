@@ -3,6 +3,8 @@ import { Save, Upload, X } from 'lucide-react';
 import { Modal, Input, Button, Select } from '../../../components/ui';
 import type { User } from './types';
 import * as rolesApi from '../../../api/roles';
+import type { Branch } from '../../../api/branches';
+import * as branchesApi from '../../../api/branches';
 import noImageUrl from '../../../assets/images/noimage.png';
 
 const MAX_AVATAR_BYTES = 500 * 1024; // 500KB
@@ -21,6 +23,7 @@ interface UserFormModalProps {
       identification: string;
       phone: string;
       roleId: string;
+      branch?: string;
       state: 'active' | 'inactive';
       avatar?: string;
     }
@@ -43,14 +46,23 @@ export function UserFormModal({
   const [identification, setIdentification] = useState('');
   const [phone, setPhone] = useState('');
   const [roleId, setRoleId] = useState('');
+  const [branch, setBranch] = useState('');
   const [state, setState] = useState<'active' | 'inactive'>('active');
-  const [roleOptions, setRoleOptions] = useState<{ value: string; label: string }[]>([]);
+  const [roleOptions, setRoleOptions] = useState<Array<{ value: string; label: string; slug?: string }>>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [branchesLoading, setBranchesLoading] = useState(false);
   const [avatar, setAvatar] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const selectedRoleSlug = roleOptions.find((r) => r.value === roleId)?.slug;
+  const showBranchSelect =
+    selectedRoleSlug === 'admin' ||
+    selectedRoleSlug === 'cashier' ||
+    selectedRoleSlug === 'lead_technician' ||
+    selectedRoleSlug === 'outsourced';
   const isEdit = !!user;
 
   const stateOptions = [
@@ -61,9 +73,26 @@ export function UserFormModal({
   useEffect(() => {
     if (open && token) {
       rolesApi.getRoles(token).then(({ roles }) => {
-        setRoleOptions(roles.map((r) => ({ value: r.id, label: r.name })));
+        setRoleOptions(roles.map((r) => ({ value: r.id, label: r.name, slug: r.slug })));
       }).catch(() => setRoleOptions([]));
     }
+  }, [open, token]);
+
+  useEffect(() => {
+    async function loadBranches() {
+      if (!open || !token) return;
+      setBranchesLoading(true);
+      try {
+        const { branches: list } = await branchesApi.getBranches(token);
+        setBranches(list.filter((b) => b.state !== 'inactive'));
+      } catch {
+        setBranches([]);
+      } finally {
+        setBranchesLoading(false);
+      }
+    }
+    // Branch selection is only meaningful for role=admin, but loading once on open keeps it simple.
+    loadBranches();
   }, [open, token]);
 
   useEffect(() => {
@@ -76,6 +105,7 @@ export function UserFormModal({
         setIdentification(user.identification ?? '');
         setPhone(user.phone ?? '');
         setRoleId(user.role?.id ?? '');
+        setBranch(user.branch ?? '');
         setState(user.state ?? 'active');
         setAvatar(user.avatar?.trim() || null);
       } else {
@@ -86,6 +116,7 @@ export function UserFormModal({
         setIdentification('');
         setPhone('');
         setRoleId('');
+        setBranch('');
         setState('active');
         setAvatar(null);
       }
@@ -152,6 +183,15 @@ export function UserFormModal({
       setError('Role is required.');
       return;
     }
+
+    if (showBranchSelect) {
+      const trimmedBranch = branch.trim();
+      if (!trimmedBranch) {
+        setError('Branch is required for this role.');
+        return;
+      }
+    }
+
     setError(null);
     setSaving(true);
     try {
@@ -162,6 +202,7 @@ export function UserFormModal({
         identification: trimmedIdentification,
         phone: trimmedPhone,
         roleId,
+        branch: branch.trim() || undefined,
         state,
         avatar: avatar != null ? avatar : (isEdit ? '' : undefined),
       });
@@ -330,6 +371,22 @@ export function UserFormModal({
               onChange={(e) => setState(e.target.value as 'active' | 'inactive')}
             />
           </div>
+          {showBranchSelect && (
+            <div className="grid grid-cols-1 col-span-2 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                  Branch <span className="text-red-500 dark:text-red-400">*</span>
+                </label>
+                <Select
+                  options={branches.map((b) => ({ value: b.branchName, label: b.branchName }))}
+                  value={branch}
+                  onChange={(e) => setBranch(e.target.value)}
+                  placeholder={branchesLoading ? 'Loading branches...' : 'Select branch'}
+                  disabled={branchesLoading || branches.length === 0}
+                />
+              </div>
+            </div>
+          )}
         </div>
         {error && (
           <p className="text-sm text-red-600 dark:text-red-400">{error}</p>

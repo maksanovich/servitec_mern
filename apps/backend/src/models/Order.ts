@@ -12,7 +12,8 @@ export interface IOrderBudgetLine {
   total: number;
 }
 
-export interface IOrder extends Document {
+// `Document` has a `model()` method typing; omit it so our schema field `model: string` doesn't conflict.
+export interface IOrder extends Omit<Document, 'model'> {
   no: string;
   code: string;
   priority: OrderPriority;

@@ -7,6 +7,7 @@ import {
   deleteRole,
 } from '../controllers/roleController.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { requireSuperAdmin } from '../middleware/requireSuperAdmin.js';
 
 const router = Router();
 
@@ -14,8 +15,8 @@ router.use(authMiddleware);
 
 router.get('/', getAllRoles);
 router.get('/:id', getRoleById);
-router.post('/', createRole);
-router.patch('/:id', updateRole);
-router.delete('/:id', deleteRole);
+router.post('/', requireSuperAdmin, createRole);
+router.patch('/:id', requireSuperAdmin, updateRole);
+router.delete('/:id', requireSuperAdmin, deleteRole);
 
 export { router as roleRoutes };

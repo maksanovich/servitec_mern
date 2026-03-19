@@ -7,6 +7,7 @@ import {
   deleteBranch,
 } from '../controllers/branchController.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { requireSuperAdmin } from '../middleware/requireSuperAdmin.js';
 
 const router = Router();
 
@@ -14,8 +15,8 @@ router.use(authMiddleware);
 
 router.get('/', getAllBranches);
 router.get('/:id', getBranchById);
-router.post('/', createBranch);
-router.patch('/:id', updateBranch);
-router.delete('/:id', deleteBranch);
+router.post('/', requireSuperAdmin, createBranch);
+router.patch('/:id', requireSuperAdmin, updateBranch);
+router.delete('/:id', requireSuperAdmin, deleteBranch);
 
 export { router as branchRoutes };

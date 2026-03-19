@@ -89,6 +89,8 @@ export function AdminLayout() {
   const { user, logout } = useAuth();
   const { company } = useCompany();
   const { isDark, toggleTheme } = useTheme();
+  const roleSlug = (user?.role?.slug ?? '').toLowerCase();
+  const isSuperAdmin = roleSlug === 'super_admin';
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
@@ -127,7 +129,9 @@ export function AdminLayout() {
           </Link>
         </div>
         <nav className="flex-1 overflow-y-auto py-4 px-2">
-          {navGroups.map((group, index) => (
+          {navGroups
+            .filter((g) => g.label !== 'System' || isSuperAdmin)
+            .map((group, index) => (
             <div key={group.label ?? `nav-group-${index}`} className="mb-4">
               {group.label && !sidebarCollapsed && (
                 <div className="px-3 py-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -160,7 +164,7 @@ export function AdminLayout() {
                 })}
               </ul>
             </div>
-          ))}
+            ))}
         </nav>
       </aside>
 

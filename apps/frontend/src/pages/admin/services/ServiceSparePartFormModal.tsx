@@ -25,7 +25,7 @@ interface Props {
 }
 
 export function ServiceSparePartFormModal({ open, onClose, item, onSuccess, onSubmit }: Props) {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [branch, setBranch] = useState('');
   const [type, setType] = useState<ServiceSparePartType>('service');
   const [name, setName] = useState('');
@@ -54,7 +54,8 @@ export function ServiceSparePartFormModal({ open, onClose, item, onSuccess, onSu
       setState(item.state ?? 'active');
       setDetails(item.details ?? '');
     } else {
-      setBranch('');
+      // For admins, default the branch to the logged-in admin's scope.
+      setBranch(user?.role?.slug === 'admin' ? (user.branch ?? '') : '');
       setType('service');
       setName('');
       setPrice('0');
@@ -63,7 +64,7 @@ export function ServiceSparePartFormModal({ open, onClose, item, onSuccess, onSu
       setDetails('');
     }
     setError(null);
-  }, [open, item]);
+  }, [open, item, user]);
 
   useEffect(() => {
     async function loadBranches() {

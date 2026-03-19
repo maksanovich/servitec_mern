@@ -26,7 +26,7 @@ export function AccessoryFormModal({
   onSuccess,
   onSubmit,
 }: AccessoryFormModalProps) {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [branch, setBranch] = useState('');
   const [artifact, setArtifact] = useState('');
   const [state, setState] = useState<'active' | 'inactive'>('active');
@@ -45,12 +45,13 @@ export function AccessoryFormModal({
       setArtifact(accessory.artifact);
       setState(accessory.state ?? 'active');
     } else {
-      setBranch('');
+      // For admins, default the branch to the logged-in admin's scope.
+      setBranch(user?.role?.slug === 'admin' ? (user.branch ?? '') : '');
       setArtifact('');
       setState('active');
     }
     setError(null);
-  }, [open, accessory]);
+  }, [open, accessory, user]);
 
   useEffect(() => {
     async function loadBranches() {

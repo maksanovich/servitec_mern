@@ -36,6 +36,7 @@ export async function login(req: Request, res: Response): Promise<Response | voi
         email: user.email,
         name: user.name,
         phone: user.phone ?? '',
+        branch: (user as any).branch ?? '',
         role: role ? { id: role._id, slug: role.slug, name: role.name } : null,
       },
     });
@@ -57,6 +58,7 @@ export async function me(req: AuthRequest, res: Response): Promise<Response | vo
         email: user.email,
         name: user.name,
         phone: user.phone ?? '',
+        branch: (user as any).branch ?? '',
         role: role ? { id: role._id, slug: role.slug, name: role.name } : null,
       },
     });

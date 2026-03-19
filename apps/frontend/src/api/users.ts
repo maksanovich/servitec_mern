@@ -13,6 +13,7 @@ export interface User {
   identification: string;
   phone: string;
   avatar?: string;
+  branch?: string;
   state: 'active' | 'inactive';
   role: UserRoleRef | null;
 }
@@ -51,6 +52,7 @@ export async function createUser(
     roleId: string;
     state?: 'active' | 'inactive';
     avatar?: string;
+    branch?: string;
   }
 ): Promise<{ user: User }> {
   if (!token) throw new Error('Not authenticated');
@@ -78,6 +80,7 @@ export async function updateUser(
     password?: string;
     state?: 'active' | 'inactive';
     avatar?: string;
+    branch?: string;
   }
 ): Promise<{ user: User }> {
   if (!token) throw new Error('Not authenticated');

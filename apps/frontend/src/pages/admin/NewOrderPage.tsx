@@ -106,7 +106,7 @@ function wrapWithIcon(Icon: typeof Building2, children: React.ReactNode) {
 
 export function NewOrderPage() {
   const navigate = useNavigate();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
 
   const [branchOptions, setBranchOptions] = useState<SelectOption[]>([]);
   const [customerOptions, setCustomerOptions] = useState<SelectOption[]>([]);
@@ -140,6 +140,15 @@ export function NewOrderPage() {
   const [accessories, setAccessories] = useState<Record<string, boolean>>({});
   const [budgetLines, setBudgetLines] = useState<BudgetLineItem[]>([]);
   const [branchError, setBranchError] = useState('');
+
+  useEffect(() => {
+    // Scope branch for branch-admin users.
+    if (!user) return;
+    const slug = (user.role?.slug ?? '').toLowerCase();
+    if (slug === 'admin' && user.branch) {
+      setBranch(user.branch);
+    }
+  }, [user]);
 
   useEffect(() => {
     let mounted = true;

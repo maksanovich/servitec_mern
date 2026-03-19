@@ -7,6 +7,7 @@ import {
   deleteUser,
 } from '../controllers/userController.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { requireSuperAdmin } from '../middleware/requireSuperAdmin.js';
 
 const router = Router();
 
@@ -14,8 +15,8 @@ router.use(authMiddleware);
 
 router.get('/', getAllUsers);
 router.get('/:id', getUserById);
-router.post('/', createUser);
-router.patch('/:id', updateUser);
-router.delete('/:id', deleteUser);
+router.post('/', requireSuperAdmin, createUser);
+router.patch('/:id', requireSuperAdmin, updateUser);
+router.delete('/:id', requireSuperAdmin, deleteUser);
 
 export { router as userRoutes };

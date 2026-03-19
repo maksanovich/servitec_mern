@@ -101,6 +101,7 @@ export function UserPage() {
     identification: string;
     phone: string;
     roleId: string;
+    branch?: string;
     state: 'active' | 'inactive';
     avatar?: string;
   }) => {
@@ -111,6 +112,7 @@ export function UserPage() {
         identification: data.identification,
         phone: data.phone,
         roleId: data.roleId,
+        branch: data.branch,
         password: data.password,
         state: data.state,
         avatar: data.avatar,
@@ -123,6 +125,7 @@ export function UserPage() {
         identification: data.identification,
         phone: data.phone,
         roleId: data.roleId,
+        branch: data.branch,
         state: data.state,
         avatar: data.avatar,
       });

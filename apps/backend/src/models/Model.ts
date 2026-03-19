@@ -1,6 +1,7 @@
 import mongoose, { Document, Model as MongooseModel } from 'mongoose';
 
-export interface IEquipmentModel extends Document {
+// `Document` has a `model()` method typing; omit it so our schema field `model: string` doesn't conflict.
+export interface IEquipmentModel extends Omit<Document, 'model'> {
   brand: string;
   model: string;
   state: 'active' | 'inactive';

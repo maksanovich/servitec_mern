@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import type { AuthRequest } from '../middleware/auth.js';
 import { Order, type IOrderBudgetLine, type OrderArea, type OrderPriority, type OrderState } from '../models/Order.js';
 import { Client } from '../models/Client.js';
 import { User } from '../models/User.js';
@@ -69,6 +70,7 @@ function toListResponse(o: any, usersById: Map<string, { name: string; identific
 
 export async function getOrders(req: Request, res: Response): Promise<Response | void> {
   try {
+    const authReq = req as AuthRequest;
     const area = typeof req.query.area === 'string' ? req.query.area.trim() : '';
     const state = typeof req.query.state === 'string' ? req.query.state.trim() : '';
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
@@ -77,6 +79,11 @@ export async function getOrders(req: Request, res: Response): Promise<Response |
     const filter: Record<string, unknown> = {};
     if (area) filter.area = area;
     if (state) filter.state = state;
+    if (authReq.user?.role === 'admin') {
+      const userBranch = String(authReq.user.branch ?? '').trim();
+      if (!userBranch) return res.status(403).json({ error: 'Branch not assigned for this admin' });
+      filter.branch = userBranch;
+    }
     if (search) {
       const re = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
       filter.$or = [{ no: re }, { code: re }, { clientName: re }, { branch: re }, { series: re }, { brand: re }, { model: re }];
@@ -115,9 +122,16 @@ export async function getOrders(req: Request, res: Response): Promise<Response |
 
 export async function createOrder(req: Request, res: Response): Promise<Response | void> {
   try {
+    const authReq = req as AuthRequest;
     const body = req.body as Record<string, unknown>;
 
-    const branch = String(body.branch ?? '').trim();
+    let branch = String(body.branch ?? '').trim();
+    if (authReq.user?.role === 'admin') {
+      const userBranch = String(authReq.user.branch ?? '').trim();
+      if (!userBranch) return res.status(403).json({ error: 'Branch not assigned for this admin' });
+      if (branch && branch !== userBranch) return res.status(403).json({ error: 'Cannot create orders for another branch' });
+      branch = userBranch;
+    }
     const clientId = parseInt(String(body.clientId ?? ''), 10);
     const brand = String(body.brand ?? '').trim();
     const model = String(body.model ?? '').trim();

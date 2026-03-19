@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import type { AuthRequest } from '../middleware/auth.js';
 import { Branch } from '../models/Branch.js';
 
 function toResponse(branch: {
@@ -19,9 +20,17 @@ function toResponse(branch: {
   };
 }
 
-export async function getAllBranches(_req: Request, res: Response): Promise<Response | void> {
+export async function getAllBranches(req: Request, res: Response): Promise<Response | void> {
   try {
-    const branches = await Branch.find().sort({ branchName: 1 }).lean();
+    const authReq = req as AuthRequest;
+    const isAdmin = authReq.user?.role === 'admin';
+    const userBranch = isAdmin ? String(authReq.user?.branch ?? '').trim() : '';
+
+    if (isAdmin && !userBranch) return res.status(403).json({ error: 'Branch not assigned for this admin' });
+    const branches = isAdmin
+      ? await Branch.find({ branchName: userBranch }).sort({ branchName: 1 }).lean()
+      : await Branch.find().sort({ branchName: 1 }).lean();
+
     res.json({
       branches: branches.map((b) =>
         toResponse({
@@ -42,10 +51,18 @@ export async function getAllBranches(_req: Request, res: Response): Promise<Resp
 
 export async function getBranchById(req: Request, res: Response): Promise<Response | void> {
   try {
+    // Keep handler compatible with Express's `Request` type.
+    const authReq = req as AuthRequest;
     const { id } = req.params;
     const branch = await Branch.findById(id).lean();
     if (!branch) {
       return res.status(404).json({ error: 'Branch not found' });
+    }
+    if (authReq.user?.role === 'admin') {
+      const userBranch = String(authReq.user.branch ?? '').trim();
+      if (!userBranch || branch.branchName !== userBranch) {
+        return res.status(404).json({ error: 'Branch not found' });
+      }
     }
     res.json({
       branch: toResponse({

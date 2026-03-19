@@ -4,7 +4,7 @@ import { config } from '../config/index.js';
 import { User } from '../models/User.js';
 
 export interface AuthRequest extends Request {
-  user?: { _id: string; email: string; name: string; role: string; roleId: string };
+  user?: { _id: string; email: string; name: string; role: string; roleId: string; branch?: string };
 }
 
 export async function authMiddleware(
@@ -30,6 +30,7 @@ export async function authMiddleware(
       name: user.name,
       role: role?.slug ?? '',
       roleId: role?._id != null ? String(role._id) : '',
+      branch: (user as any).branch ?? '',
     };
     next();
   } catch (err) {

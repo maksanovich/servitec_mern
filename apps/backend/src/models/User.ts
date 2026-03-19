@@ -9,6 +9,12 @@ export interface IUser extends Document {
   phone?: string;
   avatar?: string;
   role: Types.ObjectId;
+  /**
+   * Branch name the user is allowed to manage.
+   * Used for scoping "admin" role data (orders/accessories/services).
+   * Super-admin users can leave this empty.
+   */
+  branch?: string;
   state: 'active' | 'inactive';
   comparePassword(candidate: string): Promise<boolean>;
 }
@@ -49,6 +55,11 @@ const userSchema = new mongoose.Schema<IUser>(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Role',
       required: true,
+    },
+    branch: {
+      type: String,
+      default: '',
+      trim: true,
     },
     state: {
       type: String,
