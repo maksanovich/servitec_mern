@@ -8,6 +8,7 @@ export interface OrderListItem {
   id: string;
   no: string;
   code: string;
+  createdAt?: string;
   priority: OrderPriority;
   state: OrderState;
   area: OrderArea;
