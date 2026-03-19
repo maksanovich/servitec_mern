@@ -55,6 +55,7 @@ function toListResponse(o: any, usersById: Map<string, { name: string; identific
     id: o._id,
     no: o.no,
     code: o.code,
+    createdAt: o.createdAt ? new Date(o.createdAt).toISOString() : undefined,
     priority: o.priority,
     state: o.state,
     area: o.area,
