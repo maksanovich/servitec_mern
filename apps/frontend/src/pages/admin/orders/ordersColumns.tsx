@@ -21,9 +21,6 @@ function onStore(order: Order) {
 function onReplacement(order: Order) {
   console.log('Replacement', order);
 }
-function onMaintenance(order: Order) {
-  console.log('Maintenance', order);
-}
 function onPrint(order: Order) {
   const url = `/admin/order/${order.id}/print`;
   window.open(url, '_blank', 'noopener,noreferrer');
@@ -36,10 +33,20 @@ function ActionDropdown({
   order,
   onRequestDelete,
   isDeleteLoading,
+  onMaintenanceClick,
+  onStoreClick,
+  onReplacementClick,
+  onEditBudgetClick,
+  onDeliverClick,
 }: {
   order: Order;
   onRequestDelete: (order: Order) => void;
   isDeleteLoading?: boolean;
+  onMaintenanceClick?: (order: Order) => void;
+  onStoreClick?: (order: Order) => void;
+  onReplacementClick?: (order: Order) => void;
+  onEditBudgetClick?: (order: Order) => void;
+  onDeliverClick?: (order: Order) => void;
 }) {
   function onDelete(ord: Order) {
     if (isDeleteLoading) return;
@@ -97,7 +104,11 @@ function ActionDropdown({
             type="button"
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-200 hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20"
             onClick={() => {
-              onMaintenance(order);
+              if (onMaintenanceClick) {
+                onMaintenanceClick(order);
+              } else {
+                console.log('Maintenance', order);
+              }
               setOpen(false);
             }}
           >
@@ -144,21 +155,20 @@ function ActionDropdown({
           >
             <Printer className="w-4 h-4" /> Print
           </button>
-          <button
-            type="button"
-            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-rose-700 dark:text-rose-200 hover:bg-rose-500/10 dark:hover:bg-rose-500/20 disabled:opacity-50"
-            onClick={() => { onDelete(order); setOpen(false); }}
-            disabled={isDeleteLoading}
-          >
-            <Trash2 className="w-4 h-4" /> {isDeleteLoading ? 'Deleting…' : 'Delete'}
-          </button>
         </>
       ) : order.area === 'waiting-parts' ? (
         <>
           <button
             type="button"
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
-            onClick={() => { onDeliver(order); setOpen(false); }}
+            onClick={() => {
+              if (onDeliverClick) {
+                onDeliverClick(order);
+              } else {
+                onDeliver(order);
+              }
+              setOpen(false);
+            }}
           >
             <Truck className="w-4 h-4" /> Deliver
           </button>
@@ -183,59 +193,130 @@ function ActionDropdown({
             disabled={isDeleteLoading}
           >
             <Trash2 className="w-4 h-4" /> {isDeleteLoading ? 'Deleting…' : 'Delete'}
+          </button>
+        </>
+      ) : order.area === 'maintenance' ? (
+        <>
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-200 hover:bg-slate-100 dark:hover:bg-slate-700"
+            onClick={() => {
+              if (onEditBudgetClick) {
+                onEditBudgetClick(order);
+              } else {
+                onEditBudget(order);
+              }
+              setOpen(false);
+            }}
+          >
+            <DollarSign className="w-4 h-4" /> Edit budget
+          </button>
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-violet-700 dark:text-violet-200 hover:bg-slate-100 dark:hover:bg-slate-700"
+            onClick={() => {
+              if (onReplacementClick) {
+                onReplacementClick(order);
+              } else {
+                onReplacement(order);
+              }
+              setOpen(false);
+            }}
+          >
+            <RefreshCw className="w-4 h-4" /> Replacement
+          </button>
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-amber-700 dark:text-amber-200 hover:bg-slate-100 dark:hover:bg-slate-700"
+            onClick={() => {
+              if (onStoreClick) {
+                onStoreClick(order);
+              } else {
+                onStore(order);
+              }
+              setOpen(false);
+            }}
+          >
+            <Package className="w-4 h-4" /> Store
+          </button>
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-amber-700 dark:text-amber-200 hover:bg-amber-500/10 dark:hover:bg-amber-500/20"
+            onClick={() => {
+              navigate(`/admin/order/${order.id}/edit`);
+              setOpen(false);
+            }}
+          >
+            <Pencil className="w-4 h-4" /> Edit
+          </button>
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-sky-700 dark:text-sky-200 hover:bg-sky-500/10 dark:hover:bg-sky-500/20"
+            onClick={() => {
+              onPrint(order);
+              setOpen(false);
+            }}
+          >
+            <Printer className="w-4 h-4" /> Print
           </button>
         </>
       ) : order.area === 'warehouse' ? (
         <>
           <button
             type="button"
-            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
-            onClick={() => { onDeliver(order); setOpen(false); }}
-          >
-            <Truck className="w-4 h-4" /> Deliver
-          </button>
-          <button
-            type="button"
-            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-amber-700 dark:text-amber-200 hover:bg-amber-500/10 dark:hover:bg-amber-500/20"
             onClick={() => { navigate(`/admin/order/${order.id}/edit`); setOpen(false); }}
           >
             <Pencil className="w-4 h-4" /> Edit
           </button>
           <button
             type="button"
-            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
-            onClick={() => { onPrint(order); setOpen(false); }}
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-200 hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20"
+            onClick={() => {
+              if (onDeliverClick) {
+                onDeliverClick(order);
+              } else {
+                onDeliver(order);
+              }
+              setOpen(false);
+            }}
           >
-            <Printer className="w-4 h-4" /> Print
+            <Truck className="w-4 h-4" /> Deliver
           </button>
           <button
             type="button"
-            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-rose-700 dark:text-rose-200 hover:bg-rose-500/10 dark:hover:bg-rose-500/20 disabled:opacity-50"
-            onClick={() => { onDelete(order); setOpen(false); }}
-            disabled={isDeleteLoading}
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-sky-700 dark:text-sky-200 hover:bg-sky-500/10 dark:hover:bg-sky-500/20"
+            onClick={() => { onPrint(order); setOpen(false); }}
           >
-            <Trash2 className="w-4 h-4" /> {isDeleteLoading ? 'Deleting…' : 'Delete'}
+            <Printer className="w-4 h-4" /> Print
           </button>
         </>
       ) : (
         <>
           <button
             type="button"
-            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
-            onClick={() => { onEditBudget(order); setOpen(false); }}
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-200 hover:bg-slate-100 dark:hover:bg-slate-700"
+            onClick={() => {
+              if (onEditBudgetClick) {
+                onEditBudgetClick(order);
+              } else {
+                onEditBudget(order);
+              }
+              setOpen(false);
+            }}
           >
             <DollarSign className="w-4 h-4" /> Edit budget
           </button>
           <button
             type="button"
-            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-amber-700 dark:text-amber-200 hover:bg-slate-100 dark:hover:bg-slate-700"
             onClick={() => { onStore(order); setOpen(false); }}
           >
             <Package className="w-4 h-4" /> Store
           </button>
           <button
             type="button"
-            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-violet-700 dark:text-violet-200 hover:bg-slate-100 dark:hover:bg-slate-700"
             onClick={() => { onReplacement(order); setOpen(false); }}
           >
             <RefreshCw className="w-4 h-4" /> Replacement
@@ -287,7 +368,14 @@ function ActionDropdown({
 
 export function getOrdersColumns(
   onRequestDelete: (order: Order) => void,
-  isDeleteLoading?: boolean
+  isDeleteLoading?: boolean,
+  options?: {
+    onMaintenanceClick?: (order: Order) => void;
+    onStoreClick?: (order: Order) => void;
+    onReplacementClick?: (order: Order) => void;
+    onEditBudgetClick?: (order: Order) => void;
+    onDeliverClick?: (order: Order) => void;
+  }
 ): TableColumn<Order>[] {
   return [
   {
@@ -384,7 +472,18 @@ export function getOrdersColumns(
     name: 'Action',
     sortable: false,
     width: '80px',
-    cell: (row) => <ActionDropdown order={row} onRequestDelete={onRequestDelete} isDeleteLoading={isDeleteLoading} />,
+    cell: (row) => (
+      <ActionDropdown
+        order={row}
+        onRequestDelete={onRequestDelete}
+        isDeleteLoading={isDeleteLoading}
+        onMaintenanceClick={options?.onMaintenanceClick}
+        onStoreClick={options?.onStoreClick}
+        onReplacementClick={options?.onReplacementClick}
+        onEditBudgetClick={options?.onEditBudgetClick}
+        onDeliverClick={options?.onDeliverClick}
+      />
+    ),
   },
   {
     id: 'branch',
