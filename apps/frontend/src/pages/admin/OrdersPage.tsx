@@ -44,7 +44,7 @@ export function OrdersPage() {
 
   const [statusConfirm, setStatusConfirm] = useState<{
     order: Order;
-    action: 'to-maintenance' | 'to-warehouse' | 'to-entrance' | 'to-delivery';
+    action: 'to-maintenance' | 'to-warehouse' | 'to-entrance' | 'to-delivery' | 'to-waiting-parts' | 'from-waiting-parts';
   } | null>(null);
   const [statusLoading, setStatusLoading] = useState(false);
   const [statusError, setStatusError] = useState<string | null>(null);
@@ -257,6 +257,24 @@ export function OrdersPage() {
     [token]
   );
 
+  const handleWaitingPartsClick = useCallback(
+    async (order: Order) => {
+      if (!token) return;
+      setStatusError(null);
+      setStatusConfirm({ order, action: 'to-waiting-parts' });
+    },
+    [token]
+  );
+
+  const handleResumeMaintenanceClick = useCallback(
+    async (order: Order) => {
+      if (!token) return;
+      setStatusError(null);
+      setStatusConfirm({ order, action: 'from-waiting-parts' });
+    },
+    [token]
+  );
+
   const openDeliveryModal = useCallback(
     async (order: Order) => {
       if (!token) return;
@@ -304,6 +322,12 @@ export function OrdersPage() {
       } else if (statusConfirm.action === 'to-entrance') {
         await updateOrder(token, statusConfirm.order.id, { area: 'entrance', state: 'income' });
         await refetchOrders();
+      } else if (statusConfirm.action === 'to-waiting-parts') {
+        await updateOrder(token, statusConfirm.order.id, { area: 'waiting-parts', state: 'waiting' });
+        await refetchOrders();
+      } else if (statusConfirm.action === 'from-waiting-parts') {
+        await updateOrder(token, statusConfirm.order.id, { area: 'maintenance', state: 'maintenance' });
+        await refetchOrders();
       } else if (statusConfirm.action === 'to-delivery') {
         setDeliverySaving(true);
         setDeliveryError(null);
@@ -342,8 +366,20 @@ export function OrdersPage() {
         onReplacementClick: handleReplacementClick,
         onEditBudgetClick: handleEditBudgetClick,
         onDeliverClick: openDeliveryModal,
+        onWaitingPartsClick: handleWaitingPartsClick,
+        onResumeMaintenanceClick: handleResumeMaintenanceClick,
       }),
-    [handleDeleteClick, deleteLoading, handleMaintenanceClick, handleStoreClick, handleReplacementClick, handleEditBudgetClick, openDeliveryModal]
+    [
+      handleDeleteClick,
+      deleteLoading,
+      handleMaintenanceClick,
+      handleStoreClick,
+      handleReplacementClick,
+      handleEditBudgetClick,
+      openDeliveryModal,
+      handleWaitingPartsClick,
+      handleResumeMaintenanceClick,
+    ]
   );
 
   const exportPDF = () => exportTableToPDF(tableColumns, filteredDataRef.current, exportOptions);
@@ -689,7 +725,11 @@ export function OrdersPage() {
                 ? `Move order "${statusConfirm.order.no}" to Warehouse?`
                 : statusConfirm.action === 'to-entrance'
                   ? `Move order "${statusConfirm.order.no}" back to Entrance?`
-                  : `Mark order "${statusConfirm.order.no}" as Delivered?`
+                  : statusConfirm.action === 'to-waiting-parts'
+                    ? `Put order "${statusConfirm.order.no}" on hold until the spare part arrives? It will appear under Waiting for spare parts.`
+                    : statusConfirm.action === 'from-waiting-parts'
+                      ? `Move order "${statusConfirm.order.no}" back to Maintenance now that the part is available?`
+                      : `Mark order "${statusConfirm.order.no}" as Delivered?`
             : ''
         }
         confirmLabel="Yes"

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, DollarSign, Package, RefreshCw, Printer, Pencil, Truck, Wrench, Trash2 } from 'lucide-react';
+import { ChevronDown, DollarSign, Package, RefreshCw, Printer, Pencil, Truck, Wrench, Trash2, Clock } from 'lucide-react';
 import { Badge } from '../../../components/ui';
 import type { TableColumn } from '../../../components/datatable';
 import type { Order } from './types';
@@ -38,6 +38,8 @@ function ActionDropdown({
   onReplacementClick,
   onEditBudgetClick,
   onDeliverClick,
+  onWaitingPartsClick,
+  onResumeMaintenanceClick,
 }: {
   order: Order;
   onRequestDelete: (order: Order) => void;
@@ -47,6 +49,8 @@ function ActionDropdown({
   onReplacementClick?: (order: Order) => void;
   onEditBudgetClick?: (order: Order) => void;
   onDeliverClick?: (order: Order) => void;
+  onWaitingPartsClick?: (order: Order) => void;
+  onResumeMaintenanceClick?: (order: Order) => void;
 }) {
   function onDelete(ord: Order) {
     if (isDeleteLoading) return;
@@ -160,17 +164,15 @@ function ActionDropdown({
         <>
           <button
             type="button"
-            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-200 hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20"
             onClick={() => {
-              if (onDeliverClick) {
-                onDeliverClick(order);
-              } else {
-                onDeliver(order);
+              if (onResumeMaintenanceClick) {
+                onResumeMaintenanceClick(order);
               }
               setOpen(false);
             }}
           >
-            <Truck className="w-4 h-4" /> Deliver
+            <Wrench className="w-4 h-4" /> Part received — resume maintenance
           </button>
           <button
             type="button"
@@ -210,6 +212,18 @@ function ActionDropdown({
             }}
           >
             <DollarSign className="w-4 h-4" /> Edit budget
+          </button>
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-amber-700 dark:text-amber-200 hover:bg-amber-500/10 dark:hover:bg-amber-500/20"
+            onClick={() => {
+              if (onWaitingPartsClick) {
+                onWaitingPartsClick(order);
+              }
+              setOpen(false);
+            }}
+          >
+            <Clock className="w-4 h-4" /> Waiting for spare part
           </button>
           <button
             type="button"
@@ -375,6 +389,8 @@ export function getOrdersColumns(
     onReplacementClick?: (order: Order) => void;
     onEditBudgetClick?: (order: Order) => void;
     onDeliverClick?: (order: Order) => void;
+    onWaitingPartsClick?: (order: Order) => void;
+    onResumeMaintenanceClick?: (order: Order) => void;
   }
 ): TableColumn<Order>[] {
   return [
@@ -482,6 +498,8 @@ export function getOrdersColumns(
         onReplacementClick={options?.onReplacementClick}
         onEditBudgetClick={options?.onEditBudgetClick}
         onDeliverClick={options?.onDeliverClick}
+        onWaitingPartsClick={options?.onWaitingPartsClick}
+        onResumeMaintenanceClick={options?.onResumeMaintenanceClick}
       />
     ),
   },
