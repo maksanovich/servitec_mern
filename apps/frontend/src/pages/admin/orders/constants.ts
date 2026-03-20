@@ -23,7 +23,7 @@ export const stateLabel: Record<Order['state'], string> = {
   maintenance: 'Maintenance',
   warehouse: 'Warehouse',
   delivery: 'Delivery',
-  waiting: 'Waiting',
+  waiting: 'Waiting for spare part',
   no_solution: 'No Solution',
   finished: 'Finished',
 };
@@ -33,5 +33,5 @@ export const AREA_TABS: { id: OrderArea; label: string; icon: typeof Wrench }[] 
   { id: 'maintenance', label: 'Maintenance Area', icon: Wrench },
   { id: 'warehouse', label: 'Warehouse Area', icon: Package },
   { id: 'delivery', label: 'Delivery Area', icon: Truck },
-  { id: 'waiting-parts', label: 'Waiting Area Spare Parts', icon: Clock },
+  { id: 'waiting-parts', label: 'Waiting for spare parts', icon: Clock },
 ];
