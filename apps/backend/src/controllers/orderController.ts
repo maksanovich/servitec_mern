@@ -4,6 +4,7 @@ import path from 'path';
 import PDFDocument from 'pdfkit';
 import { Order, type IOrderBudgetLine, type OrderArea, type OrderPriority, type OrderState } from '../models/Order.js';
 import { Client } from '../models/Client.js';
+import { Product } from '../models/Product.js';
 import { User } from '../models/User.js';
 import { Company } from '../models/Company.js';
 
@@ -291,6 +292,12 @@ export async function createOrder(req: Request, res: Response): Promise<Response
     if (!series) return res.status(400).json({ error: 'series is required' });
     if (!type) return res.status(400).json({ error: 'type is required' });
     if (!technician) return res.status(400).json({ error: 'technician is required' });
+
+    // Product must exist and be active for the selected branch.
+    const productDoc = await Product.findOne({ branch, product: type, state: 'active' }).lean();
+    if (!productDoc) {
+      return res.status(400).json({ error: 'Product not available for this branch' });
+    }
 
     const client = await Client.findOne({ clientesid: clientId }).lean();
     if (!client) return res.status(404).json({ error: 'Client not found' });

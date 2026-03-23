@@ -72,12 +72,10 @@ function App() {
             <Route path="accessories" element={<AccessoriesPage />} />
             <Route path="accessories/new" element={<AdminPlaceholder title="New Accessory" />} />
             <Route path="products" element={<ProductsPage />} />
-            <Route path="products/new" element={<AdminPlaceholder title="New Product" />} />
             <Route path="services" element={<ServicesSparePartsPage />} />
             <Route path="income" element={<IncomePage />} />
             <Route path="company" element={<CompanyPage />} />
             <Route path="branch" element={<BranchPage />} />
-            <Route path="branch/new" element={<AdminPlaceholder title="New Branch" />} />
             <Route path="users" element={<UserPage />} />
             <Route path="roles" element={<RolePage />} />
             <Route path="docs" element={<AdminPlaceholder title="Documentation" />} />
