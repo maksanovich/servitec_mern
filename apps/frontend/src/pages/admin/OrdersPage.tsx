@@ -1,6 +1,6 @@
 import { useMemo, useRef, useCallback, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Home, Wrench, FileText, FileSpreadsheet, Plus, Minus, X } from 'lucide-react';
+import { Home, Wrench, FileText, FileSpreadsheet, Plus, Minus, X, Upload } from 'lucide-react';
 import { PageHeader, Card, Button, ButtonGroup, ConfirmDialog, Modal, Input, Loader } from '../../components/ui';
 import {
   DataTableWithToolbar,
@@ -19,6 +19,8 @@ import { OrderExpandedRow } from './orders/OrderExpandedRow';
 import { useAuth } from '../../contexts/AuthContext';
 import { deleteOrder, getOrders, updateOrder, getOrderById, type OrderBudgetLine } from '../../api/orders';
 import { getServicesSpareParts, type ServiceSparePartItem } from '../../api/servicesSpareParts';
+import { uploadImage } from '../../api/uploads';
+import noImageUrl from '../../assets/images/noimage.png';
 
 export type { Order, OrderArea };
 
@@ -35,6 +37,9 @@ interface BudgetLineItem {
 
 export function OrdersPage() {
   const { token } = useAuth();
+  const MAX_ORDER_PHOTO_BYTES = 150 * 1024 * 1024; // 150MB (>= 100MB)
+  const ACCEPT_ORDER_IMAGES = 'image/jpeg,image/png,image/webp,image/gif';
+
   const [activeArea, setActiveArea] = useState<OrderArea>('entrance');
   const filteredDataRef = useRef<Order[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -61,6 +66,14 @@ export function OrdersPage() {
   const [deliveryLoading, setDeliveryLoading] = useState(false);
   const [deliverySaving, setDeliverySaving] = useState(false);
   const [deliveryError, setDeliveryError] = useState<string | null>(null);
+
+  const [warehouseMoveOrder, setWarehouseMoveOrder] = useState<Order | null>(null);
+  const [warehouseAfterPhoto, setWarehouseAfterPhoto] = useState<string | null>(null);
+  const [warehousePhotoError, setWarehousePhotoError] = useState<string | null>(null);
+  const [warehouseAfterPhotoFile, setWarehouseAfterPhotoFile] = useState<File | null>(null);
+  const [warehouseSaving, setWarehouseSaving] = useState(false);
+  const warehousePhotoInputRef = useRef<HTMLInputElement>(null);
+  const warehouseAfterObjectUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -240,10 +253,15 @@ export function OrdersPage() {
   );
 
   const handleStoreClick = useCallback(
-    async (order: Order) => {
+    (order: Order) => {
       if (!token) return;
-      setStatusError(null);
-      setStatusConfirm({ order, action: 'to-warehouse' });
+      setWarehouseMoveOrder(order);
+      if (warehouseAfterObjectUrlRef.current) {
+        URL.revokeObjectURL(warehouseAfterObjectUrlRef.current);
+        warehouseAfterObjectUrlRef.current = null;
+      }
+      setWarehouseAfterPhoto(null);
+      setWarehousePhotoError(null);
     },
     [token]
   );
@@ -317,8 +335,12 @@ export function OrdersPage() {
         await updateOrder(token, statusConfirm.order.id, { area: 'maintenance', state: 'maintenance' });
         await refetchOrders();
       } else if (statusConfirm.action === 'to-warehouse') {
-        await updateOrder(token, statusConfirm.order.id, { area: 'warehouse', state: 'warehouse' });
-        await refetchOrders();
+        // Moving to warehouse now requires an after-repair photo.
+        // Open a modal so the user can upload it before updating the order.
+        setWarehouseMoveOrder(statusConfirm.order);
+        setWarehouseAfterPhoto(null);
+        setWarehousePhotoError(null);
+        setStatusConfirm(null);
       } else if (statusConfirm.action === 'to-entrance') {
         await updateOrder(token, statusConfirm.order.id, { area: 'entrance', state: 'income' });
         await refetchOrders();
@@ -357,6 +379,79 @@ export function OrdersPage() {
     setStatusConfirm(null);
     setStatusError(null);
   }, [statusLoading]);
+
+  const closeWarehouseModal = useCallback(() => {
+    if (warehouseSaving) return;
+    if (warehouseAfterObjectUrlRef.current) {
+      URL.revokeObjectURL(warehouseAfterObjectUrlRef.current);
+      warehouseAfterObjectUrlRef.current = null;
+    }
+    setWarehouseMoveOrder(null);
+    setWarehouseAfterPhoto(null);
+    setWarehouseAfterPhotoFile(null);
+    setWarehousePhotoError(null);
+    if (warehousePhotoInputRef.current) warehousePhotoInputRef.current.value = '';
+  }, [warehouseSaving]);
+
+  const handleWarehousePhotoFile = useCallback(
+    (file: File) => {
+      setWarehousePhotoError(null);
+      if (!file.type.startsWith('image/')) {
+        setWarehousePhotoError('Please select an image (JPEG, PNG, WebP or GIF).');
+        return;
+      }
+      if (file.size > MAX_ORDER_PHOTO_BYTES) {
+        setWarehousePhotoError(`Image must be under ${(MAX_ORDER_PHOTO_BYTES / (1024 * 1024)).toFixed(0)}MB.`);
+        return;
+      }
+
+      if (warehouseAfterObjectUrlRef.current) {
+        URL.revokeObjectURL(warehouseAfterObjectUrlRef.current);
+        warehouseAfterObjectUrlRef.current = null;
+      }
+
+      const objectUrl = URL.createObjectURL(file);
+      warehouseAfterObjectUrlRef.current = objectUrl;
+      setWarehouseAfterPhotoFile(file);
+      setWarehouseAfterPhoto(objectUrl);
+    },
+    [MAX_ORDER_PHOTO_BYTES]
+  );
+
+  const handleWarehouseMove = useCallback(async () => {
+    if (!token || !warehouseMoveOrder) return;
+    setWarehouseSaving(true);
+    setWarehousePhotoError(null);
+    try {
+      let photoValue = warehouseAfterPhoto?.trim() ?? '';
+
+      if (warehouseAfterPhotoFile) {
+        const { url } = await uploadImage(token, warehouseAfterPhotoFile, 'order-after');
+        photoValue = url;
+        setWarehouseAfterPhoto(url);
+        setWarehouseAfterPhotoFile(null);
+        if (warehouseAfterObjectUrlRef.current) {
+          URL.revokeObjectURL(warehouseAfterObjectUrlRef.current);
+          warehouseAfterObjectUrlRef.current = null;
+        }
+      }
+
+      if (!photoValue) {
+        setWarehousePhotoError('After-repair photo is required when moving to warehouse.');
+        return;
+      }
+      await updateOrder(token, warehouseMoveOrder.id, { area: 'warehouse', state: 'warehouse', photoAfterRepair: photoValue });
+      await refetchOrders();
+      setWarehouseMoveOrder(null);
+      setWarehouseAfterPhoto(null);
+      setWarehousePhotoError(null);
+      if (warehousePhotoInputRef.current) warehousePhotoInputRef.current.value = '';
+    } catch (e) {
+      setWarehousePhotoError(e instanceof Error ? e.message : 'Failed to move order');
+    } finally {
+      setWarehouseSaving(false);
+    }
+  }, [token, warehouseMoveOrder, warehouseAfterPhoto, warehouseAfterPhotoFile, refetchOrders]);
 
   const tableColumns = useMemo(
     () =>
@@ -569,6 +664,100 @@ export function OrdersPage() {
           >
             Keep
           </Button>
+        </div>
+      </Modal>
+
+      <Modal
+        open={!!warehouseMoveOrder}
+        onClose={closeWarehouseModal}
+        title="Move to Warehouse"
+        size="lg"
+      >
+        {warehousePhotoError && (
+          <div className="mb-4 rounded-lg border border-red-200 dark:border-red-900/40 bg-red-50/50 dark:bg-red-950/20 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+            {warehousePhotoError}
+          </div>
+        )}
+
+        <div className="space-y-4">
+          <div>
+            <p className="text-sm text-slate-600">
+              Upload the after-repair/fixed photo before moving this order to the warehouse.
+            </p>
+          </div>
+
+          <div className="flex items-start gap-4">
+            <div className="relative shrink-0">
+              <img
+                src={warehouseAfterPhoto && warehouseAfterPhoto.trim() ? warehouseAfterPhoto : noImageUrl}
+                alt=""
+                width={120}
+                height={120}
+                className="size-[120px] rounded-lg object-cover border-2 border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700"
+              />
+              {warehouseAfterPhoto && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (warehouseAfterObjectUrlRef.current) {
+                      URL.revokeObjectURL(warehouseAfterObjectUrlRef.current);
+                      warehouseAfterObjectUrlRef.current = null;
+                    }
+                    setWarehouseAfterPhoto(null);
+                    setWarehouseAfterPhotoFile(null);
+                    setWarehousePhotoError(null);
+                    if (warehousePhotoInputRef.current) warehousePhotoInputRef.current.value = '';
+                  }}
+                  className="absolute -top-1 -right-1 p-1 rounded-full bg-red-500 text-white hover:bg-red-600 shadow"
+                  title="Remove photo"
+                  aria-label="Remove after-repair photo"
+                  disabled={warehouseSaving}
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <input
+                ref={warehousePhotoInputRef}
+                type="file"
+                accept={ACCEPT_ORDER_IMAGES}
+                className="hidden"
+                disabled={warehouseSaving}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleWarehousePhotoFile(file);
+                  e.target.value = '';
+                }}
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                leftIcon={Upload}
+                onClick={() => warehousePhotoInputRef.current?.click()}
+                disabled={warehouseSaving}
+              >
+                Upload After Photo
+              </Button>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <Button type="button" variant="red" size="md" onClick={closeWarehouseModal} disabled={warehouseSaving}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="primary"
+              size="md"
+              onClick={handleWarehouseMove}
+              isLoading={warehouseSaving}
+            >
+              Move to Warehouse
+            </Button>
+          </div>
         </div>
       </Modal>
 

@@ -60,6 +60,7 @@ export function TableRow({ className = '', children, ...props }: TableRowProps) 
 
 interface TableCellProps extends HTMLAttributes<HTMLTableCellElement> {
   children: React.ReactNode;
+  colSpan?: number;
 }
 
 export function TableCell({ className = '', children, ...props }: TableCellProps) {

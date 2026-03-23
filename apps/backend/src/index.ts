@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import fs from 'fs';
+import path from 'path';
 import { config } from './config/index.js';
 import { connectDB } from './db/connection.js';
 import { seedAdminIfNeeded } from './db/seedAdmin.js';
@@ -14,6 +16,15 @@ const PORT = config.port;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve uploaded images (for <img src="/uploads/...">).
+const UPLOAD_ROOT = path.resolve(process.cwd(), 'uploads');
+try {
+  fs.mkdirSync(UPLOAD_ROOT, { recursive: true });
+} catch {
+  // ignore; upload route will fail loudly if it can't write
+}
+app.use('/uploads', express.static(UPLOAD_ROOT));
 
 // API routes
 app.use('/api', apiRouter);

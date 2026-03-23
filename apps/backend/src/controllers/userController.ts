@@ -2,8 +2,6 @@ import { Request, Response } from 'express';
 import { User } from '../models/User.js';
 import { Role } from '../models/Role.js';
 
-const MAX_AVATAR_LENGTH = 500 * 1024; // 500KB for data URL
-
 function toResponse(user: {
   _id: unknown;
   email: string;
@@ -94,9 +92,6 @@ export async function createUser(req: Request, res: Response): Promise<Response 
     if (!email || !password || !roleId) {
       return res.status(400).json({ error: 'email, password and roleId are required' });
     }
-    if (avatar !== undefined && typeof avatar === 'string' && avatar.length > MAX_AVATAR_LENGTH) {
-      return res.status(400).json({ error: 'Avatar image is too large (max 500KB)' });
-    }
     const role = await Role.findById(roleId);
     if (!role) {
       return res.status(400).json({ error: 'Invalid role' });
@@ -151,9 +146,6 @@ export async function updateUser(req: Request, res: Response): Promise<Response 
     const user = await User.findById(id).select('+password');
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
-    }
-    if (avatar !== undefined && typeof avatar === 'string' && avatar.length > MAX_AVATAR_LENGTH) {
-      return res.status(400).json({ error: 'Avatar image is too large (max 500KB)' });
     }
     if (name !== undefined) user.name = String(name).trim();
     if (identification !== undefined) user.identification = String(identification).trim();

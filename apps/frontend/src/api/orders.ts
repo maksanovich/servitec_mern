@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { apiFetch, publicApiFetch } from './client';
 
 export type OrderPriority = 'low' | 'normal' | 'high' | 'urgent';
 export type OrderArea = 'entrance' | 'maintenance' | 'warehouse' | 'delivery' | 'waiting-parts';
@@ -21,6 +21,7 @@ export interface OrderListItem {
   equipmentCondition: string;
   technicalReport: string;
   total: number;
+  advancement: number;
   branch: string;
 }
 
@@ -58,11 +59,12 @@ export interface CreateOrderPayload {
   technicalReport?: string;
   diagnosis?: 'yes' | 'no' | boolean;
   warranty?: 'yes' | 'no' | boolean;
-  password?: string;
   fianceeDate?: string;
   advancement?: number | string;
   accessories?: string[];
   budgetLines?: Array<{ serviceId: string; name: string; price: number; amount: number; total: number }>;
+  photoBeforeRepair?: string;
+  photoAfterRepair?: string;
 }
 
 export async function createOrder(
@@ -117,13 +119,32 @@ export interface OrderDetail {
   technicalReport: string;
   diagnosis: boolean;
   warranty: boolean;
-  password: string;
   fianceeDate: string;
   advancement: number;
 
   accessories: string[];
   budgetLines: OrderBudgetLine[];
   total: number;
+
+  photoBeforeRepair: string;
+  photoAfterRepair: string;
+}
+
+/** Public tracking response (by code, no auth) */
+export interface OrderTrackPublic {
+  code: string;
+  state: OrderState;
+  area: OrderArea;
+  type: string;
+  branch: string;
+  customer: string;
+  brand: string;
+  model: string;
+  series: string;
+  equipment: string;
+  createdAt?: string;
+  photoBeforeRepair: string;
+  photoAfterRepair: string;
 }
 
 export type UpdateOrderPayload = Partial<{
@@ -141,11 +162,12 @@ export type UpdateOrderPayload = Partial<{
   technicalReport: string;
   diagnosis: 'yes' | 'no' | boolean;
   warranty: 'yes' | 'no' | boolean;
-  password: string;
   fianceeDate: string;
   advancement: number | string;
   accessories: string[];
   budgetLines: Array<{ serviceId: string; name: string; price: number; amount: number; total: number }>;
+  photoBeforeRepair?: string | null;
+  photoAfterRepair?: string | null;
 }>;
 
 export async function getOrderById(
@@ -183,5 +205,14 @@ export async function deleteOrder(token: string | null, id: string): Promise<voi
     const data = await res.json().catch(() => ({}));
     throw new Error(data.error || 'Failed to delete order');
   }
+}
+
+export async function trackOrderByCode(code: string): Promise<{ order: OrderTrackPublic }> {
+  const trimmed = code.trim();
+  if (!trimmed) throw new Error('Tracking code is required');
+  const res = await publicApiFetch(`/orders/track/${encodeURIComponent(trimmed)}`);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to track order');
+  return data;
 }
 

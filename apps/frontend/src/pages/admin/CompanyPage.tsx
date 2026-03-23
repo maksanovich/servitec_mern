@@ -108,6 +108,7 @@ export function CompanyPage() {
           setEditingCompany(null);
         }}
         company={editingCompany}
+        token={token}
         onSuccess={() => {}}
         onSubmit={handleCompanySubmit}
       />

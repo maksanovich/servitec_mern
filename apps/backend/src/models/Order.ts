@@ -42,6 +42,11 @@ export interface IOrder extends Omit<Document, 'model'> {
   accessories: string[];
   budgetLines: IOrderBudgetLine[];
   total: number;
+
+  /** Data URL (e.g. image/jpeg;base64,...) — intake photo */
+  photoBeforeRepair: string;
+  /** Data URL — photo after repair */
+  photoAfterRepair: string;
 }
 
 const orderBudgetLineSchema = new mongoose.Schema<IOrderBudgetLine>(
@@ -90,6 +95,9 @@ const orderSchema = new mongoose.Schema<IOrder>(
     accessories: { type: [String], default: [] },
     budgetLines: { type: [orderBudgetLineSchema], default: [] },
     total: { type: Number, default: 0 },
+
+    photoBeforeRepair: { type: String, default: '' },
+    photoAfterRepair: { type: String, default: '' },
   },
   { timestamps: true }
 );
