@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.js';
+import { requirePage } from '../middleware/rbac.js';
 import {
   createProduct,
   deleteProduct,
@@ -11,6 +12,7 @@ import {
 const router = Router();
 
 router.use(authMiddleware);
+router.use(requirePage('/admin/products'));
 
 router.get('/', getProducts);
 router.get('/:id', getProductById);

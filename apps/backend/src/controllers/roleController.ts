@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { Role } from '../models/Role.js';
+import { isValidPageList, normalizeAdminPath } from '../constants/adminPages.js';
 
 export async function getAllRoles(_req: Request, res: Response): Promise<Response | void> {
   try {
@@ -10,6 +11,7 @@ export async function getAllRoles(_req: Request, res: Response): Promise<Respons
         name: r.name,
         slug: r.slug,
         description: r.description ?? '',
+        pages: Array.isArray(r.pages) ? r.pages.map((p) => normalizeAdminPath(String(p))) : [],
         state: r.state ?? 'active',
       })),
     });
@@ -32,6 +34,7 @@ export async function getRoleById(req: Request, res: Response): Promise<Response
         name: role.name,
         slug: role.slug,
         description: role.description ?? '',
+        pages: Array.isArray(role.pages) ? role.pages.map((p) => normalizeAdminPath(String(p))) : [],
         state: role.state ?? 'active',
       },
     });
@@ -43,19 +46,24 @@ export async function getRoleById(req: Request, res: Response): Promise<Response
 
 export async function createRole(req: Request, res: Response): Promise<Response | void> {
   try {
-    const { name, slug, description, state } = req.body as {
+    const { name, slug, description, state, pages } = req.body as {
       name: string;
       slug: string;
       description?: string;
       state?: 'active' | 'inactive';
+      pages?: string[];
     };
     if (!name || !slug) {
       return res.status(400).json({ error: 'name and slug are required' });
+    }
+    if (pages !== undefined && !isValidPageList(pages)) {
+      return res.status(400).json({ error: 'Invalid pages list' });
     }
     const role = await Role.create({
       name: String(name).trim(),
       slug: String(slug).trim().toLowerCase(),
       description: description != null ? String(description).trim() : '',
+      pages: pages != null ? pages.map((p) => normalizeAdminPath(String(p))) : [],
       state: state === 'inactive' ? 'inactive' : 'active',
     });
     res.status(201).json({
@@ -64,6 +72,7 @@ export async function createRole(req: Request, res: Response): Promise<Response 
         name: role.name,
         slug: role.slug,
         description: role.description ?? '',
+        pages: Array.isArray(role.pages) ? role.pages.map((p) => normalizeAdminPath(String(p))) : [],
         state: role.state ?? 'active',
       },
     });
@@ -80,15 +89,22 @@ export async function createRole(req: Request, res: Response): Promise<Response 
 export async function updateRole(req: Request, res: Response): Promise<Response | void> {
   try {
     const { id } = req.params;
-    const { name, slug, description, state } = req.body as {
+    const { name, slug, description, state, pages } = req.body as {
       name?: string;
       slug?: string;
       description?: string;
       state?: 'active' | 'inactive';
+      pages?: string[];
     };
     const role = await Role.findById(id);
     if (!role) {
       return res.status(404).json({ error: 'Role not found' });
+    }
+    if (pages !== undefined) {
+      if (!isValidPageList(pages)) {
+        return res.status(400).json({ error: 'Invalid pages list' });
+      }
+      role.pages = pages.map((p) => normalizeAdminPath(String(p)));
     }
     if (name !== undefined) role.name = String(name).trim();
     if (slug !== undefined) role.slug = String(slug).trim().toLowerCase();
@@ -101,6 +117,7 @@ export async function updateRole(req: Request, res: Response): Promise<Response 
         name: role.name,
         slug: role.slug,
         description: role.description ?? '',
+        pages: Array.isArray(role.pages) ? role.pages.map((p) => normalizeAdminPath(String(p))) : [],
         state: role.state ?? 'active',
       },
     });

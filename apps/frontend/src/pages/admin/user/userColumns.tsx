@@ -4,7 +4,8 @@ import { ChevronDown, Pencil, Trash2, GitBranch } from 'lucide-react';
 import { Badge } from '../../../components/ui';
 import type { TableColumn } from '../../../components/datatable';
 import type { User } from './types';
-import noImageUrl from '../../../assets/images/noimage.png';
+import noImageUrl from '../../../assets/images/profile.png';
+import { resolveMediaSrc } from '../../../utils/mediaUrl';
 
 const actionBtnClass =
   'p-1.5 rounded text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200 transition-colors';
@@ -144,13 +145,20 @@ function ActionDropdown({
 }
 
 function UserAvatar({ src }: { src?: string | null }) {
+  const [failed, setFailed] = useState(false);
+  const resolved = resolveMediaSrc(src);
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
+  const url = failed || !resolved ? noImageUrl : resolved;
   return (
     <img
-      src={src && src.trim() ? src : noImageUrl}
+      src={url}
       alt=""
       width={40}
       height={40}
       className="size-10 rounded-full object-cover bg-slate-100 dark:bg-slate-700"
+      onError={() => setFailed(true)}
     />
   );
 }

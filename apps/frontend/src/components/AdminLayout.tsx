@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import logoUrl from '../assets/images/logo.png';
 import { useAuth } from '../contexts/AuthContext';
@@ -30,6 +30,7 @@ import {
   ShoppingBag,
   Tag,
 } from 'lucide-react';
+import { userCanAccessPage } from '../constants/adminPages';
 
 interface NavItem {
   path: string;
@@ -87,6 +88,16 @@ export function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+
+  const visibleNavGroups = useMemo(() => {
+    if (!user?.role) return navGroups;
+    return navGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter((item) => userCanAccessPage(user, item.path)),
+      }))
+      .filter((g) => g.items.length > 0);
+  }, [user]);
   const { company } = useCompany();
   const { isDark, toggleTheme } = useTheme();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -127,7 +138,7 @@ export function AdminLayout() {
           </Link>
         </div>
         <nav className="flex-1 overflow-y-auto py-4 px-2">
-          {navGroups.map((group, index) => (
+          {visibleNavGroups.map((group, index) => (
             <div key={group.label ?? `nav-group-${index}`} className="mb-4">
               {group.label && !sidebarCollapsed && (
                 <div className="px-3 py-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider">

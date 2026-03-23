@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { AdminLayout } from './components/AdminLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { RequirePage } from './components/RequirePage';
 import { AuthProvider } from './contexts/AuthContext';
 import { CompanyProvider } from './contexts/CompanyContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -45,7 +46,16 @@ function App() {
             <Route path="blog" element={<BlogPage />} />
             <Route path="track" element={<TrackPage />} />
           </Route>
-          <Route path="/admin/order/:id/print" element={<OrderPrintPage />} />
+          <Route
+            path="/admin/order/:id/print"
+            element={
+              <ProtectedRoute>
+                <RequirePage page="/admin/order">
+                  <OrderPrintPage />
+                </RequirePage>
+              </ProtectedRoute>
+            }
+          />
           <Route path="/admin/login" element={<LoginPage />} />
           <Route
             path="/admin"
@@ -57,28 +67,175 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route index element={<DashboardPage />} />
+            <Route
+              index
+              element={
+                <RequirePage page="/admin">
+                  <DashboardPage />
+                </RequirePage>
+              }
+            />
             <Route path="profile" element={<ProfilePage />} />
-            <Route path="config" element={<AdminPlaceholder title="Configuration" />} />
-            <Route path="activity" element={<AdminPlaceholder title="Activity" />} />
-            <Route path="order" element={<OrdersPage />} />
-            <Route path="order/new" element={<NewOrderPage />} />
-            <Route path="order/:id/edit" element={<NewOrderPage />} />
-            <Route path="clients" element={<CustomersPage />} />
-            <Route path="brand" element={<BrandsPage />} />
-            <Route path="brand/new" element={<AdminPlaceholder title="New Brand" />} />
-            <Route path="models" element={<ModelsPage />} />
-            <Route path="model/new" element={<AdminPlaceholder title="New Model" />} />
-            <Route path="accessories" element={<AccessoriesPage />} />
-            <Route path="accessories/new" element={<AdminPlaceholder title="New Accessory" />} />
-            <Route path="products" element={<ProductsPage />} />
-            <Route path="services" element={<ServicesSparePartsPage />} />
-            <Route path="income" element={<IncomePage />} />
-            <Route path="company" element={<CompanyPage />} />
-            <Route path="branch" element={<BranchPage />} />
-            <Route path="users" element={<UserPage />} />
-            <Route path="roles" element={<RolePage />} />
-            <Route path="docs" element={<AdminPlaceholder title="Documentation" />} />
+            <Route
+              path="config"
+              element={
+                <RequirePage page="/admin">
+                  <AdminPlaceholder title="Configuration" />
+                </RequirePage>
+              }
+            />
+            <Route
+              path="activity"
+              element={
+                <RequirePage page="/admin">
+                  <AdminPlaceholder title="Activity" />
+                </RequirePage>
+              }
+            />
+            <Route
+              path="order"
+              element={
+                <RequirePage page="/admin/order">
+                  <OrdersPage />
+                </RequirePage>
+              }
+            />
+            <Route
+              path="order/new"
+              element={
+                <RequirePage page="/admin/order">
+                  <NewOrderPage />
+                </RequirePage>
+              }
+            />
+            <Route
+              path="order/:id/edit"
+              element={
+                <RequirePage page="/admin/order">
+                  <NewOrderPage />
+                </RequirePage>
+              }
+            />
+            <Route
+              path="clients"
+              element={
+                <RequirePage page="/admin/clients">
+                  <CustomersPage />
+                </RequirePage>
+              }
+            />
+            <Route
+              path="brand"
+              element={
+                <RequirePage page="/admin/brand">
+                  <BrandsPage />
+                </RequirePage>
+              }
+            />
+            <Route
+              path="brand/new"
+              element={
+                <RequirePage page="/admin/brand">
+                  <AdminPlaceholder title="New Brand" />
+                </RequirePage>
+              }
+            />
+            <Route
+              path="models"
+              element={
+                <RequirePage page="/admin/models">
+                  <ModelsPage />
+                </RequirePage>
+              }
+            />
+            <Route
+              path="model/new"
+              element={
+                <RequirePage page="/admin/models">
+                  <AdminPlaceholder title="New Model" />
+                </RequirePage>
+              }
+            />
+            <Route
+              path="accessories"
+              element={
+                <RequirePage page="/admin/accessories">
+                  <AccessoriesPage />
+                </RequirePage>
+              }
+            />
+            <Route
+              path="accessories/new"
+              element={
+                <RequirePage page="/admin/accessories">
+                  <AdminPlaceholder title="New Accessory" />
+                </RequirePage>
+              }
+            />
+            <Route
+              path="products"
+              element={
+                <RequirePage page="/admin/products">
+                  <ProductsPage />
+                </RequirePage>
+              }
+            />
+            <Route
+              path="services"
+              element={
+                <RequirePage page="/admin/services">
+                  <ServicesSparePartsPage />
+                </RequirePage>
+              }
+            />
+            <Route
+              path="income"
+              element={
+                <RequirePage page="/admin/income">
+                  <IncomePage />
+                </RequirePage>
+              }
+            />
+            <Route
+              path="company"
+              element={
+                <RequirePage page="/admin/company">
+                  <CompanyPage />
+                </RequirePage>
+              }
+            />
+            <Route
+              path="branch"
+              element={
+                <RequirePage page="/admin/branch">
+                  <BranchPage />
+                </RequirePage>
+              }
+            />
+            <Route
+              path="users"
+              element={
+                <RequirePage page="/admin/users">
+                  <UserPage />
+                </RequirePage>
+              }
+            />
+            <Route
+              path="roles"
+              element={
+                <RequirePage page="/admin/roles">
+                  <RolePage />
+                </RequirePage>
+              }
+            />
+            <Route
+              path="docs"
+              element={
+                <RequirePage page="/admin/docs">
+                  <AdminPlaceholder title="Documentation" />
+                </RequirePage>
+              }
+            />
           </Route>
           <Route path="/admin/dashboard" element={<Navigate to="/admin" replace />} />
           <Route path="/admin/workshop-config" element={<Navigate to="/admin/clients" replace />} />

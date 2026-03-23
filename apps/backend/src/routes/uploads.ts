@@ -3,6 +3,7 @@ import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
 import { authMiddleware } from '../middleware/auth.js';
+import { requireUploadPageAccess } from '../middleware/rbac.js';
 import { uploadImage } from '../controllers/uploadsController.js';
 
 type UploadCategory = 'order-before' | 'order-after' | 'avatar' | 'company-logo';
@@ -64,7 +65,7 @@ const upload = multer({
 const router = Router();
 
 router.use(authMiddleware);
-router.post('/image', upload.single('file'), uploadImage);
+router.post('/image', requireUploadPageAccess, upload.single('file'), uploadImage);
 
 // Basic error formatting for multer failures (file size, filter, etc.)
 router.use((err: any, _req: any, res: any, _next: any) => {

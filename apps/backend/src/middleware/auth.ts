@@ -2,9 +2,17 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config/index.js';
 import { User } from '../models/User.js';
+import { getEffectivePages } from '../constants/adminPages.js';
 
 export interface AuthRequest extends Request {
-  user?: { _id: string; email: string; name: string; role: string; roleId: string };
+  user?: {
+    _id: string;
+    email: string;
+    name: string;
+    role: string;
+    roleId: string;
+    pages: string[];
+  };
 }
 
 export async function authMiddleware(
@@ -23,13 +31,20 @@ export async function authMiddleware(
     const user = await User.findById(decoded.id).populate('role');
     if (!user) return res.status(401).json({ error: 'User not found' });
 
-    const role = user.role as unknown as { _id: unknown; slug: string } | null;
+    const role = user.role as unknown as {
+      _id: unknown;
+      slug: string;
+      pages?: string[];
+    } | null;
+    const slug = role?.slug ?? '';
+    const pages = role ? getEffectivePages({ slug: role.slug, pages: role.pages }) : [];
     req.user = {
       _id: user._id.toString(),
       email: user.email,
       name: user.name,
-      role: role?.slug ?? '',
+      role: slug,
       roleId: role?._id != null ? String(role._id) : '',
+      pages,
     };
     next();
   } catch (err) {

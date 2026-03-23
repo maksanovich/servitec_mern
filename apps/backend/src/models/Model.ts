@@ -1,6 +1,6 @@
 import mongoose, { Document, Model as MongooseModel } from 'mongoose';
 
-export interface IEquipmentModel extends Document {
+export interface IEquipmentModel extends Omit<Document, 'model'> {
   brand: string;
   model: string;
   state: 'active' | 'inactive';

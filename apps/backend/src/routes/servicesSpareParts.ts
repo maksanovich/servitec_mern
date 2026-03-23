@@ -7,10 +7,12 @@ import {
   deleteServiceSparePart,
 } from '../controllers/serviceSparePartController.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { requirePage } from '../middleware/rbac.js';
 
 const router = Router();
 
 router.use(authMiddleware);
+router.use(requirePage('/admin/services'));
 
 router.get('/', getAllServicesSpareParts);
 router.get('/:id', getServiceSparePartById);

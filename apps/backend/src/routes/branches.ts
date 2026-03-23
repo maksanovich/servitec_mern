@@ -7,10 +7,12 @@ import {
   deleteBranch,
 } from '../controllers/branchController.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { requirePage } from '../middleware/rbac.js';
 
 const router = Router();
 
 router.use(authMiddleware);
+router.use(requirePage('/admin/branch'));
 
 router.get('/', getAllBranches);
 router.get('/:id', getBranchById);

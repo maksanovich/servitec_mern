@@ -7,10 +7,12 @@ import {
   deleteRole,
 } from '../controllers/roleController.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { requireSuperAdmin } from '../middleware/rbac.js';
 
 const router = Router();
 
 router.use(authMiddleware);
+router.use(requireSuperAdmin);
 
 router.get('/', getAllRoles);
 router.get('/:id', getRoleById);

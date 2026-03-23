@@ -5,6 +5,7 @@ export interface Role {
   name: string;
   slug: string;
   description: string;
+  pages: string[];
   state: 'active' | 'inactive';
 }
 
@@ -52,7 +53,13 @@ export async function createRole(
 export async function updateRole(
   token: string | null,
   id: string,
-  body: { name?: string; slug?: string; description?: string; state?: 'active' | 'inactive' }
+  body: {
+    name?: string;
+    slug?: string;
+    description?: string;
+    state?: 'active' | 'inactive';
+    pages?: string[];
+  }
 ): Promise<{ role: Role }> {
   if (!token) throw new Error('Not authenticated');
   const res = await apiFetch(`/roles/${id}`, {

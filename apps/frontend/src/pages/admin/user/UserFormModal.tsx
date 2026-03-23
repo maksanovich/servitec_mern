@@ -5,6 +5,7 @@ import type { User } from './types';
 import * as rolesApi from '../../../api/roles';
 import { uploadImage } from '../../../api/uploads';
 import noImageUrl from '../../../assets/images/noimage.png';
+import { resolveMediaSrc } from '../../../utils/mediaUrl';
 
 const MAX_AVATAR_BYTES = 150 * 1024 * 1024; // 150MB (>= 100MB)
 const ACCEPT_IMAGES = 'image/jpeg,image/png,image/webp,image/gif';
@@ -209,7 +210,7 @@ export function UserFormModal({
           <div className="flex items-center gap-4">
             <div className="relative">
               <img
-                src={avatar && avatar.trim() ? avatar : noImageUrl}
+                src={resolveMediaSrc(avatar) || noImageUrl}
                 alt=""
                 width={80}
                 height={80}
