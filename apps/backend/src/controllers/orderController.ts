@@ -192,7 +192,23 @@ export async function getOrders(req: Request, res: Response): Promise<Response |
       filter.$or = [{ no: re }, { code: re }, { clientName: re }, { branch: re }, { series: re }, { brand: re }, { model: re }];
     }
 
-    const orders = await Order.find(filter).sort({ createdAt: -1 }).limit(limit).lean();
+    const orders = await Order.find(filter).limit(limit).lean();
+
+    // Prioritize equipment in service for more than 7 days since arrival (`createdAt`)
+    // so that older/overdue items appear first by default in the UI table.
+    const nowMs = Date.now();
+    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+    orders.sort((a: any, b: any) => {
+      const aCreated = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const bCreated = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
+
+      const aInServiceOld = String(a?.state ?? '') !== 'finished' && nowMs - aCreated > sevenDaysMs;
+      const bInServiceOld = String(b?.state ?? '') !== 'finished' && nowMs - bCreated > sevenDaysMs;
+
+      if (aInServiceOld !== bInServiceOld) return aInServiceOld ? -1 : 1; // old first
+      // Keep existing behavior as secondary key: newest first.
+      return bCreated - aCreated;
+    });
 
     const techIds = Array.from(
       new Set(
