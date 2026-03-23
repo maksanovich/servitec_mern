@@ -90,6 +90,7 @@ export function RolePage() {
     slug: string;
     description: string;
     state: 'active' | 'inactive';
+    pages: string[];
   }) => {
     if (!token) return;
     if (editingRole) {

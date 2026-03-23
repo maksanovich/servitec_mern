@@ -4,6 +4,7 @@ import { ChevronDown, Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '../../../components/ui';
 import type { TableColumn } from '../../../components/datatable';
 import type { Role } from './types';
+import { SUPER_ADMIN_SLUG } from '../../../constants/adminPages';
 
 const actionBtnClass =
   'p-1.5 rounded text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200 transition-colors';
@@ -99,16 +100,18 @@ function ActionDropdown({
             >
               <Pencil className="w-4 h-4" /> Edit
             </button>
-            <button
-              type="button"
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-              onClick={() => {
-                onDelete(role);
-                setOpen(false);
-              }}
-            >
-              <Trash2 className="w-4 h-4" /> Delete
-            </button>
+            {role.slug !== SUPER_ADMIN_SLUG && (
+              <button
+                type="button"
+                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                onClick={() => {
+                  onDelete(role);
+                  setOpen(false);
+                }}
+              >
+                <Trash2 className="w-4 h-4" /> Delete
+              </button>
+            )}
           </div>,
           document.body
         )}

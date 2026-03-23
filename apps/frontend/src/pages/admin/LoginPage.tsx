@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../../components/ui';
+import { firstAccessiblePagePath, userCanAccessPath } from '../../constants/adminPages';
 
 const DEFAULT_EMAIL = 'admin@servitec.local';
 const DEFAULT_PASSWORD = 'superadmin123';
@@ -11,14 +12,15 @@ export function LoginPage() {
   const [password, setPassword] = useState(DEFAULT_PASSWORD);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname ?? '/admin';
 
-  if (isAuthenticated) {
-    return <Navigate to={from} replace />;
+  if (isAuthenticated && user) {
+    const target = userCanAccessPath(user, from) ? from : firstAccessiblePagePath(user);
+    return <Navigate to={target} replace />;
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -26,8 +28,9 @@ export function LoginPage() {
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
-      navigate(from, { replace: true });
+      const loggedInUser = await login(email, password);
+      const target = userCanAccessPath(loggedInUser, from) ? from : firstAccessiblePagePath(loggedInUser);
+      navigate(target, { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {

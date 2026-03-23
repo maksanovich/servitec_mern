@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.js';
+import { requireAnyPage } from '../middleware/rbac.js';
 import {
   createOrder,
   deleteOrder,
@@ -15,6 +16,7 @@ const router = Router();
 router.get('/track/:code', getOrderTrackByCode);
 
 router.use(authMiddleware);
+router.use(requireAnyPage(['/admin/order', '/admin/income']));
 
 router.get('/', getOrders);
 router.get('/:id', getOrderById);

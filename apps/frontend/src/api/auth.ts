@@ -4,6 +4,8 @@ export interface UserRole {
   id: string;
   slug: string;
   name: string;
+  /** Effective admin paths this role may open (full list for super admin). */
+  pages?: string[];
 }
 
 export interface LoginResponse {

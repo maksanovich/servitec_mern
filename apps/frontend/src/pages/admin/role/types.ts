@@ -3,5 +3,6 @@ export interface Role {
   name: string;
   slug: string;
   description: string;
+  pages: string[];
   state: 'active' | 'inactive';
 }

@@ -42,7 +42,7 @@ export async function getAllUsers(_req: Request, res: Response): Promise<Respons
           phone: u.phone,
           avatar: u.avatar,
           state: u.state,
-          role: u.role as { _id: unknown; name: string; slug?: string } | null,
+          role: u.role as unknown as { _id: unknown; name: string; slug?: string } | null,
         })
       ),
     });
@@ -68,7 +68,7 @@ export async function getUserById(req: Request, res: Response): Promise<Response
         phone: user.phone,
         avatar: user.avatar,
         state: user.state,
-        role: user.role as { _id: unknown; name: string; slug?: string } | null,
+        role: user.role as unknown as { _id: unknown; name: string; slug?: string } | null,
       }),
     });
   } catch (err) {
@@ -108,7 +108,7 @@ export async function createUser(req: Request, res: Response): Promise<Response 
     });
     await user.populate('role', 'name slug');
     const populated = user.toObject();
-    const roleObj = populated.role as { _id: unknown; name: string; slug?: string } | null;
+    const roleObj = populated.role as unknown as { _id: unknown; name: string; slug?: string } | null;
     res.status(201).json({
       user: toResponse({
         _id: user._id,
@@ -163,7 +163,8 @@ export async function updateUser(req: Request, res: Response): Promise<Response 
     await user.save();
     await user.populate('role', 'name slug');
     const populated = user.toObject();
-    const roleObj = (populated as { role?: { _id: unknown; name: string; slug?: string } }).role ?? null;
+    const roleObj =
+      (populated as unknown as { role?: { _id: unknown; name: string; slug?: string } }).role ?? null;
     res.json({
       user: toResponse({
         _id: user._id,

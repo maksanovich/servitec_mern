@@ -7,10 +7,12 @@ import {
   deleteUser,
 } from '../controllers/userController.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { requireSuperAdmin } from '../middleware/rbac.js';
 
 const router = Router();
 
 router.use(authMiddleware);
+router.use(requireSuperAdmin);
 
 router.get('/', getAllUsers);
 router.get('/:id', getUserById);

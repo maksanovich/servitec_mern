@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import { getClients, createClient, updateClient, deleteClient } from '../controllers/clientController.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { requirePage } from '../middleware/rbac.js';
 
 const router = Router();
 
 router.use(authMiddleware);
+router.use(requirePage('/admin/clients'));
 
 router.get('/', getClients);
 router.post('/', createClient);
