@@ -38,6 +38,7 @@ import { getBrands } from '../../api/brands';
 import { getModels } from '../../api/models';
 import { getAccessories, type Accessory } from '../../api/accessories';
 import { getServicesSpareParts } from '../../api/servicesSpareParts';
+import { getProducts } from '../../api/products';
 import { getUsers, type User as ApiUser } from '../../api/users';
 import { createOrder, getOrderById, updateOrder } from '../../api/orders';
 import { uploadImage } from '../../api/uploads';
@@ -45,16 +46,6 @@ import noImageUrl from '../../assets/images/noimage.png';
 
 const MAX_ORDER_PHOTO_BYTES = 150 * 1024 * 1024; // 150MB (>= 100MB)
 const ACCEPT_ORDER_IMAGES = 'image/jpeg,image/png,image/webp,image/gif';
-
-const PRODUCT_OPTIONS: SelectOption[] = [
-  { value: 'mainboard', label: 'MAINBOARD' },
-  { value: 'ssd', label: 'SSD drive' },
-  { value: 'others', label: 'OTHERS' },
-  { value: 'laptop', label: 'LAPTOP' },
-  { value: 'printer', label: 'PRINTER' },
-  { value: 'computer', label: 'COMPUTER' },
-  { value: 'equipment', label: 'EQUIPMENT' },
-];
 
 const AREA_OPTIONS: SelectOption[] = [
   { value: 'entrance', label: 'Entrance Area' },
@@ -131,6 +122,8 @@ export function NewOrderPage() {
   const [model, setModel] = useState('');
   const [series, setSeries] = useState('');
   const [product, setProduct] = useState('');
+  const [productOptions, setProductOptions] = useState<SelectOption[]>([]);
+  const [productsLoading, setProductsLoading] = useState(false);
   const [area, setArea] = useState('entrance');
   const [stateArea, setStateArea] = useState('income');
   const [technician, setTechnician] = useState('');
@@ -298,6 +291,45 @@ export function NewOrderPage() {
 
   useEffect(() => {
     if (!token) return;
+
+    if (!branch) {
+      setProductOptions([]);
+      if (!isEditMode) setProduct('');
+      return;
+    }
+
+    let mounted = true;
+    (async () => {
+      setProductsLoading(true);
+      try {
+        const { products } = await getProducts(token, { branch, state: 'active' });
+        if (!mounted) return;
+
+        setProductOptions(products.map((p) => ({ value: p.product, label: p.product })));
+        setProduct((prev) => {
+          const trimmed = prev.trim();
+          const hasSelected = products.some((p) => p.product === trimmed);
+          if (hasSelected) return trimmed;
+          if (!trimmed || !isEditMode) return products[0]?.product ?? '';
+          return trimmed; // preserve in edit mode (so existing orders still show the current value)
+        });
+      } catch (e) {
+        console.error(e);
+        if (!mounted) return;
+        setProductOptions([]);
+        if (!isEditMode) setProduct('');
+      } finally {
+        if (mounted) setProductsLoading(false);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [token, branch, isEditMode]);
+
+  useEffect(() => {
+    if (!token) return;
     let mounted = true;
     const q = customerQuery.trim();
 
@@ -380,6 +412,15 @@ export function NewOrderPage() {
     }
     return Array.from(unique.values()).sort().map((label) => ({ id: label, label }));
   }, [accessoriesData, branch]);
+
+  const effectiveProductOptions = useMemo(() => {
+    const trimmed = product.trim();
+    if (!trimmed) return productOptions;
+    if (productOptions.some((o) => o.value === trimmed)) return productOptions;
+    if (!isEditMode) return productOptions;
+    // Keep the current order value selected even if it is not active anymore.
+    return [{ value: trimmed, label: trimmed }, ...productOptions];
+  }, [product, productOptions, isEditMode]);
 
   const availableServices = useMemo(() => {
     const filtered = branch ? servicesData.filter((s) => s.branch === branch) : servicesData;
@@ -703,21 +744,29 @@ export function NewOrderPage() {
               </div>
               <div>
                 <label className={labelClass()}>Product <span className="text-red-500 dark:text-red-400">*</span></label>
-                <div className="flex flex-wrap gap-3 pt-2">
-                  {PRODUCT_OPTIONS.map((opt) => (
-                    <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="radio"
-                        name="product"
-                        value={opt.value}
-                        checked={product === opt.value}
-                        onChange={() => setProduct(opt.value)}
-                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-slate-700 dark:text-slate-300">{opt.label}</span>
-                    </label>
-                  ))}
-                </div>
+                {productsLoading ? (
+                  <div className="pt-2">
+                    <Loader size="md" />
+                  </div>
+                ) : effectiveProductOptions.length ? (
+                  <div className="flex flex-wrap gap-3 pt-2">
+                    {effectiveProductOptions.map((opt) => (
+                      <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="product"
+                          value={opt.value}
+                          checked={product === opt.value}
+                          onChange={() => setProduct(opt.value)}
+                          className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-slate-700 dark:text-slate-300">{opt.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="pt-2 text-xs text-red-600 dark:text-red-400">No active products for this branch.</p>
+                )}
               </div>
               <div>
                 <label className={labelClass()}>Area <span className="text-red-500 dark:text-red-400">*</span></label>

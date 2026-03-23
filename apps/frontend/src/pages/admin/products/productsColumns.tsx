@@ -10,15 +10,15 @@ const actionBtnClass =
 
 const MENU_WIDTH = 160;
 
-function onEdit(product: Product) {
-  console.log('Edit product', product);
-}
-
-function onDelete(product: Product) {
-  console.log('Delete product', product);
-}
-
-function ActionDropdown({ product }: { product: Product }) {
+function ActionDropdown({
+  product,
+  onEdit,
+  onDelete,
+}: {
+  product: Product;
+  onEdit: (p: Product) => void;
+  onDelete: (p: Product) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -108,42 +108,50 @@ const stateLabel: Record<string, string> = {
   inactive: 'Inactive',
 };
 
-export const productsColumns: TableColumn<Product>[] = [
-  {
-    id: 'branch',
-    name: 'Branch',
-    selector: (row) => row.branch,
-    sortable: true,
-    minWidth: '180px',
-    cell: (row) => (
-      <span className="text-slate-700 dark:text-slate-300">{row.branch}</span>
-    ),
-  },
-  {
-    id: 'product',
-    name: 'Product',
-    selector: (row) => row.product,
-    sortable: true,
-    minWidth: '180px',
-    cell: (row) => (
-      <span className="text-slate-700 dark:text-slate-300">{row.product}</span>
-    ),
-  },
-  {
-    id: 'state',
-    name: 'State',
-    selector: (row) => row.state,
-    sortable: true,
-    width: '120px',
-    cell: (row) => (
-      <Badge variant={stateVariant[row.state]}>{stateLabel[row.state]}</Badge>
-    ),
-  },
-  {
-    id: 'action',
-    name: 'Action',
-    sortable: false,
-    width: '80px',
-    cell: (row) => <ActionDropdown product={row} />,
-  },
-];
+export function getProductsColumns({
+  onEdit,
+  onDelete,
+}: {
+  onEdit: (product: Product) => void;
+  onDelete: (product: Product) => void;
+}): TableColumn<Product>[] {
+  return [
+    {
+      id: 'branch',
+      name: 'Branch',
+      selector: (row) => row.branch,
+      sortable: true,
+      minWidth: '180px',
+      cell: (row) => <span className="text-slate-700 dark:text-slate-300">{row.branch}</span>,
+    },
+    {
+      id: 'product',
+      name: 'Product',
+      selector: (row) => row.product,
+      sortable: true,
+      minWidth: '180px',
+      cell: (row) => <span className="text-slate-700 dark:text-slate-300">{row.product}</span>,
+    },
+    {
+      id: 'state',
+      name: 'State',
+      selector: (row) => row.state,
+      sortable: true,
+      width: '120px',
+      cell: (row) => <Badge variant={stateVariant[row.state]}>{stateLabel[row.state]}</Badge>,
+    },
+    {
+      id: 'action',
+      name: 'Action',
+      sortable: false,
+      width: '80px',
+      cell: (row) => <ActionDropdown product={row} onEdit={onEdit} onDelete={onDelete} />,
+    },
+  ];
+}
+
+// Backwards-compatible export for any existing imports.
+export const productsColumns = getProductsColumns({
+  onEdit: () => {},
+  onDelete: () => {},
+});
