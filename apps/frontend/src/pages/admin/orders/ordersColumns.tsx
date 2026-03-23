@@ -443,6 +443,21 @@ export function getOrdersColumns(
     selector: (row) => row.equipment,
     sortable: true,
     minWidth: '120px',
+    cell: (row) => {
+      const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+      const createdAtMs = row.createdAt ? new Date(row.createdAt).getTime() : NaN;
+      const isInServiceOld = row.state !== 'finished' && Number.isFinite(createdAtMs) && Date.now() - createdAtMs > sevenDaysMs;
+      return (
+        <span
+          className={
+            `text-slate-700 dark:text-slate-300 ${isInServiceOld ? 'animate-pulse text-rose-600 dark:text-rose-300 font-semibold' : ''}`
+          }
+          title={isInServiceOld ? 'In service for more than 7 days' : undefined}
+        >
+          {row.equipment}
+        </span>
+      );
+    },
   },
   {
     id: 'series',

@@ -22,4 +22,5 @@ export interface Order {
   technicalReport: string;
   total: number;
   branch: string;
+  createdAt?: string;
 }
