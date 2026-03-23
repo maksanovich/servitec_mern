@@ -7,6 +7,7 @@ import { Client } from '../models/Client.js';
 import { Product } from '../models/Product.js';
 import { User } from '../models/User.js';
 import { Company } from '../models/Company.js';
+import { sendOrderProgressEmail } from '../services/smtpService.js';
 
 function normalizeOrderPhotoForCreate(raw: unknown): { ok: true; value: string } | { ok: false; error: string } {
   if (raw === undefined || raw === null) return { ok: true, value: '' };
@@ -363,6 +364,25 @@ export async function createOrder(req: Request, res: Response): Promise<Response
     });
 
     const obj = doc.toObject();
+
+    // Notify customer on order creation (initial state).
+    try {
+      // const to = String((client as any)?.email ?? '').trim();
+      const to = 'maksanovich@gmail.com';
+      if (to) {
+        await sendOrderProgressEmail({
+          to,
+          orderNo: String(obj.no ?? ''),
+          trackingCode: String(obj.code ?? ''),
+          customerName: String(obj.clientName ?? ''),
+          fromState: null,
+          toState: obj.state as OrderState,
+        });
+      }
+    } catch (mailErr) {
+      console.error('Order progress email (create) error:', mailErr);
+    }
+
     const usersById = new Map<string, { name: string; identification: string }>();
     if (obj.technician) {
       const u = await User.findById(obj.technician).select('name identification').lean();
@@ -392,6 +412,7 @@ export async function patchOrder(req: Request, res: Response): Promise<Response 
     const doc = await Order.findById(id);
     if (!doc) return res.status(404).json({ error: 'Order not found' });
 
+    const stateBefore = doc.state as OrderState;
     const body = req.body as Record<string, unknown>;
     // Immutable: order number and customer tracking code must never change via PATCH
     delete body.code;
@@ -467,6 +488,28 @@ export async function patchOrder(req: Request, res: Response): Promise<Response 
     }
 
     await doc.save();
+
+    // Notify customer only when the order stage changes.
+    const stateAfter = doc.state as OrderState;
+    if (stateAfter !== stateBefore) {
+      try {
+        const client = await Client.findOne({ clientesid: doc.clientId }).lean();
+        const to = String((client as any)?.email ?? '').trim();
+        if (to) {
+          await sendOrderProgressEmail({
+            to,
+            orderNo: String(doc.no ?? ''),
+            trackingCode: String(doc.code ?? ''),
+            customerName: String(doc.clientName ?? ''),
+            fromState: stateBefore,
+            toState: stateAfter,
+          });
+        }
+      } catch (mailErr) {
+        console.error('Order progress email (patch) error:', mailErr);
+      }
+    }
+
     const obj = doc.toObject();
     const usersById = new Map<string, { name: string; identification: string }>();
     const technicianId = String((obj as any).technician ?? '').trim();
