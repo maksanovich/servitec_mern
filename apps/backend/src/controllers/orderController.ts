@@ -1,9 +1,31 @@
 import { Request, Response } from 'express';
+import fs from 'fs';
+import path from 'path';
 import PDFDocument from 'pdfkit';
 import { Order, type IOrderBudgetLine, type OrderArea, type OrderPriority, type OrderState } from '../models/Order.js';
 import { Client } from '../models/Client.js';
 import { User } from '../models/User.js';
 import { Company } from '../models/Company.js';
+
+function normalizeOrderPhotoForCreate(raw: unknown): { ok: true; value: string } | { ok: false; error: string } {
+  if (raw === undefined || raw === null) return { ok: true, value: '' };
+  if (typeof raw !== 'string') return { ok: false, error: 'Photo must be a string' };
+  const v = raw.trim();
+  if (v === '') return { ok: true, value: '' };
+  return { ok: true, value: v };
+}
+
+/** PATCH: undefined = leave unchanged; null or '' = clear */
+function normalizeOrderPhotoForPatch(
+  raw: unknown
+): { ok: true; value: string; omit: boolean } | { ok: false; error: string } {
+  if (raw === undefined) return { ok: true, value: '', omit: true };
+  if (raw === null) return { ok: true, value: '', omit: false };
+  if (typeof raw !== 'string') return { ok: false, error: 'Photo must be a string' };
+  const v = raw.trim();
+  if (v === '') return { ok: true, value: '', omit: false };
+  return { ok: true, value: v, omit: false };
+}
 
 function randomCode(len = 6): string {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -68,6 +90,7 @@ function toListResponse(o: any, usersById: Map<string, { name: string; identific
     equipmentCondition: String(o.equipmentCondition ?? ''),
     technicalReport: String(o.technicalReport ?? ''),
     total: o.total,
+    advancement: Number.isFinite(Number(o.advancement)) ? Number(o.advancement) : 0,
     branch: o.branch,
   };
 }
@@ -112,13 +135,33 @@ function toDetailResponse(
     technicalReport: String(o.technicalReport ?? ''),
     diagnosis: Boolean(o.diagnosis),
     warranty: Boolean(o.warranty),
-    password: String(o.password ?? ''),
     fianceeDate: String(o.fianceeDate ?? ''),
     advancement: Number.isFinite(Number(o.advancement)) ? Number(o.advancement) : 0,
 
     accessories,
     budgetLines,
     total: Number.isFinite(Number(o.total)) ? Number(o.total) : 0,
+
+    photoBeforeRepair: String(o.photoBeforeRepair ?? ''),
+    photoAfterRepair: String(o.photoAfterRepair ?? ''),
+  };
+}
+
+function toPublicTrackResponse(o: any) {
+  return {
+    code: o.code,
+    state: o.state,
+    area: o.area,
+    type: o.type,
+    branch: o.branch,
+    customer: o.clientName,
+    brand: o.brand,
+    model: o.model,
+    series: o.series,
+    equipment: `${o.brand}(${o.model})`,
+    createdAt: o.createdAt ? new Date(o.createdAt).toISOString() : undefined,
+    photoBeforeRepair: String(o.photoBeforeRepair ?? ''),
+    photoAfterRepair: String(o.photoAfterRepair ?? ''),
   };
 }
 
@@ -127,6 +170,10 @@ function normalizeAccessories(accessories: unknown): string[] {
   return (accessories as unknown[])
     .map((a) => String(a).trim())
     .filter(Boolean);
+}
+
+function isWarehouseTransition(area: unknown, state: unknown): boolean {
+  return String(area ?? '').trim() === 'warehouse' || String(state ?? '').trim() === 'warehouse';
 }
 
 export async function getOrders(req: Request, res: Response): Promise<Response | void> {
@@ -202,6 +249,25 @@ export async function getOrderById(req: Request, res: Response): Promise<Respons
   }
 }
 
+/** Public: lookup by customer tracking code (no auth). */
+export async function getOrderTrackByCode(req: Request, res: Response): Promise<Response | void> {
+  try {
+    const raw = String(req.params.code ?? '')
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '');
+    if (raw.length < 4) return res.status(400).json({ error: 'Invalid tracking code' });
+
+    const order = await Order.findOne({ code: raw }).lean();
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
+    return res.json({ order: toPublicTrackResponse(order) });
+  } catch (err) {
+    console.error('Track order error:', err);
+    return res.status(500).json({ error: 'Server error' });
+  }
+}
+
 export async function createOrder(req: Request, res: Response): Promise<Response | void> {
   try {
     const body = req.body as Record<string, unknown>;
@@ -236,6 +302,14 @@ export async function createOrder(req: Request, res: Response): Promise<Response
     const advancement = Number(body.advancement ?? 0);
     const totalFromLines = budgetLines.reduce((sum, l) => sum + (Number.isFinite(l.total) ? l.total : 0), 0);
 
+    const photoBefore = normalizeOrderPhotoForCreate(body.photoBeforeRepair);
+    if (!photoBefore.ok) return res.status(400).json({ error: photoBefore.error });
+    const photoAfter = normalizeOrderPhotoForCreate(body.photoAfterRepair);
+    if (!photoAfter.ok) return res.status(400).json({ error: photoAfter.error });
+    if (isWarehouseTransition(area, state) && !photoAfter.value.trim()) {
+      return res.status(400).json({ error: 'After-repair photo is required when moving to warehouse' });
+    }
+
     const doc = await Order.create({
       no: await nextOrderNo(),
       code: randomCode(6),
@@ -255,12 +329,14 @@ export async function createOrder(req: Request, res: Response): Promise<Response
       technicalReport: String(body.technicalReport ?? '').trim(),
       diagnosis: String(body.diagnosis ?? 'no') === 'yes' || body.diagnosis === true,
       warranty: String(body.warranty ?? 'no') === 'yes' || body.warranty === true,
-      password: String(body.password ?? '').trim(),
       fianceeDate: String(body.fianceeDate ?? '').trim(),
       advancement: Number.isFinite(advancement) ? advancement : 0,
       accessories,
       budgetLines,
       total: Number.isFinite(totalFromLines) ? totalFromLines : 0,
+
+      photoBeforeRepair: photoBefore.value,
+      photoAfterRepair: photoAfter.value,
     });
 
     const obj = doc.toObject();
@@ -294,6 +370,9 @@ export async function patchOrder(req: Request, res: Response): Promise<Response 
     if (!doc) return res.status(404).json({ error: 'Order not found' });
 
     const body = req.body as Record<string, unknown>;
+    // Immutable: order number and customer tracking code must never change via PATCH
+    delete body.code;
+    delete body.no;
 
     if (body.branch != null) doc.branch = String(body.branch ?? '').trim();
 
@@ -330,7 +409,6 @@ export async function patchOrder(req: Request, res: Response): Promise<Response 
     if (body.diagnosis != null) doc.diagnosis = String(body.diagnosis ?? 'no') === 'yes' || body.diagnosis === true;
     if (body.warranty != null) doc.warranty = String(body.warranty ?? 'no') === 'yes' || body.warranty === true;
 
-    if (body.password != null) doc.password = String(body.password ?? '').trim();
     if (body.fianceeDate != null) doc.fianceeDate = String(body.fianceeDate ?? '').trim();
     if (body.advancement != null) {
       const advancement = Number(body.advancement);
@@ -345,6 +423,24 @@ export async function patchOrder(req: Request, res: Response): Promise<Response 
       const budgetLines = normalizeBudgetLines(body.budgetLines);
       doc.budgetLines = budgetLines;
       doc.total = budgetLines.reduce((sum, l) => sum + (Number.isFinite(l.total) ? l.total : 0), 0);
+    }
+
+    if (body.photoBeforeRepair !== undefined) {
+      const r = normalizeOrderPhotoForPatch(body.photoBeforeRepair);
+      if (!r.ok) return res.status(400).json({ error: r.error });
+      if (!r.omit) (doc as any).photoBeforeRepair = r.value;
+    }
+    if (body.photoAfterRepair !== undefined) {
+      const r = normalizeOrderPhotoForPatch(body.photoAfterRepair);
+      if (!r.ok) return res.status(400).json({ error: r.error });
+      if (!r.omit) (doc as any).photoAfterRepair = r.value;
+    }
+
+    if (isWarehouseTransition(body.area ?? doc.area, body.state ?? doc.state)) {
+      const nextPhotoAfter = String((doc as any).photoAfterRepair ?? '').trim();
+      if (!nextPhotoAfter) {
+        return res.status(400).json({ error: 'After-repair photo is required when moving to warehouse' });
+      }
     }
 
     await doc.save();
@@ -431,7 +527,7 @@ const CODE39_PATTERNS: Record<string, string> = {
   '%': 'NNNWNWNWN',
 };
 
-function drawCode39Barcode(doc: PDFDocument, value: string, x: number, y: number, height: number): void {
+function drawCode39Barcode(doc: any, value: string, x: number, y: number, height: number): void {
   const upper = String(value ?? '').toUpperCase().trim();
   const allowed = new Set(Object.keys(CODE39_PATTERNS));
   const safe = Array.from(upper)
@@ -519,9 +615,20 @@ export async function printOrderPdf(req: Request, res: Response): Promise<Respon
       const trimmed = String(company.logo).trim();
       if (trimmed) {
         try {
-          const base64Match = /^data:image\/[a-zA-Z0-9.+-]+;base64,(.+)$/.exec(trimmed);
-          const base64 = base64Match ? base64Match[1] : trimmed;
-          logoBuffer = Buffer.from(base64, 'base64');
+          const normalized = trimmed.replaceAll('\\', '/');
+          const uploadIdx = normalized.indexOf('/uploads/');
+
+          // Support both legacy base64 logos and the new `/uploads/...` URLs.
+          if (uploadIdx >= 0) {
+            const uploadRoot = path.resolve(process.cwd(), 'uploads');
+            const rel = normalized.slice(uploadIdx + '/uploads/'.length);
+            const logoPath = path.join(uploadRoot, rel);
+            logoBuffer = fs.readFileSync(logoPath);
+          } else {
+            const base64Match = /^data:image\/[a-zA-Z0-9.+-]+;base64,(.+)$/.exec(trimmed);
+            const base64 = base64Match ? base64Match[1] : trimmed;
+            logoBuffer = Buffer.from(base64, 'base64');
+          }
         } catch {
           logoBuffer = null;
         }

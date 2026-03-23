@@ -20,7 +20,6 @@ export interface AgendaItem {
   service: string;
   advancement: string;
   total: string;
-  debt: string;
 }
 
 const columns: TableColumn<AgendaItem>[] = [
@@ -43,13 +42,6 @@ const columns: TableColumn<AgendaItem>[] = [
     selector: (row) => row.total,
     sortable: true,
     sortFunction: (a, b) => parseFloat(a.total.replace(/,/g, '')) - parseFloat(b.total.replace(/,/g, '')),
-  },
-  {
-    id: 'debt',
-    name: 'Debt',
-    selector: (row) => row.debt,
-    sortable: true,
-    sortFunction: (a, b) => parseFloat(a.debt.replace(/,/g, '')) - parseFloat(b.debt.replace(/,/g, '')),
   },
 ];
 
@@ -85,9 +77,9 @@ export function AgendaItemsTable() {
 
     return orders.map((o) => {
       const total = Number.isFinite(Number(o.total)) ? Number(o.total) : 0;
-      const advancementNum = Number.isFinite((o as any).advancement) ? Number((o as any).advancement) : 0;
-      const debt = Math.max(0, total - advancementNum);
-      const advancementPercent = total > 0 ? `${((advancementNum / total) * 100).toFixed(0)}%` : '0%';
+      const advancementNum = Number.isFinite(Number(o.advancement)) ? Number(o.advancement) : 0;
+      const advancementPercent = total > 0 ? `${Math.round((advancementNum / total) * 100)}%` : '0%';
+      const advancementDisplay = `${advancementNum.toFixed(2)} (${advancementPercent})`;
 
       const created = o.createdAt ? new Date(o.createdAt) : null;
       const yyyy = created ? created.getFullYear() : '';
@@ -102,9 +94,8 @@ export function AgendaItemsTable() {
         area: o.area,
         state: o.state,
         service: o.type,
-        advancement: advancementPercent,
+        advancement: advancementDisplay,
         total: total.toFixed(2),
-        debt: debt.toFixed(2),
       };
     });
   }, [orders]);

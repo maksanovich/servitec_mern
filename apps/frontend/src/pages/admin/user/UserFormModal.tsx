@@ -3,9 +3,10 @@ import { Save, Upload, X } from 'lucide-react';
 import { Modal, Input, Button, Select } from '../../../components/ui';
 import type { User } from './types';
 import * as rolesApi from '../../../api/roles';
+import { uploadImage } from '../../../api/uploads';
 import noImageUrl from '../../../assets/images/noimage.png';
 
-const MAX_AVATAR_BYTES = 500 * 1024; // 500KB
+const MAX_AVATAR_BYTES = 150 * 1024 * 1024; // 150MB (>= 100MB)
 const ACCEPT_IMAGES = 'image/jpeg,image/png,image/webp,image/gif';
 
 interface UserFormModalProps {
@@ -47,9 +48,11 @@ export function UserFormModal({
   const [roleOptions, setRoleOptions] = useState<{ value: string; label: string }[]>([]);
   const [avatar, setAvatar] = useState<string | null>(null);
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const avatarObjectUrlRef = useRef<string | null>(null);
 
   const isEdit = !!user;
 
@@ -103,25 +106,29 @@ export function UserFormModal({
       return;
     }
     if (file.size > MAX_AVATAR_BYTES) {
-      setAvatarError(`Image must be under ${MAX_AVATAR_BYTES / 1024}KB.`);
+      setAvatarError(`Image must be under ${(MAX_AVATAR_BYTES / (1024 * 1024)).toFixed(0)}MB.`);
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result as string;
-      if (dataUrl.length > MAX_AVATAR_BYTES) {
-        setAvatarError('Image is too large after encoding.');
-        return;
-      }
-      setAvatar(dataUrl);
-    };
-    reader.onerror = () => setAvatarError('Failed to read file.');
-    reader.readAsDataURL(file);
+
+    if (avatarObjectUrlRef.current) {
+      URL.revokeObjectURL(avatarObjectUrlRef.current);
+      avatarObjectUrlRef.current = null;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    avatarObjectUrlRef.current = objectUrl;
+    setAvatarFile(file);
+    setAvatar(objectUrl);
     e.target.value = '';
   };
 
   const clearAvatar = () => {
+    if (avatarObjectUrlRef.current) {
+      URL.revokeObjectURL(avatarObjectUrlRef.current);
+      avatarObjectUrlRef.current = null;
+    }
     setAvatar(null);
+    setAvatarFile(null);
     setAvatarError(null);
     fileInputRef.current?.value && (fileInputRef.current.value = '');
   };
@@ -155,6 +162,19 @@ export function UserFormModal({
     setError(null);
     setSaving(true);
     try {
+      let avatarValue: string | undefined = avatar ?? undefined;
+      if (avatarFile) {
+        if (!token) throw new Error('Not authenticated.');
+        const { url } = await uploadImage(token, avatarFile, 'avatar');
+        avatarValue = url;
+        setAvatar(url);
+        setAvatarFile(null);
+        if (avatarObjectUrlRef.current) {
+          URL.revokeObjectURL(avatarObjectUrlRef.current);
+          avatarObjectUrlRef.current = null;
+        }
+      }
+
       await onSubmit({
         email: trimmedEmail,
         password: isEdit ? (password || undefined) : password,
@@ -163,7 +183,7 @@ export function UserFormModal({
         phone: trimmedPhone,
         roleId,
         state,
-        avatar: avatar != null ? avatar : (isEdit ? '' : undefined),
+        avatar: avatarValue != null ? avatarValue : (isEdit ? '' : undefined),
       });
       onSuccess();
       onClose();
@@ -226,7 +246,7 @@ export function UserFormModal({
                 Upload image
               </Button>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                JPEG, PNG, WebP or GIF. Max 500KB.
+                JPEG, PNG, WebP or GIF. Max 150MB.
               </p>
               {avatarError && (
                 <p className="text-xs text-red-600 dark:text-red-400">{avatarError}</p>

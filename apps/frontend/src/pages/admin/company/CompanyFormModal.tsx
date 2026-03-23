@@ -3,14 +3,16 @@ import { FileText, Globe, Phone, Mail, MapPin, Map, MessageCircle, Upload, X, Sa
 import { Modal, Input, Button } from '../../../components/ui';
 import type { Company } from './types';
 import defaultLogo from '../../../assets/logo.svg';
+import { uploadImage } from '../../../api/uploads';
 
-const MAX_LOGO_BYTES = 500 * 1024;
+const MAX_LOGO_BYTES = 150 * 1024 * 1024; // 150MB (>= 100MB)
 const ACCEPT_IMAGES = 'image/jpeg,image/png,image/webp,image/gif';
 
 interface CompanyFormModalProps {
   open: boolean;
   onClose: () => void;
   company: Company | null;
+  token: string | null;
   onSuccess: () => void;
   onSubmit: (data: {
     companyName: string;
@@ -29,6 +31,7 @@ export function CompanyFormModal({
   open,
   onClose,
   company,
+  token,
   onSuccess,
   onSubmit,
 }: CompanyFormModalProps) {
@@ -42,9 +45,11 @@ export function CompanyFormModal({
   const [companyInformation, setCompanyInformation] = useState('');
   const [logo, setLogo] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const logoObjectUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -83,18 +88,29 @@ export function CompanyFormModal({
       return;
     }
     if (file.size > MAX_LOGO_BYTES) {
-      setLogoError(`Image must be under ${MAX_LOGO_BYTES / 1024}KB.`);
+      setLogoError(`Image must be under ${(MAX_LOGO_BYTES / (1024 * 1024)).toFixed(0)}MB.`);
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => setLogo(reader.result as string);
-    reader.onerror = () => setLogoError('Failed to read file.');
-    reader.readAsDataURL(file);
+
+    if (logoObjectUrlRef.current) {
+      URL.revokeObjectURL(logoObjectUrlRef.current);
+      logoObjectUrlRef.current = null;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    logoObjectUrlRef.current = objectUrl;
+    setLogoFile(file);
+    setLogo(objectUrl);
     e.target.value = '';
   };
 
   const clearLogo = () => {
+    if (logoObjectUrlRef.current) {
+      URL.revokeObjectURL(logoObjectUrlRef.current);
+      logoObjectUrlRef.current = null;
+    }
     setLogo(null);
+    setLogoFile(null);
     setLogoError(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -139,6 +155,19 @@ export function CompanyFormModal({
     setError(null);
     setSaving(true);
     try {
+      let logoValue = logo ?? '';
+      if (logoFile) {
+        if (!token) throw new Error('Not authenticated.');
+        const { url } = await uploadImage(token, logoFile, 'company-logo');
+        logoValue = url;
+        setLogo(url);
+        setLogoFile(null);
+        if (logoObjectUrlRef.current) {
+          URL.revokeObjectURL(logoObjectUrlRef.current);
+          logoObjectUrlRef.current = null;
+        }
+      }
+
       await onSubmit({
         companyName: trimmedName,
         ruc: trimmedRuc,
@@ -148,7 +177,7 @@ export function CompanyFormModal({
         address: trimmedAddress,
         googleMaps: trimmedGoogleMaps,
         companyInformation: companyInformation.trim(),
-        logo: logo ?? '',
+        logo: logoValue,
       });
       onSuccess();
       onClose();
