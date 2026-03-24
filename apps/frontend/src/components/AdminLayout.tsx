@@ -30,8 +30,12 @@ import {
   Layers,
   ShoppingBag,
   Tag,
+  CheckCheck,
+  Inbox,
+  X,
 } from 'lucide-react';
 import { userCanAccessPage } from '../constants/adminPages';
+import { useNotifications } from '../contexts/NotificationContext';
 
 interface NavItem {
   path: string;
@@ -42,6 +46,18 @@ interface NavItem {
 interface NavGroup {
   label: string | null;
   items: NavItem[];
+}
+
+function formatRelativeTime(ts: number): string {
+  const diff = Date.now() - ts;
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 45) return 'Just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
 }
 
 const navGroups: NavGroup[] = [
@@ -112,12 +128,26 @@ export function AdminLayout() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [appsPanelOpen, setAppsPanelOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
+  const notificationsRef = useRef<HTMLDivElement>(null);
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllRead,
+    remove,
+    clearAll,
+  } = useNotifications();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (profileDropdownRef.current && !profileDropdownRef.current.contains(target)) {
         setProfileDropdownOpen(false);
+      }
+      if (notificationsRef.current && !notificationsRef.current.contains(target)) {
+        setNotificationsOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -141,6 +171,16 @@ export function AdminLayout() {
       document.body.style.overflow = '';
     };
   }, [appsPanelOpen]);
+
+  useEffect(() => {
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setNotificationsOpen(false);
+    }
+    if (notificationsOpen) {
+      document.addEventListener('keydown', handleEscape);
+    }
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [notificationsOpen]);
 
   const handleLogout = () => {
     setProfileDropdownOpen(false);
@@ -235,7 +275,10 @@ export function AdminLayout() {
             </button>
             <button
               type="button"
-              onClick={() => setAppsPanelOpen((prev) => !prev)}
+              onClick={() => {
+                setNotificationsOpen(false);
+                setAppsPanelOpen((prev) => !prev);
+              }}
               className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
               aria-label="Apps"
               aria-expanded={appsPanelOpen}
@@ -243,13 +286,147 @@ export function AdminLayout() {
             >
               <Grid3X3 className="w-5 h-5" />
             </button>
-            <button
-              type="button"
-              className="relative p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-              aria-label="Notifications"
-            >
-              <Bell className="w-5 h-5" />
-            </button>
+            <div className="relative" ref={notificationsRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setAppsPanelOpen(false);
+                  setNotificationsOpen((prev) => !prev);
+                }}
+                className="relative p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                aria-label="Notifications"
+                aria-expanded={notificationsOpen}
+                aria-haspopup="dialog"
+              >
+                <Bell className="w-5 h-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 flex items-center justify-center text-[10px] font-semibold leading-none text-white bg-red-500 rounded-full">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              {notificationsOpen && (
+                <div
+                  role="dialog"
+                  aria-label="Notifications"
+                  className="absolute right-0 top-full mt-2 w-[min(100vw-2rem,22rem)] max-h-[min(28rem,calc(100vh-5rem))] flex flex-col bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl shadow-xl z-[100]"
+                >
+                  <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-slate-200 dark:border-slate-600 flex-shrink-0">
+                    <div>
+                      <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Notifications</h2>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        {notifications.length === 0
+                          ? 'No items yet'
+                          : `${unreadCount} unread`}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {unreadCount > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => markAllRead()}
+                          className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                          title="Mark all as read"
+                          aria-label="Mark all as read"
+                        >
+                          <CheckCheck className="w-4 h-4" />
+                        </button>
+                      )}
+                      {notifications.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => clearAll()}
+                          className="px-2 py-1 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="overflow-y-auto flex-1 min-h-0">
+                    {notifications.length === 0 ? (
+                      <div className="px-4 py-10 text-center text-slate-500 dark:text-slate-400">
+                        <Inbox className="w-10 h-10 mx-auto mb-3 opacity-50" />
+                        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Nothing here yet</p>
+                        <p className="text-xs mt-1 max-w-[16rem] mx-auto">
+                          Important updates from the admin app will appear here when they are recorded.
+                        </p>
+                      </div>
+                    ) : (
+                      <ul className="py-1">
+                        {notifications.map((n) => {
+                          const content = (
+                            <>
+                              <div className="flex items-start justify-between gap-2">
+                                <span
+                                  className={`text-sm font-medium leading-snug ${
+                                    n.read
+                                      ? 'text-slate-600 dark:text-slate-400'
+                                      : 'text-slate-900 dark:text-white'
+                                  }`}
+                                >
+                                  {n.title}
+                                </span>
+                                {!n.read && (
+                                  <span className="mt-1.5 w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" aria-hidden />
+                                )}
+                              </div>
+                              {n.body && (
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">{n.body}</p>
+                              )}
+                              <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+                                {formatRelativeTime(n.createdAt)}
+                              </p>
+                            </>
+                          );
+                          const rowClass = `block w-full text-left pl-4 pr-10 py-3 border-b border-slate-100 dark:border-slate-700/80 last:border-b-0 transition-colors ${
+                            n.read
+                              ? 'bg-transparent'
+                              : 'bg-blue-50/60 dark:bg-blue-900/15'
+                          } hover:bg-slate-50 dark:hover:bg-slate-700/40`;
+                          return (
+                            <li key={n.id} className="group relative">
+                              {n.href ? (
+                                <Link
+                                  to={n.href}
+                                  className={rowClass}
+                                  onClick={() => {
+                                    markAsRead(n.id);
+                                    setNotificationsOpen(false);
+                                  }}
+                                >
+                                  {content}
+                                </Link>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className={rowClass}
+                                  onClick={() => markAsRead(n.id)}
+                                >
+                                  {content}
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  remove(n.id);
+                                }}
+                                className="absolute top-2 right-2 z-10 p-1 rounded opacity-0 group-hover:opacity-100 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/80 dark:hover:bg-slate-600"
+                                aria-label="Dismiss notification"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
             <div className="flex items-center gap-3 pl-4 ml-2 border-l border-slate-200 dark:border-slate-600">
               {!sidebarCollapsed && (
                 <div className="text-right hidden sm:block">

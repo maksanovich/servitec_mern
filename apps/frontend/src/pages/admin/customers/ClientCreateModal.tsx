@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Save } from 'lucide-react';
 import { Modal, Input, Button } from '../../../components/ui';
+import { useNotifications } from '../../../contexts/NotificationContext';
 import { createClient } from '../../../api/clients';
 import type { CreateClientPayload } from '../../../api/clients';
 
@@ -18,6 +19,7 @@ export function ClientCreateModal({
   onSuccess,
   token,
 }: ClientCreateModalProps) {
+  const { addNotification } = useNotifications();
   const [razonsocial, setRazonsocial] = useState('');
   const [direccion, setDireccion] = useState('');
   const [identificacion, setIdentificacion] = useState('');
@@ -73,6 +75,11 @@ export function ClientCreateModal({
       };
       await createClient(token, payload);
       toast.success('Client created successfully');
+      addNotification({
+        title: 'New client added',
+        body: trimmed,
+        href: '/admin/clients',
+      });
       onSuccess();
       onClose();
     } catch (err) {
