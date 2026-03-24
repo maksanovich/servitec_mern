@@ -14,7 +14,11 @@ function openWhatsApp(client: Client) {
   const phone = client.telefono1 || client.telefono2 || client.telefono3 || '';
   const digits = phone.replace(/\D/g, '');
   if (!digits) return;
-  const number = digits.length === 9 ? `51${digits}` : digits;
+  let number = digits;
+  if (!digits.startsWith('593')) {
+    if (digits.startsWith('0') && digits.length >= 10) number = `593${digits.slice(1)}`;
+    else if (digits.length === 9 && digits.startsWith('9')) number = `593${digits}`;
+  }
   const url = `https://wa.me/${number}`;
   window.open(url, '_blank', 'noopener,noreferrer');
 }

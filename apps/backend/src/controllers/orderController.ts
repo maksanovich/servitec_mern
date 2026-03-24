@@ -201,7 +201,10 @@ function toPublicTrackResponse(o: any) {
 function normalizePhoneForWhatsApp(raw: unknown): string {
   const digits = String(raw ?? '').replace(/\D/g, '');
   if (!digits) return '';
+  // Ecuador (+593): WhatsApp expects E.164 without leading +.
+  if (digits.startsWith('593')) return digits;
   if (digits.startsWith('0') && digits.length >= 10) return `593${digits.slice(1)}`;
+  if (digits.length === 9 && digits.startsWith('9')) return `593${digits}`;
   return digits;
 }
 
