@@ -6,10 +6,13 @@ import {
   deleteProduct,
   getProductById,
   getProducts,
+  getProductsPublic,
   updateProduct,
 } from '../controllers/productController.js';
 
 const router = Router();
+
+router.get('/public', getProductsPublic);
 
 router.use(authMiddleware);
 router.use(requirePage('/admin/products'));

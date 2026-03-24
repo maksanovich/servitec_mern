@@ -27,6 +27,19 @@ export async function getProducts(req: Request, res: Response): Promise<Response
   }
 }
 
+/** Public: active products only for landing page (no auth). */
+export async function getProductsPublic(req: Request, res: Response): Promise<Response | void> {
+  try {
+    const products = await Product.find({ state: 'active' })
+      .sort({ branch: 1, product: 1 })
+      .lean();
+    res.json({ products: products.map(toResponse) });
+  } catch (err) {
+    console.error('Get products public error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+}
+
 export async function getProductById(req: Request, res: Response): Promise<Response | void> {
   try {
     const { id } = req.params;

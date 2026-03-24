@@ -1,28 +1,304 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { getProductsPublic } from '../api/products';
+import { getOrdersShowcase } from '../api/orders';
+import type { Product } from '../api/products';
+import type { OrderShowcaseItem } from '../api/orders';
+import noImageUrl from '../assets/images/noimage.png';
+
+const SLIDER_ITEMS = [
+  {
+    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1200',
+    title: 'Professional Repair Services',
+    subtitle: 'Expert technicians for all your equipment needs',
+  },
+  {
+    image: 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=1200',
+    title: 'Quality You Can Trust',
+    subtitle: 'Comprehensive warranty and after-service support',
+  },
+  {
+    image: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=1200',
+    title: 'Fast & Reliable',
+    subtitle: 'Track your order status anytime, anywhere',
+  },
+];
+
+function HeroSlider() {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      setIndex((i) => (i + 1) % SLIDER_ITEMS.length);
+    }, 5000);
+    return () => clearInterval(t);
+  }, []);
+
+  return (
+    <section className="relative rounded-2xl overflow-hidden aspect-[21/9] min-h-[240px] max-h-[420px] bg-slate-800">
+      {SLIDER_ITEMS.map((item, i) => (
+        <div
+          key={i}
+          className={`absolute inset-0 transition-opacity duration-700 ${
+            i === index ? 'opacity-100 z-10' : 'opacity-0 z-0'
+          }`}
+        >
+          <img
+            src={item.image}
+            alt=""
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-8 text-white z-20">
+            <h2 className="text-2xl md:text-3xl font-bold mb-2">{item.title}</h2>
+            <p className="text-lg text-white/90">{item.subtitle}</p>
+          </div>
+        </div>
+      ))}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-30">
+        {SLIDER_ITEMS.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setIndex(i)}
+            className={`w-2.5 h-2.5 rounded-full transition-colors ${
+              i === index ? 'bg-white' : 'bg-white/50 hover:bg-white/70'
+            }`}
+            aria-label={`Go to slide ${i + 1}`}
+          />
+        ))}
+      </div>
+      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-30">
+        <button
+          onClick={() => setIndex((i) => (i - 1 + SLIDER_ITEMS.length) % SLIDER_ITEMS.length)}
+          className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-colors"
+          aria-label="Previous slide"
+        >
+          ‹
+        </button>
+        <button
+          onClick={() => setIndex((i) => (i + 1) % SLIDER_ITEMS.length)}
+          className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-colors"
+          aria-label="Next slide"
+        >
+          ›
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function AboutSection() {
+  return (
+    <section className="py-12 md:py-16">
+      <h2 className="text-2xl font-bold text-slate-900 mb-6">About Us</h2>
+      <div className="prose prose-slate max-w-none">
+        <p className="text-slate-600 leading-relaxed mb-4">
+          <strong>Servitec</strong> provides professional technical service and warranty management
+          for your equipment. Our experienced technicians handle repairs with precision, and we
+          maintain full transparency throughout the process.
+        </p>
+        <p className="text-slate-600 leading-relaxed mb-4">
+          From intake to delivery, we keep you informed. Use your tracking code to check status,
+          view before and after photos, and read technical notes at any time.
+        </p>
+        <p className="text-slate-600 leading-relaxed">
+          We serve multiple branches and offer a wide range of repair solutions for various
+          equipment types. Your satisfaction and equipment longevity are our priorities.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function ProductsSection() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getProductsPublic()
+      .then((r) => setProducts(r.products))
+      .catch(() => setProducts([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <section className="py-12 md:py-16">
+        <h2 className="text-2xl font-bold text-slate-900 mb-6">Our Products & Services</h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-24 rounded-lg bg-slate-200 animate-pulse" />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (products.length === 0) return null;
+
+  const byBranch = products.reduce<Record<string, Product[]>>((acc, p) => {
+    const b = p.branch || 'Other';
+    if (!acc[b]) acc[b] = [];
+    acc[b].push(p);
+    return acc;
+  }, {});
+
+  return (
+    <section className="py-12 md:py-16">
+      <h2 className="text-2xl font-bold text-slate-900 mb-6">Our Products & Services</h2>
+      <div className="space-y-6">
+        {Object.entries(byBranch).map(([branch, items]) => (
+          <div key={branch}>
+            <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">
+              {branch}
+            </h3>
+            <div className="flex flex-wrap gap-3">
+              {items.map((p) => (
+                <span
+                  key={p.id}
+                  className="px-4 py-2 bg-slate-100 text-slate-800 rounded-lg font-medium"
+                >
+                  {p.product}
+                </span>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function OrderShowcaseSection() {
+  const [orders, setOrders] = useState<OrderShowcaseItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<number | null>(null);
+
+  useEffect(() => {
+    getOrdersShowcase(6)
+      .then((r) => setOrders(r.orders))
+      .catch(() => setOrders([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <section className="py-12 md:py-16">
+        <h2 className="text-2xl font-bold text-slate-900 mb-6">Completed Work</h2>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-64 rounded-xl bg-slate-200 animate-pulse" />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (orders.length === 0) return null;
+
+  return (
+    <section className="py-12 md:py-16">
+      <h2 className="text-2xl font-bold text-slate-900 mb-2">Completed Work</h2>
+      <p className="text-slate-500 mb-6">
+        See before & after results and technical notes from our finished repairs.
+      </p>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {orders.map((order, i) => (
+          <div
+            key={order.code}
+            className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow"
+          >
+            <div className="grid grid-cols-2 gap-0 border-b border-slate-100">
+              <div className="p-2 bg-slate-50">
+                <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Before</p>
+                <img
+                  src={order.photoBeforeRepair?.trim() ? order.photoBeforeRepair : noImageUrl}
+                  alt="Before repair"
+                  className="w-full aspect-square object-contain rounded"
+                />
+              </div>
+              <div className="p-2 bg-slate-50">
+                <p className="text-xs font-semibold text-slate-500 uppercase mb-1">After</p>
+                <img
+                  src={order.photoAfterRepair?.trim() ? order.photoAfterRepair : noImageUrl}
+                  alt="After repair"
+                  className="w-full aspect-square object-contain rounded"
+                />
+              </div>
+            </div>
+            <div className="p-4">
+              <p className="font-mono text-sm font-semibold text-slate-900 mb-1">
+                {order.brand} / {order.model}
+              </p>
+              <p className="text-xs text-slate-500 mb-3">
+                {order.type} · {order.branch}
+              </p>
+              {(order.equipmentCondition || order.technicalReport) && (
+                <button
+                  onClick={() => setSelected(selected === i ? null : i)}
+                  className="text-sm text-[var(--color-accent)] hover:underline font-medium"
+                >
+                  {selected === i ? 'Hide notes' : 'Technical notes'}
+                </button>
+              )}
+              {selected === i && (
+                <div className="mt-3 pt-3 border-t border-slate-100 text-sm text-slate-600 space-y-2">
+                  {order.equipmentCondition && (
+                    <p>
+                      <span className="font-semibold text-slate-700">Condition: </span>
+                      {order.equipmentCondition}
+                    </p>
+                  )}
+                  {order.technicalReport && (
+                    <p>
+                      <span className="font-semibold text-slate-700">Report: </span>
+                      {order.technicalReport}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 export function LandingPage() {
   return (
-    <div className="text-center max-w-[640px] mx-auto">
-      <h1 className="text-[clamp(2rem,5vw,3rem)] font-bold tracking-tight leading-tight mb-4 text-slate-900">
-        Technical Service & Warranty
-      </h1>
-      <p className="text-lg text-slate-500 mb-8 leading-relaxed">
-        Professional repair and warranty management for your equipment. Track your order status anytime.
-      </p>
-      <div className="flex gap-3 justify-center flex-wrap">
-        <Link
-          to="/track"
-          className="inline-block px-6 py-3 bg-[var(--color-accent)] text-white font-semibold rounded-lg hover:bg-[var(--color-accent-hover)] transition-colors"
-        >
-          Track Order
-        </Link>
-        <Link
-          to="/blog"
-          className="inline-block px-6 py-3 border border-slate-200 text-slate-900 font-medium rounded-lg hover:border-slate-300 transition-colors"
-        >
-          Browse Solutions
-        </Link>
+    <div className="max-w-[1120px] mx-auto">
+      <div className="mb-10">
+        <HeroSlider />
       </div>
+
+      <div className="text-center mb-12">
+        <h1 className="text-[clamp(2rem,5vw,3rem)] font-bold tracking-tight leading-tight mb-4 text-slate-900">
+          Technical Service & Warranty
+        </h1>
+        <p className="text-lg text-slate-500 mb-8 leading-relaxed max-w-2xl mx-auto">
+          Professional repair and warranty management for your equipment. Track your order status
+          anytime.
+        </p>
+        <div className="flex gap-3 justify-center flex-wrap">
+          <Link
+            to="/track"
+            className="inline-block px-6 py-3 bg-[var(--color-accent)] text-white font-semibold rounded-lg hover:bg-[var(--color-accent-hover)] transition-colors"
+          >
+            Track Order
+          </Link>
+          <Link
+            to="/blog"
+            className="inline-block px-6 py-3 border border-slate-200 text-slate-900 font-medium rounded-lg hover:border-slate-300 transition-colors"
+          >
+            Browse Solutions
+          </Link>
+        </div>
+      </div>
+
+      <AboutSection />
+      <ProductsSection />
+      <OrderShowcaseSection />
     </div>
   );
 }
