@@ -30,4 +30,13 @@ export const incomeColumns: TableColumn<DailyIncomeEntry>[] = [
     sortable: true,
     minWidth: '140px',
   },
+  {
+    id: 'amount',
+    name: 'Amount',
+    selector: (row) => row.amount,
+    sortable: true,
+    sortFunction: (a, b) => a.amount - b.amount,
+    width: '140px',
+    cell: (row) => <span className="font-medium">${row.amount.toFixed(2)}</span>,
+  },
 ];

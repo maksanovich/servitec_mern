@@ -1,5 +1,5 @@
 import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
-import { Home, DollarSign, FileText, FileSpreadsheet, LayoutGrid } from 'lucide-react';
+import { Home, DollarSign, FileText, FileSpreadsheet } from 'lucide-react';
 import { PageHeader, KpiCard, Card, Button, ButtonGroup } from '../../components/ui';
 import {
   DataTableWithToolbar,
@@ -19,6 +19,13 @@ export function IncomePage() {
   const [orders, setOrders] = useState<OrderListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const filteredDataRef = useRef<DailyIncomeEntry[]>([]);
+  const todayFilter = useMemo(() => {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -72,9 +79,13 @@ export function IncomePage() {
 
     const today = new Date();
     const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const endOfToday = new Date(startOfToday);
+    endOfToday.setDate(endOfToday.getDate() + 1);
     const startOfWeek = new Date(startOfToday);
     startOfWeek.setDate(startOfToday.getDate() - 6);
+    const endOfWeek = new Date(endOfToday);
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
 
     let dailyIncome = 0;
     let weeklyIncome = 0;
@@ -99,13 +110,13 @@ export function IncomePage() {
 
       const createdAt = o.createdAt ? new Date(o.createdAt) : null;
       if (createdAt && !Number.isNaN(createdAt.getTime())) {
-        if (createdAt >= startOfToday) {
+        if (createdAt >= startOfToday && createdAt < endOfToday) {
           dailyIncome += amount;
         }
-        if (createdAt >= startOfWeek) {
+        if (createdAt >= startOfWeek && createdAt < endOfWeek) {
           weeklyIncome += amount;
         }
-        if (createdAt >= startOfMonth) {
+        if (createdAt >= startOfMonth && createdAt < endOfMonth) {
           monthlyIncome += amount;
         }
 
@@ -115,6 +126,7 @@ export function IncomePage() {
           user: o.technical || '',
           customer: o.customer,
           order: o.no || o.code,
+          amount,
         });
       }
     }
@@ -189,9 +201,11 @@ export function IncomePage() {
         <DataTableWithToolbar<DailyIncomeEntry>
           data={dailyIncomeRows}
           columns={incomeColumns}
-          searchFields={['date', 'user', 'customer', 'order']}
+          searchFields={['date', 'user', 'customer', 'order', 'amount']}
           searchPlaceholder="Look for:"
           dateColumnId="date"
+          defaultStartDate={todayFilter}
+          defaultEndDate={todayFilter}
           pageSizeOptions={[10, 25, 50, 100]}
           defaultPageSize={10}
           onFilteredDataChange={onFilteredDataChange}
@@ -214,14 +228,6 @@ export function IncomePage() {
                 title="Export PDF"
                 className="p-2 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20"
                 aria-label="Export PDF"
-              />
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={LayoutGrid}
-                title="Columns"
-                className="p-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20"
-                aria-label="Columns"
               />
             </ButtonGroup>
           }

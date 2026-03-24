@@ -4,4 +4,5 @@ export interface DailyIncomeEntry {
   user: string;
   customer: string;
   order: string;
+  amount: number;
 }

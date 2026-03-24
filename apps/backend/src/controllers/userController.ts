@@ -52,6 +52,40 @@ export async function getAllUsers(_req: Request, res: Response): Promise<Respons
   }
 }
 
+export async function getAssignableTechnicians(_req: Request, res: Response): Promise<Response | void> {
+  try {
+    const users = await User.find({ state: { $ne: 'inactive' } })
+      .select('-password')
+      .populate('role', 'name slug')
+      .sort({ name: 1, email: 1 })
+      .lean();
+
+    const normalized = users.map((u) =>
+      toResponse({
+        _id: u._id,
+        email: u.email,
+        name: u.name,
+        identification: u.identification,
+        phone: u.phone,
+        avatar: u.avatar,
+        state: u.state,
+        role: u.role as unknown as { _id: unknown; name: string; slug?: string } | null,
+      })
+    );
+
+    const technicians = normalized.filter((u) => {
+      const slug = String(u.role?.slug ?? '').toLowerCase();
+      const name = String(u.role?.name ?? '').toLowerCase();
+      return slug === 'technician' || slug.includes('tech') || name.includes('technician') || name.includes('tech');
+    });
+
+    res.json({ users: technicians.length > 0 ? technicians : normalized });
+  } catch (err) {
+    console.error('Get assignable technicians error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+}
+
 export async function getUserById(req: Request, res: Response): Promise<Response | void> {
   try {
     const { id } = req.params;
