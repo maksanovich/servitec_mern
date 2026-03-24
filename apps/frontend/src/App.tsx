@@ -6,6 +6,7 @@ import { RequirePage } from './components/RequirePage';
 import { AuthProvider } from './contexts/AuthContext';
 import { CompanyProvider } from './contexts/CompanyContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import { LandingPage } from './pages/LandingPage';
 import { BlogPage } from './pages/BlogPage';
 import { TrackPage } from './pages/TrackPage';
@@ -65,7 +66,9 @@ function App() {
             element={
               <ProtectedRoute>
                 <CompanyProvider>
-                  <AdminLayout />
+                  <NotificationProvider>
+                    <AdminLayout />
+                  </NotificationProvider>
                 </CompanyProvider>
               </ProtectedRoute>
             }
