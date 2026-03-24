@@ -8,6 +8,23 @@ import { Product } from '../models/Product.js';
 import { User } from '../models/User.js';
 import { Company } from '../models/Company.js';
 import { sendOrderProgressEmail } from '../services/smtpService.js';
+import type { AuthRequest } from '../middleware/auth.js';
+
+/** Matches backend `getAssignableTechnicians` / frontend technician detection. */
+function isTechnicianRole(slug: string, roleName?: string): boolean {
+  const s = String(slug ?? '').toLowerCase();
+  const n = String(roleName ?? '').toLowerCase();
+  return s === 'technician' || s.includes('tech') || n.includes('technician') || n.includes('tech');
+}
+
+/** Technicians may only access orders assigned to them; use 404 to avoid leaking ids. */
+function denyIfTechnicianNotAssignee(req: AuthRequest, res: Response, orderTechnicianId: unknown): boolean {
+  if (!req.user || !isTechnicianRole(req.user.role)) return false;
+  const tid = String(orderTechnicianId ?? '').trim();
+  if (tid === req.user._id) return false;
+  res.status(404).json({ error: 'Order not found' });
+  return true;
+}
 
 function normalizeOrderPhotoForCreate(raw: unknown): { ok: true; value: string } | { ok: false; error: string } {
   if (raw === undefined || raw === null) return { ok: true, value: '' };
@@ -226,7 +243,7 @@ function isWarehouseTransition(area: unknown, state: unknown): boolean {
   return String(area ?? '').trim() === 'warehouse' || String(state ?? '').trim() === 'warehouse';
 }
 
-export async function getOrders(req: Request, res: Response): Promise<Response | void> {
+export async function getOrders(req: AuthRequest, res: Response): Promise<Response | void> {
   try {
     const area = typeof req.query.area === 'string' ? req.query.area.trim() : '';
     const state = typeof req.query.state === 'string' ? req.query.state.trim() : '';
@@ -234,6 +251,9 @@ export async function getOrders(req: Request, res: Response): Promise<Response |
     const limit = Math.min(200, Math.max(1, parseInt(String(req.query.limit), 10) || 50));
 
     const filter: Record<string, unknown> = {};
+    if (req.user && isTechnicianRole(req.user.role, req.user.roleName)) {
+      filter.technician = req.user._id;
+    }
     if (area) filter.area = area;
     if (state) filter.state = state;
     if (search) {
@@ -307,13 +327,14 @@ export async function getOrders(req: Request, res: Response): Promise<Response |
   }
 }
 
-export async function getOrderById(req: Request, res: Response): Promise<Response | void> {
+export async function getOrderById(req: AuthRequest, res: Response): Promise<Response | void> {
   try {
     const id = String(req.params.id ?? '').trim();
     if (!id) return res.status(400).json({ error: 'id is required' });
 
     const order = await Order.findById(id).lean();
     if (!order) return res.status(404).json({ error: 'Order not found' });
+    if (denyIfTechnicianNotAssignee(req, res, (order as any).technician)) return;
 
     const usersById = new Map<string, { name: string; identification: string }>();
     const technicianId = String((order as any).technician ?? '').trim();
@@ -398,7 +419,7 @@ export async function getOrdersShowcase(req: Request, res: Response): Promise<Re
   }
 }
 
-export async function createOrder(req: Request, res: Response): Promise<Response | void> {
+export async function createOrder(req: AuthRequest, res: Response): Promise<Response | void> {
   try {
     const body = req.body as Record<string, unknown>;
 
@@ -412,7 +433,13 @@ export async function createOrder(req: Request, res: Response): Promise<Response
     const area = String(body.area ?? '').trim() as OrderArea;
     const state = String(body.state ?? '').trim() as OrderState;
     const priority = (String(body.priority ?? '').trim() as OrderPriority) || 'normal';
-    const technician = String(body.technician ?? '').trim();
+    let technician = String(body.technician ?? '').trim();
+    if (req.user && isTechnicianRole(req.user.role)) {
+      if (technician && technician !== req.user._id) {
+        return res.status(403).json({ error: 'You can only create orders assigned to yourself' });
+      }
+      technician = req.user._id;
+    }
 
     if (!branch) return res.status(400).json({ error: 'branch is required' });
     if (!Number.isFinite(clientId)) return res.status(400).json({ error: 'clientId is required' });
@@ -516,13 +543,14 @@ export async function createOrder(req: Request, res: Response): Promise<Response
   }
 }
 
-export async function patchOrder(req: Request, res: Response): Promise<Response | void> {
+export async function patchOrder(req: AuthRequest, res: Response): Promise<Response | void> {
   try {
     const id = String(req.params.id ?? '').trim();
     if (!id) return res.status(400).json({ error: 'id is required' });
 
     const doc = await Order.findById(id);
     if (!doc) return res.status(404).json({ error: 'Order not found' });
+    if (denyIfTechnicianNotAssignee(req, res, (doc as any).technician)) return;
 
     const stateBefore = doc.state as OrderState;
     const body = req.body as Record<string, unknown>;
@@ -554,6 +582,9 @@ export async function patchOrder(req: Request, res: Response): Promise<Response 
     if (body.priority != null) doc.priority = (String(body.priority ?? '').trim() as OrderPriority) || 'normal';
 
     if (body.technician != null) {
+      if (req.user && isTechnicianRole(req.user.role, req.user.roleName)) {
+        return res.status(403).json({ error: 'You cannot reassign the technician' });
+      }
       const technician = String(body.technician ?? '').trim();
       if (!technician) return res.status(400).json({ error: 'technician is required' });
       doc.technician = technician;
@@ -656,10 +687,14 @@ export async function patchOrder(req: Request, res: Response): Promise<Response 
   }
 }
 
-export async function deleteOrder(req: Request, res: Response): Promise<Response | void> {
+export async function deleteOrder(req: AuthRequest, res: Response): Promise<Response | void> {
   try {
     const id = String(req.params.id ?? '').trim();
     if (!id) return res.status(400).json({ error: 'id is required' });
+
+    const existing = await Order.findById(id).lean();
+    if (!existing) return res.status(404).json({ error: 'Order not found' });
+    if (denyIfTechnicianNotAssignee(req, res, (existing as any).technician)) return;
 
     const doc = await Order.findByIdAndDelete(id);
     if (!doc) return res.status(404).json({ error: 'Order not found' });
@@ -748,13 +783,14 @@ function drawCode39Barcode(doc: any, value: string, x: number, y: number, height
   }
 }
 
-export async function printOrderPdf(req: Request, res: Response): Promise<Response | void> {
+export async function printOrderPdf(req: AuthRequest, res: Response): Promise<Response | void> {
   try {
     const id = String(req.params.id ?? '').trim();
     if (!id) return res.status(400).json({ error: 'id is required' });
 
     const orderDoc = await Order.findById(id).lean();
     if (!orderDoc) return res.status(404).json({ error: 'Order not found' });
+    if (denyIfTechnicianNotAssignee(req, res, (orderDoc as any).technician)) return;
 
     const client = await Client.findOne({ clientesid: orderDoc.clientId }).lean();
 

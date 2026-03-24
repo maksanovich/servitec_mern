@@ -16,6 +16,7 @@ import {
   getOrdersColumns,
 } from './orders';
 import { OrderExpandedRow } from './orders/OrderExpandedRow';
+import { toast } from 'sonner';
 import { useAuth } from '../../contexts/AuthContext';
 import { deleteOrder, getOrders, updateOrder, getOrderById, type OrderBudgetLine } from '../../api/orders';
 import { getServicesSpareParts, type ServiceSparePartItem } from '../../api/servicesSpareParts';
@@ -108,32 +109,11 @@ export function OrdersPage() {
     }
   }, [token]);
 
-  const normalizePhoneForWhatsApp = useCallback((raw?: string) => {
-    const digits = String(raw ?? '').replace(/\D/g, '');
-    if (!digits) return '';
-    if (digits.startsWith('0') && digits.length >= 10) return `593${digits.slice(1)}`;
-    return digits;
-  }, []);
-
-  const buildStatusWhatsappLink = useCallback(
-    (params: { phone?: string; customerName?: string; code?: string; orderNo?: string; fromState: string; toState: string; branch?: string }) => {
-      const phone = normalizePhoneForWhatsApp(params.phone);
-      if (!phone) return '';
-      const text =
-        `Hello ${params.customerName || 'client'}, your service order has been updated.\n` +
-        `Order No: ${params.orderNo || ''}\n` +
-        `Tracking code: ${params.code || ''}\n` +
-        `Status: ${params.fromState} -> ${params.toState}\n` +
-        `Branch: ${params.branch || ''}`;
-      return `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`;
-    },
-    [normalizePhoneForWhatsApp]
-  );
-
   const openWhatsappUpdate = useCallback((whatsappLink?: string, targetWindow?: Window | null) => {
     const link = String(whatsappLink ?? '').trim();
     if (!link) {
       if (targetWindow) targetWindow.close();
+      toast.warning('Cannot send message via WhatsApp because the client phone is not registered.');
       return;
     }
     if (targetWindow) {
@@ -370,18 +350,7 @@ export function OrdersPage() {
     try {
       if (statusConfirm.action === 'to-maintenance') {
         const resp = await updateOrder(token, statusConfirm.order.id, { area: 'maintenance', state: 'maintenance' });
-        openWhatsappUpdate(
-          buildStatusWhatsappLink({
-            phone: resp.order.customerPhone,
-            customerName: resp.order.customer,
-            code: resp.order.code,
-            orderNo: resp.order.no,
-            fromState: statusConfirm.order.state,
-            toState: resp.order.state,
-            branch: resp.order.branch,
-          }),
-          pendingWhatsappTab
-        );
+        openWhatsappUpdate(resp.whatsappLink, pendingWhatsappTab);
         await refetchOrders();
       } else if (statusConfirm.action === 'to-warehouse') {
         // Moving to warehouse now requires an after-repair photo.
@@ -392,48 +361,15 @@ export function OrdersPage() {
         setStatusConfirm(null);
       } else if (statusConfirm.action === 'to-entrance') {
         const resp = await updateOrder(token, statusConfirm.order.id, { area: 'entrance', state: 'income' });
-        openWhatsappUpdate(
-          buildStatusWhatsappLink({
-            phone: resp.order.customerPhone,
-            customerName: resp.order.customer,
-            code: resp.order.code,
-            orderNo: resp.order.no,
-            fromState: statusConfirm.order.state,
-            toState: resp.order.state,
-            branch: resp.order.branch,
-          }),
-          pendingWhatsappTab
-        );
+        openWhatsappUpdate(resp.whatsappLink, pendingWhatsappTab);
         await refetchOrders();
       } else if (statusConfirm.action === 'to-waiting-parts') {
         const resp = await updateOrder(token, statusConfirm.order.id, { area: 'waiting-parts', state: 'waiting' });
-        openWhatsappUpdate(
-          buildStatusWhatsappLink({
-            phone: resp.order.customerPhone,
-            customerName: resp.order.customer,
-            code: resp.order.code,
-            orderNo: resp.order.no,
-            fromState: statusConfirm.order.state,
-            toState: resp.order.state,
-            branch: resp.order.branch,
-          }),
-          pendingWhatsappTab
-        );
+        openWhatsappUpdate(resp.whatsappLink, pendingWhatsappTab);
         await refetchOrders();
       } else if (statusConfirm.action === 'from-waiting-parts') {
         const resp = await updateOrder(token, statusConfirm.order.id, { area: 'maintenance', state: 'maintenance' });
-        openWhatsappUpdate(
-          buildStatusWhatsappLink({
-            phone: resp.order.customerPhone,
-            customerName: resp.order.customer,
-            code: resp.order.code,
-            orderNo: resp.order.no,
-            fromState: statusConfirm.order.state,
-            toState: resp.order.state,
-            branch: resp.order.branch,
-          }),
-          pendingWhatsappTab
-        );
+        openWhatsappUpdate(resp.whatsappLink, pendingWhatsappTab);
         await refetchOrders();
       } else if (statusConfirm.action === 'to-delivery') {
         setDeliverySaving(true);
@@ -444,18 +380,7 @@ export function OrdersPage() {
           state: 'delivery',
           advancement: adv,
         });
-        openWhatsappUpdate(
-          buildStatusWhatsappLink({
-            phone: resp.order.customerPhone,
-            customerName: resp.order.customer,
-            code: resp.order.code,
-            orderNo: resp.order.no,
-            fromState: statusConfirm.order.state,
-            toState: resp.order.state,
-            branch: resp.order.branch,
-          }),
-          pendingWhatsappTab
-        );
+        openWhatsappUpdate(resp.whatsappLink, pendingWhatsappTab);
         await refetchOrders();
         setDeliveryOrder(null);
         setDeliveryAdvance(0);
@@ -470,7 +395,7 @@ export function OrdersPage() {
         setDeliverySaving(false);
       }
     }
-  }, [token, statusConfirm, refetchOrders, deliveryAdvance, openWhatsappUpdate, buildStatusWhatsappLink]);
+  }, [token, statusConfirm, refetchOrders, deliveryAdvance, openWhatsappUpdate]);
 
   const handleStatusCancel = useCallback(() => {
     if (statusLoading) return;
@@ -544,18 +469,7 @@ export function OrdersPage() {
         state: 'warehouse',
         photoAfterRepair: photoValue,
       });
-      openWhatsappUpdate(
-        buildStatusWhatsappLink({
-          phone: resp.order.customerPhone,
-          customerName: resp.order.customer,
-          code: resp.order.code,
-          orderNo: resp.order.no,
-          fromState: warehouseMoveOrder.state,
-          toState: resp.order.state,
-          branch: resp.order.branch,
-        }),
-        pendingWhatsappTab
-      );
+      openWhatsappUpdate(resp.whatsappLink, pendingWhatsappTab);
       await refetchOrders();
       setWarehouseMoveOrder(null);
       setWarehouseAfterPhoto(null);
@@ -567,7 +481,7 @@ export function OrdersPage() {
     } finally {
       setWarehouseSaving(false);
     }
-  }, [token, warehouseMoveOrder, warehouseAfterPhoto, warehouseAfterPhotoFile, refetchOrders, openWhatsappUpdate, buildStatusWhatsappLink]);
+  }, [token, warehouseMoveOrder, warehouseAfterPhoto, warehouseAfterPhotoFile, refetchOrders, openWhatsappUpdate]);
 
   const tableColumns = useMemo(
     () =>
