@@ -98,10 +98,16 @@ export function AdminLayout() {
       }))
       .filter((g) => g.items.length > 0);
   }, [user]);
+  const allVisibleApps = useMemo(
+    () => visibleNavGroups.flatMap((group) => group.items),
+    [visibleNavGroups]
+  );
+  const quickAccessApps = useMemo(() => allVisibleApps.slice(0, 8), [allVisibleApps]);
   const { company } = useCompany();
   const { isDark, toggleTheme } = useTheme();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [appsPanelOpen, setAppsPanelOpen] = useState(false);
   const profileDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -113,6 +119,24 @@ export function AdminLayout() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setAppsPanelOpen(false);
+      }
+    }
+
+    if (appsPanelOpen) {
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = '';
+    };
+  }, [appsPanelOpen]);
 
   const handleLogout = () => {
     setProfileDropdownOpen(false);
@@ -207,8 +231,11 @@ export function AdminLayout() {
             </button>
             <button
               type="button"
+              onClick={() => setAppsPanelOpen((prev) => !prev)}
               className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
               aria-label="Apps"
+              aria-expanded={appsPanelOpen}
+              aria-controls="apps-panel"
             >
               <Grid3X3 className="w-5 h-5" />
             </button>
@@ -270,6 +297,73 @@ export function AdminLayout() {
         <main className="flex-1 overflow-auto p-6">
           <Outlet />
         </main>
+      </div>
+
+      <div
+        className={`fixed inset-0 z-40 transition-opacity duration-200 ${
+          appsPanelOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+      >
+        <button
+          type="button"
+          onClick={() => setAppsPanelOpen(false)}
+          className="absolute inset-0 bg-slate-900/35 dark:bg-slate-950/60"
+          aria-label="Close app panel"
+        />
+        <aside
+          id="apps-panel"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Apps panel"
+          className={`absolute right-0 top-0 h-full w-full max-w-sm bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 shadow-2xl transform transition-transform duration-200 ${
+            appsPanelOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}
+        >
+          <div className="h-14 px-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-semibold text-slate-900 dark:text-white">Apps</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Quick access to admin modules</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAppsPanelOpen(false)}
+              className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              aria-label="Close apps panel"
+            >
+              <Menu className="w-5 h-5 rotate-90" />
+            </button>
+          </div>
+
+          <div className="p-4 overflow-y-auto h-[calc(100%-56px)] space-y-6">
+            <section>
+              <h3 className="px-1 mb-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                Fast Access
+              </h3>
+              <div className="grid grid-cols-2 gap-2">
+                {quickAccessApps.map(({ path, label, icon: Icon }) => {
+                  const isActive =
+                    location.pathname === path ||
+                    (path !== '/admin' && location.pathname.startsWith(path + '/'));
+                  return (
+                    <Link
+                      key={`quick-app-${path}`}
+                      to={path}
+                      onClick={() => setAppsPanelOpen(false)}
+                      className={`rounded-xl border px-3 py-3 text-left transition-colors ${
+                        isActive
+                          ? 'border-blue-300 dark:border-blue-500/60 bg-blue-50 dark:bg-blue-600/15 text-blue-700 dark:text-blue-300'
+                          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 mb-2" />
+                      <span className="block text-sm font-medium leading-tight">{label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
+          </div>
+        </aside>
       </div>
     </div>
   );
