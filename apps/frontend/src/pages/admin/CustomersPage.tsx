@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Home, UserPlus } from 'lucide-react';
 import { PageHeader, Card, Button, Loader, ConfirmDialog } from '../../components/ui';
 import { DataTable, DataTableToolbar, DataTablePagination } from '../../components/datatable';
 import { useAuth } from '../../contexts/AuthContext';
-import { getClients, updateClient, deleteClient } from '../../api/clients';
+import { getClients, getClientById, updateClient, deleteClient } from '../../api/clients';
 import type { Client } from '../../api/clients';
 import { getClientsColumns } from './customers/customersColumns';
 import { ClientEditModal } from './customers/ClientEditModal';
@@ -15,6 +16,8 @@ const DEFAULT_PAGE_SIZE = 10;
 
 export function CustomersPage() {
   const { token } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const editFromUrl = searchParams.get('edit');
   const [clients, setClients] = useState<Awaited<ReturnType<typeof getClients>>['clients']>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -54,6 +57,37 @@ export function CustomersPage() {
   useEffect(() => {
     fetchClients();
   }, [fetchClients]);
+
+  useEffect(() => {
+    if (!editFromUrl || !token) return;
+    const id = parseInt(editFromUrl, 10);
+    if (!Number.isFinite(id)) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const client = await getClientById(token, id);
+        if (cancelled) return;
+        setEditClient(client);
+        setEditModalOpen(true);
+        setSearchParams(
+          (prev) => {
+            const next = new URLSearchParams(prev);
+            next.delete('edit');
+            return next;
+          },
+          { replace: true }
+        );
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Could not load client';
+        toast.error('Could not open client', { description: msg });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [editFromUrl, token, setSearchParams]);
 
   // Debounced search: apply search param when user stops typing
   useEffect(() => {

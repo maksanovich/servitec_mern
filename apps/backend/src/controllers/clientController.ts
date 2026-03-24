@@ -175,6 +175,23 @@ export async function createClient(req: Request, res: Response): Promise<Respons
   }
 }
 
+export async function getClientById(req: Request, res: Response): Promise<Response | void> {
+  try {
+    const id = parseInt(String(req.params.id), 10);
+    if (Number.isNaN(id)) {
+      return res.status(400).json({ error: 'Invalid client id' });
+    }
+    const doc = await Client.findOne({ clientesid: id }).lean();
+    if (!doc) {
+      return res.status(404).json({ error: 'Client not found' });
+    }
+    return res.json(toResponse(doc as Parameters<typeof toResponse>[0]));
+  } catch (err) {
+    console.error('Get client error:', err);
+    return res.status(500).json({ error: 'Server error' });
+  }
+}
+
 export async function getClients(req: Request, res: Response): Promise<Response | void> {
   try {
     const page = Math.max(1, parseInt(String(req.query.page), 10) || 1);

@@ -61,6 +61,16 @@ export async function getClients(
   return data;
 }
 
+export async function getClientById(token: string | null, clientesid: number): Promise<Client> {
+  if (!token) throw new Error('Not authenticated');
+  const res = await apiFetch(`/clients/${clientesid}`, { token });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to fetch client');
+  }
+  return data;
+}
+
 export interface CreateClientPayload {
   razonsocial: string;
   direccion?: string;

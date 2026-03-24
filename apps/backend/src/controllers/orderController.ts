@@ -458,6 +458,17 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
     const client = await Client.findOne({ clientesid: clientId }).lean();
     if (!client) return res.status(404).json({ error: 'Client not found' });
 
+    const phone = getClientPreferredPhone(client);
+    const email = String((client as any)?.email ?? '').trim();
+    if (!phone || !email) {
+      return res.status(400).json({
+        error:
+          'This client must have at least one phone number and an email address before you can create an order.',
+        code: 'CLIENT_CONTACT_REQUIRED',
+        clientId,
+      });
+    }
+
     const budgetLines = normalizeBudgetLines(body.budgetLines);
     const accessories = Array.isArray(body.accessories)
       ? (body.accessories as unknown[]).map((a) => String(a).trim()).filter(Boolean)
