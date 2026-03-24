@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { apiFetch, publicApiFetch } from './client';
 
 export type ProductState = 'active' | 'inactive';
 
@@ -7,6 +7,13 @@ export interface Product {
   branch: string;
   product: string;
   state: ProductState;
+}
+
+export async function getProductsPublic(): Promise<{ products: Product[] }> {
+  const res = await publicApiFetch('/products/public');
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to fetch products');
+  return data;
 }
 
 export async function getProducts(

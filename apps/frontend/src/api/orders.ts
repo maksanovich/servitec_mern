@@ -145,6 +145,23 @@ export interface OrderTrackPublic {
   createdAt?: string;
   photoBeforeRepair: string;
   photoAfterRepair: string;
+  equipmentCondition?: string;
+  technicalReport?: string;
+}
+
+/** Order showcase item for landing page */
+export interface OrderShowcaseItem {
+  code: string;
+  type: string;
+  brand: string;
+  model: string;
+  series: string;
+  branch: string;
+  photoBeforeRepair: string;
+  photoAfterRepair: string;
+  equipmentCondition: string;
+  technicalReport: string;
+  createdAt?: string;
 }
 
 export type UpdateOrderPayload = Partial<{
@@ -213,6 +230,13 @@ export async function trackOrderByCode(code: string): Promise<{ order: OrderTrac
   const res = await publicApiFetch(`/orders/track/${encodeURIComponent(trimmed)}`);
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Failed to track order');
+  return data;
+}
+
+export async function getOrdersShowcase(limit = 6): Promise<{ orders: OrderShowcaseItem[] }> {
+  const res = await publicApiFetch(`/orders/showcase?limit=${limit}`);
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Failed to fetch showcase');
   return data;
 }
 

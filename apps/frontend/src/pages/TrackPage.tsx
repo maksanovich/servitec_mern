@@ -97,7 +97,27 @@ export function TrackPage() {
             )}
           </div>
 
-          <div>
+          {(order.equipmentCondition || order.technicalReport) && (
+            <div className="border-t border-slate-200 pt-6">
+              <p className="text-sm font-semibold text-slate-800 mb-3">Technical Notes</p>
+              <div className="space-y-2 text-sm text-slate-600">
+                {order.equipmentCondition && (
+                  <p>
+                    <span className="font-medium text-slate-700">Condition: </span>
+                    {order.equipmentCondition}
+                  </p>
+                )}
+                {order.technicalReport && (
+                  <p>
+                    <span className="font-medium text-slate-700">Report: </span>
+                    {order.technicalReport}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          <div className="border-t border-slate-200 pt-6">
             <p className="text-sm font-semibold text-slate-800 mb-3">Photos</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>

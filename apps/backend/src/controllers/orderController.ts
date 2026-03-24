@@ -164,6 +164,8 @@ function toPublicTrackResponse(o: any) {
     createdAt: o.createdAt ? new Date(o.createdAt).toISOString() : undefined,
     photoBeforeRepair: String(o.photoBeforeRepair ?? ''),
     photoAfterRepair: String(o.photoAfterRepair ?? ''),
+    equipmentCondition: String(o.equipmentCondition ?? ''),
+    technicalReport: String(o.technicalReport ?? ''),
   };
 }
 
@@ -282,6 +284,35 @@ export async function getOrderTrackByCode(req: Request, res: Response): Promise<
     return res.json({ order: toPublicTrackResponse(order) });
   } catch (err) {
     console.error('Track order error:', err);
+    return res.status(500).json({ error: 'Server error' });
+  }
+}
+
+/** Public: delivered/finished orders for landing showcase (before/after photos + technical notes). */
+export async function getOrdersShowcase(req: Request, res: Response): Promise<Response | void> {
+  try {
+    const limit = Math.min(24, Math.max(1, parseInt(String(req.query.limit), 10) || 6));
+    const orders = await Order.find({ state: { $in: ['delivery', 'finished'] } })
+      .select('code type brand model series branch photoBeforeRepair photoAfterRepair equipmentCondition technicalReport createdAt')
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+    const items = orders.map((o: any) => ({
+      code: o.code,
+      type: o.type,
+      brand: o.brand,
+      model: o.model,
+      series: o.series,
+      branch: o.branch,
+      photoBeforeRepair: String(o.photoBeforeRepair ?? ''),
+      photoAfterRepair: String(o.photoAfterRepair ?? ''),
+      equipmentCondition: String(o.equipmentCondition ?? ''),
+      technicalReport: String(o.technicalReport ?? ''),
+      createdAt: o.createdAt ? new Date(o.createdAt).toISOString() : undefined,
+    }));
+    return res.json({ orders: items });
+  } catch (err) {
+    console.error('Orders showcase error:', err);
     return res.status(500).json({ error: 'Server error' });
   }
 }

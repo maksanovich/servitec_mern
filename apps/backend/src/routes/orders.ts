@@ -7,6 +7,7 @@ import {
   getOrderById,
   getOrders,
   getOrderTrackByCode,
+  getOrdersShowcase,
   patchOrder,
   printOrderPdf,
 } from '../controllers/orderController.js';
@@ -14,6 +15,7 @@ import {
 const router = Router();
 
 router.get('/track/:code', getOrderTrackByCode);
+router.get('/showcase', getOrdersShowcase);
 
 router.use(authMiddleware);
 router.use(requireAnyPage(['/admin/order', '/admin/income']));
