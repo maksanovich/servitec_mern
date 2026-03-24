@@ -40,7 +40,7 @@ import { getAccessories, type Accessory } from '../../api/accessories';
 import { getServicesSpareParts } from '../../api/servicesSpareParts';
 import { getProducts } from '../../api/products';
 import { getAssignableTechnicians, type User as ApiUser } from '../../api/users';
-import { createOrder, getOrderById, updateOrder } from '../../api/orders';
+import { createOrder, CreateOrderError, getOrderById, updateOrder } from '../../api/orders';
 import { uploadImage } from '../../api/uploads';
 import noImageUrl from '../../assets/images/noimage.png';
 
@@ -114,7 +114,7 @@ export function NewOrderPage() {
   const [servicesData, setServicesData] = useState<ServiceSparePartItem[]>([]);
   const [servicesLoading, setServicesLoading] = useState(false);
   const [technicianOptions, setTechnicianOptions] = useState<SelectOption[]>([]);
-  const [submitError, setSubmitError] = useState('');
+  const [submitError, setSubmitError] = useState<{ text: string; contactClientId?: number } | null>(null);
 
   const [branch, setBranch] = useState('');
   const [customer, setCustomer] = useState('');
@@ -543,10 +543,10 @@ export function NewOrderPage() {
       return;
     }
     setBranchError('');
-    setSubmitError('');
+    setSubmitError(null);
     try {
       if (!token) {
-        setSubmitError('Not authenticated.');
+        setSubmitError({ text: 'Not authenticated.' });
         return;
       }
 
@@ -619,8 +619,15 @@ export function NewOrderPage() {
       }
       navigate('/admin/order');
     } catch (err) {
+      if (err instanceof CreateOrderError && err.code === 'CLIENT_CONTACT_REQUIRED' && err.clientId != null) {
+        setSubmitError({
+          text: err.message,
+          contactClientId: err.clientId,
+        });
+        return;
+      }
       const message = err instanceof Error ? err.message : 'Failed to submit order';
-      setSubmitError(message);
+      setSubmitError({ text: message });
     }
   };
 
@@ -1137,8 +1144,18 @@ export function NewOrderPage() {
         </div>
 
         {submitError && (
-          <div className="rounded-lg border border-red-200 dark:border-red-900/40 bg-red-50/50 dark:bg-red-950/20 px-4 py-3 text-sm text-red-700 dark:text-red-300">
-            {submitError}
+          <div className="rounded-lg border border-red-200 dark:border-red-900/40 bg-red-50/50 dark:bg-red-950/20 px-4 py-3 text-sm text-red-700 dark:text-red-300 space-y-2">
+            <p>{submitError.text}</p>
+            {submitError.contactClientId != null && (
+              <a
+                href={`${typeof window !== 'undefined' ? window.location.origin : ''}/admin/clients?edit=${submitError.contactClientId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block font-medium text-red-800 dark:text-red-200 underline underline-offset-2 hover:text-red-900 dark:hover:text-red-100"
+              >
+                Open client page in a new tab to add phone and email
+              </a>
+            )}
           </div>
         )}
 

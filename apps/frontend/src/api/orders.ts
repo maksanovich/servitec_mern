@@ -68,6 +68,19 @@ export interface CreateOrderPayload {
   photoAfterRepair?: string;
 }
 
+export class CreateOrderError extends Error {
+  readonly code?: string;
+  readonly clientId?: number;
+
+  constructor(message: string, opts?: { code?: string; clientId?: number }) {
+    super(message);
+    this.name = 'CreateOrderError';
+    Object.setPrototypeOf(this, CreateOrderError.prototype);
+    this.code = opts?.code;
+    this.clientId = opts?.clientId;
+  }
+}
+
 export async function createOrder(
   token: string | null,
   payload: CreateOrderPayload
@@ -81,6 +94,13 @@ export async function createOrder(
   });
   const data = await res.json();
   if (!res.ok) {
+    if (data?.code === 'CLIENT_CONTACT_REQUIRED') {
+      const cid = Number(data.clientId);
+      throw new CreateOrderError(data.error || 'Client phone and email are required', {
+        code: data.code,
+        clientId: Number.isFinite(cid) ? cid : undefined,
+      });
+    }
     throw new Error(data.error || 'Failed to create order');
   }
   return data;
