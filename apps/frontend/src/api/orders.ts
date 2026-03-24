@@ -206,7 +206,7 @@ export async function updateOrder(
   token: string | null,
   id: string,
   payload: UpdateOrderPayload
-): Promise<{ order: OrderDetail }> {
+): Promise<{ order: OrderDetail; whatsappLink?: string }> {
   if (!token) throw new Error('Not authenticated');
   const res = await apiFetch(`/orders/${id}`, {
     method: 'PATCH',

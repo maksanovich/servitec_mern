@@ -10,6 +10,8 @@ export interface AuthRequest extends Request {
     email: string;
     name: string;
     role: string;
+    /** Role display name (for slug/name-based checks, e.g. technician). */
+    roleName: string;
     roleId: string;
     pages: string[];
   };
@@ -33,6 +35,7 @@ export async function authMiddleware(
 
     const role = user.role as unknown as {
       _id: unknown;
+      name?: string;
       slug: string;
       pages?: string[];
     } | null;
@@ -43,6 +46,7 @@ export async function authMiddleware(
       email: user.email,
       name: user.name,
       role: slug,
+      roleName: String(role?.name ?? '').trim(),
       roleId: role?._id != null ? String(role._id) : '',
       pages,
     };
