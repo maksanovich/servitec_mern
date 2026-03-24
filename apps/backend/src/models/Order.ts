@@ -47,6 +47,12 @@ export interface IOrder extends Omit<Document, 'model'> {
   photoBeforeRepair: string;
   /** Data URL — photo after repair */
   photoAfterRepair: string;
+
+  /** Set when the order first enters `state: delivery` (equipment at delivery area). */
+  deliveryArrivedAt?: Date | null;
+  pickupReminder30dSentAt?: Date | null;
+  /** Second notice at 30 + 60 days from arrival (abandonment warning). */
+  pickupReminder90dSentAt?: Date | null;
 }
 
 const orderBudgetLineSchema = new mongoose.Schema<IOrderBudgetLine>(
@@ -98,11 +104,16 @@ const orderSchema = new mongoose.Schema<IOrder>(
 
     photoBeforeRepair: { type: String, default: '' },
     photoAfterRepair: { type: String, default: '' },
+
+    deliveryArrivedAt: { type: Date },
+    pickupReminder30dSentAt: { type: Date },
+    pickupReminder90dSentAt: { type: Date },
   },
   { timestamps: true }
 );
 
 orderSchema.index({ no: 1 }, { unique: true });
+orderSchema.index({ state: 1, deliveryArrivedAt: 1 });
 orderSchema.index({ code: 1 }, { unique: true });
 
 export const Order: Model<IOrder> = mongoose.model<IOrder>('Order', orderSchema);

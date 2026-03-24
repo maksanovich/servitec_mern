@@ -490,6 +490,7 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
       priority,
       area,
       state,
+      deliveryArrivedAt: state === 'delivery' ? new Date() : undefined,
       type,
       branch,
       clientId,
@@ -641,10 +642,16 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
       }
     }
 
+    const stateAfter = doc.state as OrderState;
+    if (stateAfter === 'delivery' && stateBefore !== 'delivery') {
+      doc.deliveryArrivedAt = new Date();
+      doc.pickupReminder30dSentAt = null;
+      doc.pickupReminder90dSentAt = null;
+    }
+
     await doc.save();
 
     // Notify customer only when the order stage changes.
-    const stateAfter = doc.state as OrderState;
     let statusWhatsappLink = '';
     if (stateAfter !== stateBefore) {
       try {
