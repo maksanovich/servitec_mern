@@ -15,6 +15,7 @@ import {
   Users,
   Shield,
   FileQuestion,
+  Stethoscope,
   Menu,
   Search,
   Sun,
@@ -50,7 +51,10 @@ const navGroups: NavGroup[] = [
   },
   {
     label: 'Operations',
-    items: [{ path: '/admin/order', label: 'Orders', icon: Wrench }],
+    items: [
+      { path: '/admin/order', label: 'Orders', icon: Wrench },
+      { path: '/admin/pre-diagnosis', label: 'Pre-Diagnosis', icon: Stethoscope },
+    ],
   },
   {
     label: 'Workshop Setup',

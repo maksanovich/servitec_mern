@@ -17,6 +17,7 @@ export interface OrderListItem {
   series: string;
   customer: string;
   customerId: string;
+  customerPhone?: string;
   technical: string;
   equipmentCondition: string;
   technicalReport: string;
@@ -107,6 +108,7 @@ export interface OrderDetail {
   clientId: number;
   customer: string;
   customerId: string;
+  customerPhone?: string;
 
   brand: string;
   model: string;
@@ -147,6 +149,8 @@ export interface OrderTrackPublic {
   photoAfterRepair: string;
   equipmentCondition?: string;
   technicalReport?: string;
+  warranty?: boolean;
+  whatsappLink?: string;
 }
 
 /** Order showcase item for landing page */

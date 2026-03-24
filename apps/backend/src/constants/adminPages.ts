@@ -10,6 +10,7 @@ export const ADMIN_SLUG = 'admin';
 export const ADMIN_PAGE_PATHS: readonly string[] = [
   '/admin',
   '/admin/order',
+  '/admin/pre-diagnosis',
   '/admin/clients',
   '/admin/brand',
   '/admin/models',

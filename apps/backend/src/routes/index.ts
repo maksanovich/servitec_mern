@@ -12,6 +12,7 @@ import { orderRoutes } from './orders.js';
 import { servicesSparePartsRoutes } from './servicesSpareParts.js';
 import { uploadsRoutes } from './uploads.js';
 import { productRoutes } from './products.js';
+import { preDiagnosisRoutes } from './preDiagnosis.js';
 
 const apiRouter = Router();
 
@@ -28,6 +29,7 @@ apiRouter.use('/orders', orderRoutes);
 apiRouter.use('/services-spare-parts', servicesSparePartsRoutes);
 apiRouter.use('/uploads', uploadsRoutes);
 apiRouter.use('/products', productRoutes);
+apiRouter.use('/pre-diagnosis', preDiagnosisRoutes);
 
 apiRouter.get('/', (req, res) => {
   res.json({ message: 'Servitec API', version: '1.0.0' });

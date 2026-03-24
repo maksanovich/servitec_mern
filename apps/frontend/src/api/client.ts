@@ -10,7 +10,7 @@ function handleUnauthorized(): void {
   if (typeof localStorage !== 'undefined') {
     localStorage.removeItem(TOKEN_KEY);
   }
-  window.location.href = '/admin/login';
+  window.location.href = '/';
 }
 
 export async function apiFetch(
