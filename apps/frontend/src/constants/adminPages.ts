@@ -6,6 +6,7 @@ export const SUPER_ADMIN_SLUG = 'super_admin';
 export const ADMIN_PAGE_PATHS: readonly string[] = [
   '/admin',
   '/admin/order',
+  '/admin/pre-diagnosis',
   '/admin/clients',
   '/admin/brand',
   '/admin/models',
@@ -23,6 +24,7 @@ export const ADMIN_PAGE_PATHS: readonly string[] = [
 export const ADMIN_PAGE_OPTIONS: readonly { path: string; label: string }[] = [
   { path: '/admin', label: 'Dashboard' },
   { path: '/admin/order', label: 'Orders' },
+  { path: '/admin/pre-diagnosis', label: 'Pre-Diagnosis' },
   { path: '/admin/clients', label: 'Clients' },
   { path: '/admin/brand', label: 'Brand' },
   { path: '/admin/models', label: 'Models' },

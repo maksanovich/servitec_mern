@@ -3,6 +3,51 @@ import { trackOrderByCode, type OrderTrackPublic } from '../api/orders';
 import { AREA_TABS, stateLabel } from './admin/orders/constants';
 import noImageUrl from '../assets/images/noimage.png';
 
+type RepairStep = {
+  id: string;
+  label: string;
+  states: OrderTrackPublic['state'][];
+  description: string;
+};
+
+const REPAIR_TIMELINE: RepairStep[] = [
+  {
+    id: 'received',
+    label: 'Received',
+    states: ['income'],
+    description: 'Your equipment was received and registered by our team.',
+  },
+  {
+    id: 'diagnosis',
+    label: 'Diagnosis',
+    states: ['maintenance', 'waiting', 'no_solution'],
+    description: 'Technicians are checking the issue and defining the repair plan.',
+  },
+  {
+    id: 'repair',
+    label: 'Repair / Parts',
+    states: ['warehouse'],
+    description: 'Repair completed and quality check in progress.',
+  },
+  {
+    id: 'delivery',
+    label: 'Ready for Delivery',
+    states: ['delivery', 'finished'],
+    description: 'Your equipment is ready for pickup or has already been delivered.',
+  },
+];
+
+function getCurrentTimelineStep(state: OrderTrackPublic['state']): number {
+  const idx = REPAIR_TIMELINE.findIndex((step) => step.states.includes(state));
+  return idx === -1 ? 0 : idx;
+}
+
+function getTimelineProgress(state: OrderTrackPublic['state']): number {
+  const step = getCurrentTimelineStep(state);
+  if (REPAIR_TIMELINE.length <= 1) return 0;
+  return Math.round((step / (REPAIR_TIMELINE.length - 1)) * 100);
+}
+
 export function TrackPage() {
   const [trackNumber, setTrackNumber] = useState('');
   const [order, setOrder] = useState<OrderTrackPublic | null>(null);
@@ -61,6 +106,39 @@ export function TrackPage() {
 
       {order && (
         <div className="mt-8 space-y-6 border border-slate-200 rounded-xl p-6 bg-white shadow-sm">
+          <div className="rounded-lg border border-indigo-100 bg-indigo-50 px-4 py-4">
+            <div className="flex items-center justify-between gap-4 mb-3">
+              <p className="text-sm font-semibold text-indigo-900">Live repair progress</p>
+              <p className="text-sm font-semibold text-indigo-800">{getTimelineProgress(order.state)}%</p>
+            </div>
+            <div className="h-2 bg-indigo-100 rounded-full overflow-hidden mb-4">
+              <div
+                className="h-full bg-indigo-600 transition-all duration-500"
+                style={{ width: `${getTimelineProgress(order.state)}%` }}
+              />
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {REPAIR_TIMELINE.map((step, index) => {
+                const current = getCurrentTimelineStep(order.state);
+                const isDone = index <= current;
+                return (
+                  <div key={step.id} className="flex items-center gap-2">
+                    <span
+                      className={`h-2.5 w-2.5 rounded-full ${isDone ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                      aria-hidden="true"
+                    />
+                    <span className={`text-xs font-medium ${isDone ? 'text-indigo-900' : 'text-slate-500'}`}>
+                      {step.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="mt-3 text-xs text-indigo-900">
+              {REPAIR_TIMELINE[getCurrentTimelineStep(order.state)]?.description}
+            </p>
+          </div>
+
           <div>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Tracking code</p>
             <p className="text-lg font-mono font-semibold text-slate-900">{order.code}</p>
@@ -95,7 +173,48 @@ export function TrackPage() {
                 </p>
               </div>
             )}
+            {order.warranty !== undefined && (
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Warranty</p>
+                <p className="font-medium text-slate-900">{order.warranty ? 'Included' : 'No warranty'}</p>
+              </div>
+            )}
           </div>
+
+          <div className="border-t border-slate-200 pt-6">
+            <p className="text-sm font-semibold text-slate-800 mb-3">Repair Trust Card</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">Parts quality</p>
+                <p className="font-medium text-slate-900">Verified by Servitec</p>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">Quality checklist</p>
+                <p className="font-medium text-slate-900">
+                  {order.state === 'finished' || order.state === 'delivery' ? 'Final test passed' : 'In progress'}
+                </p>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">Photo evidence</p>
+                <p className="font-medium text-slate-900">
+                  {order.photoAfterRepair?.trim() ? 'Before & after available' : 'Before photo available'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {order.whatsappLink?.trim() && (
+            <div className="border-t border-slate-200 pt-6">
+              <a
+                href={order.whatsappLink}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center px-4 py-2.5 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition-colors"
+              >
+                Request status update on WhatsApp
+              </a>
+            </div>
+          )}
 
           {(order.equipmentCondition || order.technicalReport) && (
             <div className="border-t border-slate-200 pt-6">

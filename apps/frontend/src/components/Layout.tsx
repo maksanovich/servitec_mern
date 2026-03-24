@@ -5,6 +5,7 @@ export function Layout() {
   const navItems = [
     { path: '/', label: 'Home' },
     { path: '/blog', label: 'Blog' },
+    { path: '/diagnosis', label: 'Pre-Diagnosis' },
     { path: '/track', label: 'Track Order' },
   ];
 

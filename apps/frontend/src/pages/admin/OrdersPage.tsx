@@ -108,6 +108,41 @@ export function OrdersPage() {
     }
   }, [token]);
 
+  const normalizePhoneForWhatsApp = useCallback((raw?: string) => {
+    const digits = String(raw ?? '').replace(/\D/g, '');
+    if (!digits) return '';
+    if (digits.startsWith('0') && digits.length >= 10) return `593${digits.slice(1)}`;
+    return digits;
+  }, []);
+
+  const buildStatusWhatsappLink = useCallback(
+    (params: { phone?: string; customerName?: string; code?: string; orderNo?: string; fromState: string; toState: string; branch?: string }) => {
+      const phone = normalizePhoneForWhatsApp(params.phone);
+      if (!phone) return '';
+      const text =
+        `Hello ${params.customerName || 'client'}, your service order has been updated.\n` +
+        `Order No: ${params.orderNo || ''}\n` +
+        `Tracking code: ${params.code || ''}\n` +
+        `Status: ${params.fromState} -> ${params.toState}\n` +
+        `Branch: ${params.branch || ''}`;
+      return `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`;
+    },
+    [normalizePhoneForWhatsApp]
+  );
+
+  const openWhatsappUpdate = useCallback((whatsappLink?: string, targetWindow?: Window | null) => {
+    const link = String(whatsappLink ?? '').trim();
+    if (!link) {
+      if (targetWindow) targetWindow.close();
+      return;
+    }
+    if (targetWindow) {
+      targetWindow.location.href = link;
+      return;
+    }
+    window.open(link, '_blank');
+  }, []);
+
   const handleDeleteClick = useCallback((order: Order) => {
     setDeleteError(null);
     setDeleteConfirm(order);
@@ -328,11 +363,25 @@ export function OrdersPage() {
 
   const handleStatusConfirm = useCallback(async () => {
     if (!token || !statusConfirm) return;
+    const shouldOpenWhatsappTab = statusConfirm.action !== 'to-warehouse';
+    const pendingWhatsappTab = shouldOpenWhatsappTab ? window.open('', '_blank') : null;
     setStatusLoading(true);
     setStatusError(null);
     try {
       if (statusConfirm.action === 'to-maintenance') {
-        await updateOrder(token, statusConfirm.order.id, { area: 'maintenance', state: 'maintenance' });
+        const resp = await updateOrder(token, statusConfirm.order.id, { area: 'maintenance', state: 'maintenance' });
+        openWhatsappUpdate(
+          buildStatusWhatsappLink({
+            phone: resp.order.customerPhone,
+            customerName: resp.order.customer,
+            code: resp.order.code,
+            orderNo: resp.order.no,
+            fromState: statusConfirm.order.state,
+            toState: resp.order.state,
+            branch: resp.order.branch,
+          }),
+          pendingWhatsappTab
+        );
         await refetchOrders();
       } else if (statusConfirm.action === 'to-warehouse') {
         // Moving to warehouse now requires an after-repair photo.
@@ -342,29 +391,78 @@ export function OrdersPage() {
         setWarehousePhotoError(null);
         setStatusConfirm(null);
       } else if (statusConfirm.action === 'to-entrance') {
-        await updateOrder(token, statusConfirm.order.id, { area: 'entrance', state: 'income' });
+        const resp = await updateOrder(token, statusConfirm.order.id, { area: 'entrance', state: 'income' });
+        openWhatsappUpdate(
+          buildStatusWhatsappLink({
+            phone: resp.order.customerPhone,
+            customerName: resp.order.customer,
+            code: resp.order.code,
+            orderNo: resp.order.no,
+            fromState: statusConfirm.order.state,
+            toState: resp.order.state,
+            branch: resp.order.branch,
+          }),
+          pendingWhatsappTab
+        );
         await refetchOrders();
       } else if (statusConfirm.action === 'to-waiting-parts') {
-        await updateOrder(token, statusConfirm.order.id, { area: 'waiting-parts', state: 'waiting' });
+        const resp = await updateOrder(token, statusConfirm.order.id, { area: 'waiting-parts', state: 'waiting' });
+        openWhatsappUpdate(
+          buildStatusWhatsappLink({
+            phone: resp.order.customerPhone,
+            customerName: resp.order.customer,
+            code: resp.order.code,
+            orderNo: resp.order.no,
+            fromState: statusConfirm.order.state,
+            toState: resp.order.state,
+            branch: resp.order.branch,
+          }),
+          pendingWhatsappTab
+        );
         await refetchOrders();
       } else if (statusConfirm.action === 'from-waiting-parts') {
-        await updateOrder(token, statusConfirm.order.id, { area: 'maintenance', state: 'maintenance' });
+        const resp = await updateOrder(token, statusConfirm.order.id, { area: 'maintenance', state: 'maintenance' });
+        openWhatsappUpdate(
+          buildStatusWhatsappLink({
+            phone: resp.order.customerPhone,
+            customerName: resp.order.customer,
+            code: resp.order.code,
+            orderNo: resp.order.no,
+            fromState: statusConfirm.order.state,
+            toState: resp.order.state,
+            branch: resp.order.branch,
+          }),
+          pendingWhatsappTab
+        );
         await refetchOrders();
       } else if (statusConfirm.action === 'to-delivery') {
         setDeliverySaving(true);
         setDeliveryError(null);
         const adv = Number.isFinite(deliveryAdvance) ? deliveryAdvance : 0;
-        await updateOrder(token, statusConfirm.order.id, {
+        const resp = await updateOrder(token, statusConfirm.order.id, {
           area: 'delivery',
           state: 'delivery',
           advancement: adv,
         });
+        openWhatsappUpdate(
+          buildStatusWhatsappLink({
+            phone: resp.order.customerPhone,
+            customerName: resp.order.customer,
+            code: resp.order.code,
+            orderNo: resp.order.no,
+            fromState: statusConfirm.order.state,
+            toState: resp.order.state,
+            branch: resp.order.branch,
+          }),
+          pendingWhatsappTab
+        );
         await refetchOrders();
         setDeliveryOrder(null);
         setDeliveryAdvance(0);
       }
       setStatusConfirm(null);
     } catch (e) {
+      if (pendingWhatsappTab) pendingWhatsappTab.close();
       setStatusError(e instanceof Error ? e.message : 'Failed to update order status');
     } finally {
       setStatusLoading(false);
@@ -372,7 +470,7 @@ export function OrdersPage() {
         setDeliverySaving(false);
       }
     }
-  }, [token, statusConfirm, refetchOrders, deliveryAdvance]);
+  }, [token, statusConfirm, refetchOrders, deliveryAdvance, openWhatsappUpdate, buildStatusWhatsappLink]);
 
   const handleStatusCancel = useCallback(() => {
     if (statusLoading) return;
@@ -420,6 +518,7 @@ export function OrdersPage() {
 
   const handleWarehouseMove = useCallback(async () => {
     if (!token || !warehouseMoveOrder) return;
+    const pendingWhatsappTab = window.open('', '_blank');
     setWarehouseSaving(true);
     setWarehousePhotoError(null);
     try {
@@ -440,18 +539,35 @@ export function OrdersPage() {
         setWarehousePhotoError('After-repair photo is required when moving to warehouse.');
         return;
       }
-      await updateOrder(token, warehouseMoveOrder.id, { area: 'warehouse', state: 'warehouse', photoAfterRepair: photoValue });
+      const resp = await updateOrder(token, warehouseMoveOrder.id, {
+        area: 'warehouse',
+        state: 'warehouse',
+        photoAfterRepair: photoValue,
+      });
+      openWhatsappUpdate(
+        buildStatusWhatsappLink({
+          phone: resp.order.customerPhone,
+          customerName: resp.order.customer,
+          code: resp.order.code,
+          orderNo: resp.order.no,
+          fromState: warehouseMoveOrder.state,
+          toState: resp.order.state,
+          branch: resp.order.branch,
+        }),
+        pendingWhatsappTab
+      );
       await refetchOrders();
       setWarehouseMoveOrder(null);
       setWarehouseAfterPhoto(null);
       setWarehousePhotoError(null);
       if (warehousePhotoInputRef.current) warehousePhotoInputRef.current.value = '';
     } catch (e) {
+      if (pendingWhatsappTab) pendingWhatsappTab.close();
       setWarehousePhotoError(e instanceof Error ? e.message : 'Failed to move order');
     } finally {
       setWarehouseSaving(false);
     }
-  }, [token, warehouseMoveOrder, warehouseAfterPhoto, warehouseAfterPhotoFile, refetchOrders]);
+  }, [token, warehouseMoveOrder, warehouseAfterPhoto, warehouseAfterPhotoFile, refetchOrders, openWhatsappUpdate, buildStatusWhatsappLink]);
 
   const tableColumns = useMemo(
     () =>

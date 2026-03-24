@@ -74,7 +74,15 @@ function formatTechnician(
   return name || id || key;
 }
 
-function toListResponse(o: any, usersById: Map<string, { name: string; identification: string }>) {
+function getClientPreferredPhone(client: any): string {
+  return String(client?.telefono1 ?? client?.telefono2 ?? client?.telefono3 ?? '').trim();
+}
+
+function toListResponse(
+  o: any,
+  usersById: Map<string, { name: string; identification: string }>,
+  clientPhonesById: Map<number, string> = new Map<number, string>()
+) {
   return {
     id: o._id,
     no: o.no,
@@ -88,6 +96,7 @@ function toListResponse(o: any, usersById: Map<string, { name: string; identific
     series: o.series,
     customer: o.clientName,
     customerId: o.clientIdentification,
+    customerPhone: clientPhonesById.get(Number(o.clientId ?? 0)) ?? '',
     technical: formatTechnician(o.technician, usersById),
     equipmentCondition: String(o.equipmentCondition ?? ''),
     technicalReport: String(o.technicalReport ?? ''),
@@ -99,7 +108,8 @@ function toListResponse(o: any, usersById: Map<string, { name: string; identific
 
 function toDetailResponse(
   o: any,
-  usersById: Map<string, { name: string; identification: string }> = new Map<string, { name: string; identification: string }>()
+  usersById: Map<string, { name: string; identification: string }> = new Map<string, { name: string; identification: string }>(),
+  customerPhone = ''
 ) {
   const accessories = Array.isArray(o.accessories) ? o.accessories.map((a: any) => String(a).trim()).filter(Boolean) : [];
   const budgetLines = Array.isArray(o.budgetLines)
@@ -126,6 +136,7 @@ function toDetailResponse(
     clientId: o.clientId,
     customer: o.clientName,
     customerId: o.clientIdentification,
+    customerPhone,
 
     brand: o.brand,
     model: o.model,
@@ -166,7 +177,42 @@ function toPublicTrackResponse(o: any) {
     photoAfterRepair: String(o.photoAfterRepair ?? ''),
     equipmentCondition: String(o.equipmentCondition ?? ''),
     technicalReport: String(o.technicalReport ?? ''),
+    warranty: Boolean(o.warranty),
   };
+}
+
+function normalizePhoneForWhatsApp(raw: unknown): string {
+  const digits = String(raw ?? '').replace(/\D/g, '');
+  if (!digits) return '';
+  if (digits.startsWith('0') && digits.length >= 10) return `593${digits.slice(1)}`;
+  return digits;
+}
+
+function buildTrackWhatsAppLink(params: { phone: string; code: string; state: string; branch: string }): string {
+  const phone = normalizePhoneForWhatsApp(params.phone);
+  if (!phone) return '';
+  const text = `Hello Servitec! I want an update for my repair.\nCode: ${params.code}\nCurrent status: ${params.state}\nBranch: ${params.branch}`;
+  return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+}
+
+function buildStatusWhatsAppLink(params: {
+  phone: string;
+  customerName: string;
+  code: string;
+  orderNo: string;
+  fromState: string;
+  toState: string;
+  branch: string;
+}): string {
+  const phone = normalizePhoneForWhatsApp(params.phone);
+  if (!phone) return '';
+  const text =
+    `Hello ${params.customerName || 'client'}, your service order has been updated.\n` +
+    `Order No: ${params.orderNo}\n` +
+    `Tracking code: ${params.code}\n` +
+    `Status: ${params.fromState} -> ${params.toState}\n` +
+    `Branch: ${params.branch}`;
+  return `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`;
 }
 
 function normalizeAccessories(accessories: unknown): string[] {
@@ -235,7 +281,26 @@ export async function getOrders(req: Request, res: Response): Promise<Response |
       });
     }
 
-    return res.json({ orders: orders.map((o: any) => toListResponse(o, usersById)) });
+    const clientIds = Array.from(
+      new Set(
+        orders
+          .map((o: any) => Number(o.clientId ?? 0))
+          .filter((id) => Number.isFinite(id) && id > 0)
+      )
+    );
+    const clients = clientIds.length
+      ? await Client.find({ clientesid: { $in: clientIds } })
+          .select('clientesid telefono1 telefono2 telefono3')
+          .lean()
+      : [];
+    const clientPhonesById = new Map<number, string>();
+    for (const c of clients as any[]) {
+      const id = Number(c?.clientesid ?? 0);
+      if (!Number.isFinite(id) || id <= 0) continue;
+      clientPhonesById.set(id, getClientPreferredPhone(c));
+    }
+
+    return res.json({ orders: orders.map((o: any) => toListResponse(o, usersById, clientPhonesById)) });
   } catch (err) {
     console.error('Get orders error:', err);
     return res.status(500).json({ error: 'Server error' });
@@ -262,7 +327,10 @@ export async function getOrderById(req: Request, res: Response): Promise<Respons
       }
     }
 
-    return res.json({ order: toDetailResponse(order, usersById) });
+    const client = await Client.findOne({ clientesid: Number((order as any).clientId ?? 0) })
+      .select('telefono1 telefono2 telefono3')
+      .lean();
+    return res.json({ order: toDetailResponse(order, usersById, getClientPreferredPhone(client)) });
   } catch (err) {
     console.error('Get order by id error:', err);
     return res.status(500).json({ error: 'Server error' });
@@ -280,8 +348,21 @@ export async function getOrderTrackByCode(req: Request, res: Response): Promise<
 
     const order = await Order.findOne({ code: raw }).lean();
     if (!order) return res.status(404).json({ error: 'Order not found' });
-
-    return res.json({ order: toPublicTrackResponse(order) });
+    const client = await Client.findOne({ clientesid: Number((order as any).clientId ?? 0) })
+      .select('telefono1 telefono2 telefono3')
+      .lean();
+    const phone = getClientPreferredPhone(client);
+    return res.json({
+      order: {
+        ...toPublicTrackResponse(order),
+        whatsappLink: buildTrackWhatsAppLink({
+          phone,
+          code: String((order as any).code ?? ''),
+          state: String((order as any).state ?? ''),
+          branch: String((order as any).branch ?? ''),
+        }),
+      },
+    });
   } catch (err) {
     console.error('Track order error:', err);
     return res.status(500).json({ error: 'Server error' });
@@ -522,9 +603,11 @@ export async function patchOrder(req: Request, res: Response): Promise<Response 
 
     // Notify customer only when the order stage changes.
     const stateAfter = doc.state as OrderState;
+    let statusWhatsappLink = '';
     if (stateAfter !== stateBefore) {
       try {
         const client = await Client.findOne({ clientesid: doc.clientId }).lean();
+        const phone = getClientPreferredPhone(client);
         const to = String((client as any)?.email ?? '').trim();
         if (to) {
           await sendOrderProgressEmail({
@@ -536,6 +619,15 @@ export async function patchOrder(req: Request, res: Response): Promise<Response 
             toState: stateAfter,
           });
         }
+        statusWhatsappLink = buildStatusWhatsAppLink({
+          phone,
+          customerName: String(doc.clientName ?? ''),
+          code: String(doc.code ?? ''),
+          orderNo: String(doc.no ?? ''),
+          fromState: String(stateBefore ?? ''),
+          toState: String(stateAfter ?? ''),
+          branch: String(doc.branch ?? ''),
+        });
       } catch (mailErr) {
         console.error('Order progress email (patch) error:', mailErr);
       }
@@ -554,7 +646,10 @@ export async function patchOrder(req: Request, res: Response): Promise<Response 
       }
     }
 
-    return res.json({ order: toDetailResponse(obj, usersById) });
+    return res.json({
+      order: toDetailResponse(obj, usersById, getClientPreferredPhone(await Client.findOne({ clientesid: obj.clientId }).select('telefono1 telefono2 telefono3').lean())),
+      whatsappLink: statusWhatsappLink,
+    });
   } catch (err) {
     console.error('Patch order error:', err);
     return res.status(500).json({ error: 'Server error' });

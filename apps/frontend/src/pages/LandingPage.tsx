@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getProductsPublic } from '../api/products';
 import { getOrdersShowcase } from '../api/orders';
+import { getPreDiagnosisRulesPublic, type PreDiagnosisRule } from '../api/preDiagnosis';
 import type { Product } from '../api/products';
 import type { OrderShowcaseItem } from '../api/orders';
 import noImageUrl from '../assets/images/noimage.png';
@@ -265,6 +266,48 @@ function OrderShowcaseSection() {
   );
 }
 
+function PreDiagnosisPreviewSection() {
+  const [rules, setRules] = useState<PreDiagnosisRule[]>([]);
+
+  useEffect(() => {
+    getPreDiagnosisRulesPublic()
+      .then((r) => setRules(r.rules.slice(0, 6)))
+      .catch(() => setRules([]));
+  }, []);
+
+  if (rules.length === 0) return null;
+
+  return (
+    <section className="py-12 md:py-16">
+      <h2 className="text-2xl font-bold text-slate-900 mb-2">Smart Pre-Diagnosis</h2>
+      <p className="text-slate-500 mb-6">
+        These rules are managed by our admin team and updated in real time.
+      </p>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {rules.map((rule) => (
+          <div key={rule.id} className="rounded-xl border border-slate-200 bg-white p-4">
+            <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
+              {rule.device} / {rule.symptom}
+            </p>
+            <p className="font-medium text-slate-900">{rule.probableIssue}</p>
+            <p className="text-sm text-slate-600 mt-2">
+              ${rule.estimateMin} - ${rule.estimateMax} · {rule.etaHours}h
+            </p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-5">
+        <Link
+          to="/diagnosis"
+          className="inline-block px-5 py-2.5 border border-emerald-200 text-emerald-700 font-semibold rounded-lg hover:border-emerald-300 transition-colors"
+        >
+          Open Smart Pre-Diagnosis
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 export function LandingPage() {
   return (
     <div className="max-w-[1120px] mx-auto">
@@ -282,6 +325,12 @@ export function LandingPage() {
         </p>
         <div className="flex gap-3 justify-center flex-wrap">
           <Link
+            to="/diagnosis"
+            className="inline-block px-6 py-3 border border-emerald-200 text-emerald-700 font-semibold rounded-lg hover:border-emerald-300 transition-colors"
+          >
+            Smart Pre-Diagnosis
+          </Link>
+          <Link
             to="/track"
             className="inline-block px-6 py-3 bg-[var(--color-accent)] text-white font-semibold rounded-lg hover:bg-[var(--color-accent-hover)] transition-colors"
           >
@@ -298,6 +347,7 @@ export function LandingPage() {
 
       <AboutSection />
       <ProductsSection />
+      <PreDiagnosisPreviewSection />
       <OrderShowcaseSection />
     </div>
   );

@@ -9,6 +9,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { LandingPage } from './pages/LandingPage';
 import { BlogPage } from './pages/BlogPage';
 import { TrackPage } from './pages/TrackPage';
+import { PreDiagnosisPage } from './pages/PreDiagnosisPage';
 
 import { LoginPage } from './pages/admin/LoginPage';
 
@@ -34,6 +35,7 @@ import { ProductsPage } from './pages/admin/ProductsPage';
 
 import { ServicesSparePartsPage } from './pages/admin/ServicesSparePartsPage';
 import { IncomePage } from './pages/admin/IncomePage';
+import { PreDiagnosisRulesPage } from './pages/admin/PreDiagnosisRulesPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 function App() {
@@ -45,6 +47,7 @@ function App() {
             <Route index element={<LandingPage />} />
             <Route path="blog" element={<BlogPage />} />
             <Route path="track" element={<TrackPage />} />
+            <Route path="diagnosis" element={<PreDiagnosisPage />} />
           </Route>
           <Route
             path="/admin/order/:id/print"
@@ -193,6 +196,14 @@ function App() {
               element={
                 <RequirePage page="/admin/income">
                   <IncomePage />
+                </RequirePage>
+              }
+            />
+            <Route
+              path="pre-diagnosis"
+              element={
+                <RequirePage page="/admin/pre-diagnosis">
+                  <PreDiagnosisRulesPage />
                 </RequirePage>
               }
             />

@@ -17,6 +17,7 @@ export interface Order {
   series: string;
   customer: string;
   customerId: string;
+  customerPhone?: string;
   technical: string;
   equipmentCondition: string;
   technicalReport: string;
