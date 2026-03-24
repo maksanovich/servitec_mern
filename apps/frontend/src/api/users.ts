@@ -27,6 +27,16 @@ export async function getUsers(token: string | null): Promise<{ users: User[] }>
   return data;
 }
 
+export async function getAssignableTechnicians(token: string | null): Promise<{ users: User[] }> {
+  if (!token) return { users: [] };
+  const res = await apiFetch('/users/technicians', { token });
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error || 'Failed to fetch technicians');
+  }
+  return data;
+}
+
 export async function getUserById(
   token: string | null,
   id: string

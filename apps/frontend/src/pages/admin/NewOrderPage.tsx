@@ -39,7 +39,7 @@ import { getModels } from '../../api/models';
 import { getAccessories, type Accessory } from '../../api/accessories';
 import { getServicesSpareParts } from '../../api/servicesSpareParts';
 import { getProducts } from '../../api/products';
-import { getUsers, type User as ApiUser } from '../../api/users';
+import { getAssignableTechnicians, type User as ApiUser } from '../../api/users';
 import { createOrder, getOrderById, updateOrder } from '../../api/orders';
 import { uploadImage } from '../../api/uploads';
 import noImageUrl from '../../assets/images/noimage.png';
@@ -155,24 +155,26 @@ export function NewOrderPage() {
     (async () => {
       try {
         const orderPromise = isEditMode && id ? getOrderById(token, id) : Promise.resolve(null);
-
-        const [{ branches }, clientsResp, { brands }, { models }, { accessories }, { users }, orderResp] = await Promise.all([
+        const [branchesRes, clientsRes, brandsRes, modelsRes, accessoriesRes, usersRes, orderRes] = await Promise.allSettled([
           getBranches(token),
           getClients(token, { page: 1, limit: 100 }),
           getBrands(token),
           getModels(token),
           getAccessories(token),
-          getUsers(token),
+          getAssignableTechnicians(token),
           orderPromise,
         ]);
 
         if (!mounted) return;
 
+        const branches = branchesRes.status === 'fulfilled' ? branchesRes.value.branches : [];
         setBranchOptions(
           branches
             .filter((b) => b.state !== 'inactive')
             .map((b) => ({ value: b.branchName, label: b.branchName }))
         );
+
+        const clientsResp = clientsRes.status === 'fulfilled' ? clientsRes.value : { clients: [] };
         setCustomerOptions(
           clientsResp.clients
             .filter((c) => c.estado !== false)
@@ -199,11 +201,15 @@ export function NewOrderPage() {
               return { value: String(c.clientesid), label, searchText };
             })
         );
+
+        const brands = brandsRes.status === 'fulfilled' ? brandsRes.value.brands : [];
         setBrandOptions(
           brands
             .filter((b) => b.state !== 'inactive')
             .map((b) => ({ value: b.name, label: b.name }))
         );
+
+        const models = modelsRes.status === 'fulfilled' ? modelsRes.value.models : [];
         setAllModels(
           models
             .filter((m) => m.state !== 'inactive')
@@ -213,8 +219,11 @@ export function NewOrderPage() {
             }))
             .filter((m) => m.brand && m.model)
         );
+
+        const accessories = accessoriesRes.status === 'fulfilled' ? accessoriesRes.value.accessories : [];
         setAccessoriesData(accessories.filter((a) => a.state !== 'inactive'));
 
+        const users = usersRes.status === 'fulfilled' ? usersRes.value.users : [];
         const activeUsers = (users ?? []).filter((u) => u.state !== 'inactive');
         const technicians = activeUsers.filter(isTechnicianUser);
         const list = (technicians.length ? technicians : activeUsers)
@@ -229,6 +238,7 @@ export function NewOrderPage() {
         setTechnicianOptions(list);
 
         // Prefill form when editing an existing order.
+        const orderResp = orderRes.status === 'fulfilled' ? orderRes.value : null;
         if (orderResp?.order) {
           const o = orderResp.order;
           setBranch(o.branch ?? '');
