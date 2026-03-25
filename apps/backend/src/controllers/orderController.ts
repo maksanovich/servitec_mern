@@ -8,6 +8,7 @@ import { Product } from '../models/Product.js';
 import { User } from '../models/User.js';
 import { Company } from '../models/Company.js';
 import { sendOrderProgressEmail } from '../services/smtpService.js';
+import { applyBudgetLinesReplacementStockDelta } from '../services/replacementStockService.js';
 import type { AuthRequest } from '../middleware/auth.js';
 
 /** Matches backend `getAssignableTechnicians` / frontend technician detection. */
@@ -473,6 +474,9 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
     }
 
     const budgetLines = normalizeBudgetLines(body.budgetLines);
+    const stockApply = await applyBudgetLinesReplacementStockDelta([], budgetLines);
+    if (!stockApply.ok) return res.status(400).json({ error: stockApply.error });
+
     const accessories = Array.isArray(body.accessories)
       ? (body.accessories as unknown[]).map((a) => String(a).trim()).filter(Boolean)
       : [];
@@ -487,7 +491,9 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
       return res.status(400).json({ error: 'After-repair photo is required when moving to warehouse' });
     }
 
-    const doc = await Order.create({
+    let doc;
+    try {
+      doc = await Order.create({
       no: await nextOrderNo(),
       code: randomCode(6),
       priority,
@@ -516,6 +522,11 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
       photoBeforeRepair: photoBefore.value,
       photoAfterRepair: photoAfter.value,
     });
+    } catch (createErr) {
+      const rollback = await applyBudgetLinesReplacementStockDelta(budgetLines, []);
+      if (!rollback.ok) console.error('Replacement stock rollback after failed create:', rollback.error);
+      throw createErr;
+    }
 
     const obj = doc.toObject();
 
@@ -623,6 +634,11 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
 
     if (body.budgetLines != null) {
       const budgetLines = normalizeBudgetLines(body.budgetLines);
+      const previousLines = Array.isArray((doc as any).budgetLines)
+        ? ([...(doc as any).budgetLines] as IOrderBudgetLine[])
+        : [];
+      const stockApply = await applyBudgetLinesReplacementStockDelta(previousLines, budgetLines);
+      if (!stockApply.ok) return res.status(400).json({ error: stockApply.error });
       doc.budgetLines = budgetLines;
       doc.total = budgetLines.reduce((sum, l) => sum + (Number.isFinite(l.total) ? l.total : 0), 0);
     }
@@ -716,6 +732,12 @@ export async function deleteOrder(req: AuthRequest, res: Response): Promise<Resp
     const existing = await Order.findById(id).lean();
     if (!existing) return res.status(404).json({ error: 'Order not found' });
     if (denyIfTechnicianNotAssignee(req, res, (existing as any).technician)) return;
+
+    const previousLines = Array.isArray((existing as any).budgetLines)
+      ? ([...(existing as any).budgetLines] as IOrderBudgetLine[])
+      : [];
+    const stockApply = await applyBudgetLinesReplacementStockDelta(previousLines, []);
+    if (!stockApply.ok) return res.status(400).json({ error: stockApply.error });
 
     const doc = await Order.findByIdAndDelete(id);
     if (!doc) return res.status(404).json({ error: 'Order not found' });

@@ -14,6 +14,12 @@ export interface ServiceSparePartItem {
   state: ServiceSparePartState;
 }
 
+/** Replacement parts with zero catalog stock cannot be added to an order budget. */
+export function canAddCatalogItemToBudget(item: Pick<ServiceSparePartItem, 'type' | 'amount'>): boolean {
+  if (item.type === 'replacement' && item.amount === 0) return false;
+  return true;
+}
+
 export async function getServicesSpareParts(token: string | null): Promise<{ items: ServiceSparePartItem[] }> {
   if (!token) return { items: [] };
   const res = await apiFetch('/services-spare-parts', { token });

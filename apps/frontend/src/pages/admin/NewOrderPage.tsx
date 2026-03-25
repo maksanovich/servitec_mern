@@ -37,7 +37,7 @@ import { getClients } from '../../api/clients';
 import { getBrands } from '../../api/brands';
 import { getModels } from '../../api/models';
 import { getAccessories, type Accessory } from '../../api/accessories';
-import { getServicesSpareParts } from '../../api/servicesSpareParts';
+import { getServicesSpareParts, canAddCatalogItemToBudget } from '../../api/servicesSpareParts';
 import { getProducts } from '../../api/products';
 import { getAssignableTechnicians, type User as ApiUser } from '../../api/users';
 import { createOrder, CreateOrderError, getOrderById, updateOrder } from '../../api/orders';
@@ -136,6 +136,9 @@ export function NewOrderPage() {
   const [advancement, setAdvancement] = useState('');
   const [accessories, setAccessories] = useState<Record<string, boolean>>({});
   const [budgetLines, setBudgetLines] = useState<BudgetLineItem[]>([]);
+  // Tracks the budget quantities at the moment this page loaded (edit mode) so we can enforce
+  // replacement stock limits while editing.
+  const initialBudgetQtyRef = useRef<Map<string, number>>(new Map());
   const [branchError, setBranchError] = useState('');
 
   const [photoBeforeRepair, setPhotoBeforeRepair] = useState<string | null>(null);
@@ -271,6 +274,7 @@ export function NewOrderPage() {
             total: l.total,
           }));
           setBudgetLines(initialBudgetLines);
+          initialBudgetQtyRef.current = new Map(initialBudgetLines.map((l) => [l.serviceId, l.amount]));
 
           setPhotoBeforeRepair(o.photoBeforeRepair?.trim() ? o.photoBeforeRepair : null);
           setPhotoAfterRepair(o.photoAfterRepair?.trim() ? o.photoAfterRepair : null);
@@ -437,6 +441,24 @@ export function NewOrderPage() {
     return filtered.filter((s) => s.state !== 'inactive');
   }, [servicesData, branch]);
 
+  const servicesById = useMemo(() => {
+    const m = new Map<string, ServiceSparePartItem>();
+    for (const s of servicesData) m.set(s.id, s);
+    return m;
+  }, [servicesData]);
+
+  const getInitialBudgetQty = useCallback((serviceId: string) => {
+    return initialBudgetQtyRef.current.get(serviceId) ?? 0;
+  }, []);
+
+  const getReplacementRemaining = useCallback(
+    (serviceId: string, currentQty: number, catalogAmount: number) => {
+      const initialQty = getInitialBudgetQty(serviceId);
+      return Number(catalogAmount ?? 0) - (Number(currentQty ?? 0) - Number(initialQty ?? 0));
+    },
+    [getInitialBudgetQty]
+  );
+
   useEffect(() => {
     // reset model selection if brand changes and selected model isn't valid anymore
     if (!model) return;
@@ -450,39 +472,61 @@ export function NewOrderPage() {
     [budgetLines]
   );
 
-  const addToBudget = useCallback((item: Pick<ServiceSparePartItem, 'id' | 'name' | 'price'>, amount: number = 1) => {
-    const total = item.price * amount;
-    setBudgetLines((prev) => {
-      const existing = prev.find((l) => l.serviceId === item.id);
-      if (existing) {
-        const newAmount = existing.amount + amount;
-        return prev.map((l) =>
-          l.serviceId === item.id
-            ? { ...l, amount: newAmount, total: l.price * newAmount }
-            : l
-        );
-      }
-      return [
-        ...prev,
-        {
-          id: `budget-${item.id}-${Date.now()}`,
-          serviceId: item.id,
-          name: item.name,
-          price: item.price,
-          amount,
-          total,
-        },
-      ];
-    });
-  }, []);
+  const addToBudget = useCallback(
+    (item: Pick<ServiceSparePartItem, 'id' | 'name' | 'price' | 'type' | 'amount'>, amount: number = 1) => {
+      if (!canAddCatalogItemToBudget(item)) return;
+      setBudgetLines((prev) => {
+        const existing = prev.find((l) => l.serviceId === item.id);
+        const currentQty = existing ? existing.amount : 0;
+
+        if (item.type === 'replacement') {
+          const remaining = getReplacementRemaining(item.id, currentQty, item.amount);
+          const addNow = Math.max(0, Math.min(amount, Math.floor(remaining)));
+          if (addNow <= 0) return prev;
+          amount = addNow;
+        }
+
+        const total = item.price * amount;
+        if (existing) {
+          const newAmount = existing.amount + amount;
+          return prev.map((l) =>
+            l.serviceId === item.id
+              ? { ...l, amount: newAmount, total: l.price * newAmount }
+              : l
+          );
+        }
+        return [
+          ...prev,
+          {
+            id: `budget-${item.id}-${Date.now()}`,
+            serviceId: item.id,
+            name: item.name,
+            price: item.price,
+            amount,
+            total,
+          },
+        ];
+      });
+    },
+    [getReplacementRemaining]
+  );
 
   const updateBudgetAmount = useCallback((lineId: string, amount: number) => {
-    setBudgetLines((prev) =>
-      prev.map((l) =>
-        l.id === lineId ? { ...l, amount, total: l.price * amount } : l
-      )
-    );
-  }, []);
+    setBudgetLines((prev) => {
+      const line = prev.find((l) => l.id === lineId);
+      if (!line) return prev;
+      const service = servicesById.get(line.serviceId);
+      let nextAmount = amount;
+      if (service?.type === 'replacement') {
+        const initialQty = getInitialBudgetQty(line.serviceId);
+        const max = Math.max(1, Math.floor(initialQty + Number(service.amount ?? 0)));
+        nextAmount = Math.min(max, Math.max(1, Math.floor(nextAmount || 1)));
+      } else {
+        nextAmount = Math.max(1, Math.floor(nextAmount || 1));
+      }
+      return prev.map((l) => (l.id === lineId ? { ...l, amount: nextAmount, total: l.price * nextAmount } : l));
+    });
+  }, [servicesById, getInitialBudgetQty]);
 
   const removeBudgetLine = useCallback((lineId: string) => {
     setBudgetLines((prev) => prev.filter((l) => l.id !== lineId));
@@ -644,22 +688,30 @@ export function NewOrderPage() {
         id: 'add',
         name: '',
         width: '60px',
-        cell: (row) => (
-          <Button
-            type="button"
-            variant="primary"
-            size="sm"
-            className="min-w-0 p-1.5"
-            onClick={() => addToBudget(row)}
-            aria-label={`Add ${row.name}`}
-          >
-            <Plus className="w-5 h-5 font-bold" />
-          </Button>
-        ),
+        cell: (row) => {
+          const currentQty = budgetLines.find((l) => l.serviceId === row.id)?.amount ?? 0;
+          const remaining =
+            row.type === 'replacement' ? getReplacementRemaining(row.id, currentQty, row.amount) : Number.POSITIVE_INFINITY;
+          const addable = canAddCatalogItemToBudget(row) && (row.type !== 'replacement' || remaining > 0);
+          return (
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              className="min-w-0 p-1.5"
+              disabled={!addable}
+              title={addable ? undefined : 'Not enough stock to add'}
+              onClick={() => addToBudget(row)}
+              aria-label={addable ? `Add ${row.name}` : `Cannot add ${row.name} — not enough stock`}
+            >
+              <Plus className="w-5 h-5 font-bold" />
+            </Button>
+          );
+        },
         ignoreRowClick: true,
       },
     ],
-    [addToBudget]
+    [addToBudget, budgetLines, getReplacementRemaining]
   );
 
   useEffect(() => {
