@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import logoUrl from '../assets/images/logo.png';
+import noImageUrl from '../assets/images/profile.png';
 import { useAuth } from '../contexts/AuthContext';
 import { useCompany } from '../contexts/CompanyContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Input } from './ui';
+import { resolveMediaSrc } from '../utils/mediaUrl';
 import {
   LayoutDashboard,
   Wrench,
@@ -58,6 +60,34 @@ function formatRelativeTime(ts: number): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
+}
+
+function HeaderUserAvatar({
+  name,
+  email,
+  avatar,
+}: {
+  name?: string | null;
+  email?: string | null;
+  avatar?: string | null;
+}) {
+  const [failed, setFailed] = useState(false);
+  const resolved = resolveMediaSrc(avatar);
+  useEffect(() => {
+    setFailed(false);
+  }, [avatar]);
+
+  const url = !failed && resolved ? resolved : noImageUrl;
+  const label = (name || email || 'User').trim() || 'User';
+
+  return (
+    <img
+      src={url}
+      alt={label}
+      className="w-9 h-9 rounded-full object-cover bg-slate-200 dark:bg-slate-600"
+      onError={() => setFailed(true)}
+    />
+  );
 }
 
 const navGroups: NavGroup[] = [
@@ -443,9 +473,7 @@ export function AdminLayout() {
                   className="flex items-center gap-2 p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
                   title="Profile menu"
                 >
-                  <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-600 flex items-center justify-center text-slate-700 dark:text-slate-300 font-medium">
-                    {(user?.name || user?.email || 'A')[0].toUpperCase()}
-                  </div>
+                  <HeaderUserAvatar name={user?.name} email={user?.email} avatar={user?.avatar} />
                   <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-800" />
                 </button>
                 {profileDropdownOpen && (

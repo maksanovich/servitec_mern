@@ -203,7 +203,7 @@ export function TrackPage() {
             </div>
           </div>
 
-          {order.whatsappLink?.trim() && (
+          {/* {order.whatsappLink?.trim() && (
             <div className="border-t border-slate-200 pt-6">
               <a
                 href={order.whatsappLink}
@@ -214,7 +214,7 @@ export function TrackPage() {
                 Request status update on WhatsApp
               </a>
             </div>
-          )}
+          )} */}
 
           {(order.equipmentCondition || order.technicalReport) && (
             <div className="border-t border-slate-200 pt-6">

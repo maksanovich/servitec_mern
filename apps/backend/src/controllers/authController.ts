@@ -50,6 +50,7 @@ export async function login(req: Request, res: Response): Promise<Response | voi
         email: user.email,
         name: user.name,
         phone: user.phone ?? '',
+        avatar: user.avatar ?? '',
         role: role
           ? {
               id: role._id,
@@ -84,6 +85,7 @@ export async function me(req: AuthRequest, res: Response): Promise<Response | vo
         email: user.email,
         name: user.name,
         phone: user.phone ?? '',
+        avatar: user.avatar ?? '',
         role: role
           ? { id: role._id, slug: role.slug, name: role.name, pages: effectivePages }
           : null,
