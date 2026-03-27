@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer';
 
 import type { OrderState } from '../models/Order.js';
+import { EMAIL_MESSAGES, ORDER_STATE_LABELS } from '../constants/messages.js';
 
 type OrderProgressEmailParams = {
   to: string;
@@ -12,16 +13,7 @@ type OrderProgressEmailParams = {
 };
 
 function formatOrderState(state: OrderState): string {
-  const map: Record<OrderState, string> = {
-    income: 'En recepción',
-    maintenance: 'En mantenimiento',
-    warehouse: 'En almacén',
-    delivery: 'En entrega',
-    waiting: 'En espera',
-    no_solution: 'Sin solución',
-    finished: 'Finalizado',
-  };
-  return map[state] ?? state;
+  return ORDER_STATE_LABELS[state] ?? state;
 }
 
 function getSmtpTransport() {
@@ -61,23 +53,19 @@ export async function sendOrderProgressEmail(params: OrderProgressEmailParams): 
   const SMTP_FROM_NAME = process.env.SMTP_FROM_NAME;
   if (!SMTP_FROM) throw new Error('Missing SMTP_FROM env var');
 
-  const subject = `Actualización de su orden ${params.orderNo}: ${formatOrderState(params.toState)}`;
+  const subject = EMAIL_MESSAGES.progressSubject(params.orderNo, formatOrderState(params.toState));
 
   const fromLine = params.fromState
-    ? `Estado anterior: ${formatOrderState(params.fromState)}`
-    : 'Estado anterior: (creada)';
+    ? EMAIL_MESSAGES.progressPreviousStateLine(formatOrderState(params.fromState))
+    : EMAIL_MESSAGES.progressCreatedLine;
 
-  const text = [
-    `Hola ${params.customerName || 'cliente'},`,
-    '',
-    `Le informamos que su orden número ${params.orderNo} cambió de estado.`,
-    `Nuevo estado: ${formatOrderState(params.toState)}`,
+  const text = EMAIL_MESSAGES.progressBody({
+    customerName: params.customerName,
+    orderNo: params.orderNo,
+    toStateLabel: formatOrderState(params.toState),
     fromLine,
-    '',
-    `Código de seguimiento: ${params.trackingCode}`,
-    '',
-    'Este es un correo automático del sistema Servitec.',
-  ].join('\n');
+    trackingCode: params.trackingCode,
+  });
 
   const transporter = getSmtpTransport();
 
@@ -109,31 +97,20 @@ export async function sendDeliveryPickupReminderEmail(params: DeliveryPickupRemi
 
   const isSecond = params.phase === '90d';
   const subject = isSecond
-    ? `Aviso importante: retiro de equipo — Orden ${params.orderNo}`
-    : `Recordatorio de retiro de equipo — Orden ${params.orderNo}`;
+    ? EMAIL_MESSAGES.pickupReminder90dSubject(params.orderNo)
+    : EMAIL_MESSAGES.pickupReminder30dSubject(params.orderNo);
 
   const text = isSecond
-    ? [
-        `Hola ${params.customerName || 'cliente'},`,
-        '',
-        `Este es el segundo aviso automático respecto a la orden ${params.orderNo}.`,
-        'Han transcurrido 90 días desde que su equipo llegó al área de entrega (60 días después del primer recordatorio enviado al mes de su llegada).',
-        'Debe retirar su producto de inmediato. La falta de retiro puede hacer que el equipo sea considerado abandonado, con las consecuencias que ello conlleve según las políticas aplicables.',
-        '',
-        `Código de seguimiento: ${params.trackingCode}`,
-        '',
-        'Este es un correo automático del sistema Servitec.',
-      ].join('\n')
-    : [
-        `Hola ${params.customerName || 'cliente'},`,
-        '',
-        `Han pasado 30 días desde que su equipo llegó al área de entrega (orden ${params.orderNo}).`,
-        'Le solicitamos pasar a retirar su producto en la sucursal correspondiente.',
-        '',
-        `Código de seguimiento: ${params.trackingCode}`,
-        '',
-        'Este es un correo automático del sistema Servitec.',
-      ].join('\n');
+    ? EMAIL_MESSAGES.pickupReminder90dBody({
+        customerName: params.customerName,
+        orderNo: params.orderNo,
+        trackingCode: params.trackingCode,
+      })
+    : EMAIL_MESSAGES.pickupReminder30dBody({
+        customerName: params.customerName,
+        orderNo: params.orderNo,
+        trackingCode: params.trackingCode,
+      });
 
   const transporter = getSmtpTransport();
 
