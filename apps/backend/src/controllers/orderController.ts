@@ -10,6 +10,7 @@ import { Company } from '../models/Company.js';
 import { sendOrderProgressEmail } from '../services/smtpService.js';
 import { applyBudgetLinesReplacementStockDelta } from '../services/replacementStockService.js';
 import type { AuthRequest } from '../middleware/auth.js';
+import { PRINT_ORDER_MESSAGES, STATUS_UPDATE_MESSAGES } from '../constants/messages.js';
 
 /** Matches backend `getAssignableTechnicians` / frontend technician detection. */
 function isTechnicianRole(slug: string, roleName?: string): boolean {
@@ -212,7 +213,11 @@ function normalizePhoneForWhatsApp(raw: unknown): string {
 function buildTrackWhatsAppLink(params: { phone: string; code: string; state: string; branch: string }): string {
   const phone = normalizePhoneForWhatsApp(params.phone);
   if (!phone) return '';
-  const text = `Hello Servitec! I want an update for my repair.\nCode: ${params.code}\nCurrent status: ${params.state}\nBranch: ${params.branch}`;
+  const text = STATUS_UPDATE_MESSAGES.trackWhatsAppText({
+    code: params.code,
+    state: params.state,
+    branch: params.branch,
+  });
   return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
 }
 
@@ -227,12 +232,14 @@ function buildStatusWhatsAppLink(params: {
 }): string {
   const phone = normalizePhoneForWhatsApp(params.phone);
   if (!phone) return '';
-  const text =
-    `Hello ${params.customerName || 'client'}, your service order has been updated.\n` +
-    `Order No: ${params.orderNo}\n` +
-    `Tracking code: ${params.code}\n` +
-    `Status: ${params.fromState} -> ${params.toState}\n` +
-    `Branch: ${params.branch}`;
+  const text = STATUS_UPDATE_MESSAGES.statusWhatsAppText({
+    customerName: params.customerName,
+    orderNo: params.orderNo,
+    code: params.code,
+    fromState: params.fromState,
+    toState: params.toState,
+    branch: params.branch,
+  });
   return `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`;
 }
 
@@ -1038,13 +1045,9 @@ export async function printOrderPdf(req: AuthRequest, res: Response): Promise<Re
       doc.text(`Technician: ${detail.technical || '-'}`, leftX, doc.y + 3);
 
       y = doc.y + 4;
-      doc.font('Helvetica-Bold').text(
-        'CHECK THE STATUS OF THIS WORK ORDER FROM OUR WEBSITE',
-        leftX,
-        y
-      );
+      doc.font('Helvetica-Bold').text(PRINT_ORDER_MESSAGES.trackingHeading, leftX, y);
       doc.font('Helvetica').text(
-        `Go to the website serviciotecnico.xyz and enter the following code. CODE: ${detail.code}`,
+        PRINT_ORDER_MESSAGES.trackingInstruction(detail.code),
         leftX,
         doc.y + 1
       );
@@ -1057,22 +1060,16 @@ export async function printOrderPdf(req: AuthRequest, res: Response): Promise<Re
 
       y = barcodeY + 26;
 
-      const termsText =
-        '1) To collect the equipment, it is mandatory to present this work order. Please keep it safe. ' +
-        '2) The equipment must be collected within a maximum period of 3 months; after this time the customer will lose all rights over it. ' +
-        '3) By leaving the equipment for repair, the customer accepts these conditions, which may also be sent virtually. ' +
-        '4) Payment will be made via bank deposit/transfer; the customer is responsible for providing correct payment details.';
-
-      doc.font('Helvetica-Bold').text('Terms and conditions:', leftX, y);
-      doc.font('Helvetica').text(termsText, leftX, doc.y + 1, { width: 520 });
+      doc.font('Helvetica-Bold').text(PRINT_ORDER_MESSAGES.termsTitle, leftX, y);
+      doc.font('Helvetica').text(PRINT_ORDER_MESSAGES.termsText, leftX, doc.y + 1, { width: 520 });
 
       doc.text(
-        'This service was received with information provided by the customer.',
+        PRINT_ORDER_MESSAGES.customerInfoNote,
         leftX,
         doc.y + 4
       );
       doc.text(
-        'This document contains information that is the exclusive property of SERVICIO TECNICO DIGITALSERVER. This information is personal and may not be shared.',
+        PRINT_ORDER_MESSAGES.confidentialityNote,
         leftX,
         doc.y + 2,
         { width: 520 }
