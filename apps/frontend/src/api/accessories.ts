@@ -2,7 +2,6 @@ import { apiFetch } from './client';
 
 export interface Accessory {
   id: string;
-  branch: string;
   artifact: string;
   state: 'active' | 'inactive';
 }
@@ -19,7 +18,7 @@ export async function getAccessories(token: string | null): Promise<{ accessorie
 
 export async function createAccessory(
   token: string | null,
-  body: { branch: string; artifact: string; state?: 'active' | 'inactive' }
+  body: { artifact: string; state?: 'active' | 'inactive' }
 ): Promise<{ accessory: Accessory }> {
   if (!token) throw new Error('Not authenticated');
   const res = await apiFetch('/accessories', {
@@ -38,7 +37,7 @@ export async function createAccessory(
 export async function updateAccessory(
   token: string | null,
   id: string,
-  body: { branch?: string; artifact?: string; state?: 'active' | 'inactive' }
+  body: { artifact?: string; state?: 'active' | 'inactive' }
 ): Promise<{ accessory: Accessory }> {
   if (!token) throw new Error('Not authenticated');
   const res = await apiFetch(`/accessories/${id}`, {

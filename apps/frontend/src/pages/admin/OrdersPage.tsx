@@ -155,7 +155,7 @@ export function OrdersPage() {
 
   const availableServices = useMemo(() => {
     if (!budgetOrder) return [];
-    const filtered = budgetOrder.branch ? servicesData.filter((s) => s.branch === budgetOrder.branch) : servicesData;
+    const filtered = servicesData;
     return filtered.filter((s) => s.state !== 'inactive');
   }, [servicesData, budgetOrder]);
 
@@ -648,7 +648,7 @@ export function OrdersPage() {
         <DataTableWithToolbar<Order>
           data={dataByArea}
           columns={tableColumns}
-          searchFields={['no', 'code', 'customer', 'technical', 'equipment', 'series', 'type', 'branch']}
+          searchFields={['no', 'code', 'customer', 'technical', 'equipment', 'series', 'type']}
           searchPlaceholder="Look for:"
           pageSizeOptions={[10, 25, 50, 100]}
           defaultPageSize={10}

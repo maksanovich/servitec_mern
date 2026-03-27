@@ -161,10 +161,6 @@ export function TrackPage() {
                 {order.brand} / {order.model} — {order.series}
               </p>
             </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Branch</p>
-              <p className="font-medium text-slate-900">{order.branch}</p>
-            </div>
             {order.createdAt && (
               <div>
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Received</p>

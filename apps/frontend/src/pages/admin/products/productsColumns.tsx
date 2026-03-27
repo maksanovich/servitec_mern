@@ -117,14 +117,6 @@ export function getProductsColumns({
 }): TableColumn<Product>[] {
   return [
     {
-      id: 'branch',
-      name: 'Branch',
-      selector: (row) => row.branch,
-      sortable: true,
-      minWidth: '180px',
-      cell: (row) => <span className="text-slate-700 dark:text-slate-300">{row.branch}</span>,
-    },
-    {
       id: 'product',
       name: 'Product',
       selector: (row) => row.product,

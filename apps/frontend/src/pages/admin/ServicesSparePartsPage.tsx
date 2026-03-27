@@ -127,7 +127,7 @@ export function ServicesSparePartsPage() {
         <DataTableWithToolbar<ServiceSparePartItem>
           data={items}
           columns={columns}
-          searchFields={['branch', 'name', 'details']}
+          searchFields={['name', 'details']}
           searchPlaceholder="Look for:"
           pageSizeOptions={[10, 25, 50, 100]}
           defaultPageSize={10}
@@ -184,7 +184,7 @@ export function ServicesSparePartsPage() {
         title="Delete service / spare part"
         message={
           deleteConfirm
-            ? `Are you sure you want to delete "${deleteConfirm.branch} - ${deleteConfirm.name}"? This action cannot be undone.`
+            ? `Are you sure you want to delete "${deleteConfirm.name}"? This action cannot be undone.`
             : ''
         }
         confirmLabel="Delete"

@@ -518,13 +518,6 @@ export function getOrdersColumns(
       />
     ),
   },
-  {
-    id: 'branch',
-    name: 'Branch',
-    selector: (row) => row.branch,
-    sortable: true,
-    width: '140px',
-  },
 ];
 }
 

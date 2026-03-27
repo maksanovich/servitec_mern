@@ -13,7 +13,6 @@ import {
   Package,
   DollarSign,
   Building2,
-  GitBranch,
   Users,
   Shield,
   FileQuestion,
@@ -123,7 +122,6 @@ const navGroups: NavGroup[] = [
     label: 'System',
     items: [
       { path: '/admin/company', label: 'Company', icon: Building2 },
-      { path: '/admin/branch', label: 'Branches', icon: GitBranch },
       { path: '/admin/users', label: 'Users', icon: Users },
       { path: '/admin/roles', label: 'Roles', icon: Shield },
     ],

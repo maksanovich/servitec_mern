@@ -121,7 +121,6 @@ function toListResponse(
     technicalReport: String(o.technicalReport ?? ''),
     total: o.total,
     advancement: Number.isFinite(Number(o.advancement)) ? Number(o.advancement) : 0,
-    branch: o.branch,
   };
 }
 
@@ -150,7 +149,6 @@ function toDetailResponse(
     state: o.state,
     area: o.area,
     type: o.type,
-    branch: o.branch,
 
     clientId: o.clientId,
     customer: o.clientName,
@@ -185,7 +183,6 @@ function toPublicTrackResponse(o: any) {
     state: o.state,
     area: o.area,
     type: o.type,
-    branch: o.branch,
     customer: o.clientName,
     brand: o.brand,
     model: o.model,
@@ -210,13 +207,12 @@ function normalizePhoneForWhatsApp(raw: unknown): string {
   return digits;
 }
 
-function buildTrackWhatsAppLink(params: { phone: string; code: string; state: string; branch: string }): string {
+function buildTrackWhatsAppLink(params: { phone: string; code: string; state: string }): string {
   const phone = normalizePhoneForWhatsApp(params.phone);
   if (!phone) return '';
   const text = STATUS_UPDATE_MESSAGES.trackWhatsAppText({
     code: params.code,
     state: params.state,
-    branch: params.branch,
   });
   return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
 }
@@ -228,7 +224,6 @@ function buildStatusWhatsAppLink(params: {
   orderNo: string;
   fromState: string;
   toState: string;
-  branch: string;
 }): string {
   const phone = normalizePhoneForWhatsApp(params.phone);
   if (!phone) return '';
@@ -238,7 +233,6 @@ function buildStatusWhatsAppLink(params: {
     code: params.code,
     fromState: params.fromState,
     toState: params.toState,
-    branch: params.branch,
   });
   return `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`;
 }
@@ -269,7 +263,7 @@ export async function getOrders(req: AuthRequest, res: Response): Promise<Respon
     if (state) filter.state = state;
     if (search) {
       const re = new RegExp(search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-      filter.$or = [{ no: re }, { code: re }, { clientName: re }, { branch: re }, { series: re }, { brand: re }, { model: re }];
+      filter.$or = [{ no: re }, { code: re }, { clientName: re }, { series: re }, { brand: re }, { model: re }];
     }
 
     const orders = await Order.find(filter).limit(limit).lean();
@@ -393,7 +387,6 @@ export async function getOrderTrackByCode(req: Request, res: Response): Promise<
           phone,
           code: String((order as any).code ?? ''),
           state: String((order as any).state ?? ''),
-          branch: String((order as any).branch ?? ''),
         }),
       },
     });
@@ -408,7 +401,7 @@ export async function getOrdersShowcase(req: Request, res: Response): Promise<Re
   try {
     const limit = Math.min(24, Math.max(1, parseInt(String(req.query.limit), 10) || 6));
     const orders = await Order.find({ state: { $in: ['delivery', 'finished'] } })
-      .select('code type brand model series branch photoBeforeRepair photoAfterRepair equipmentCondition technicalReport createdAt')
+      .select('code type brand model series photoBeforeRepair photoAfterRepair equipmentCondition technicalReport createdAt')
       .sort({ createdAt: -1 })
       .limit(limit)
       .lean();
@@ -418,7 +411,6 @@ export async function getOrdersShowcase(req: Request, res: Response): Promise<Re
       brand: o.brand,
       model: o.model,
       series: o.series,
-      branch: o.branch,
       photoBeforeRepair: String(o.photoBeforeRepair ?? ''),
       photoAfterRepair: String(o.photoAfterRepair ?? ''),
       equipmentCondition: String(o.equipmentCondition ?? ''),
@@ -436,7 +428,6 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
   try {
     const body = req.body as Record<string, unknown>;
 
-    const branch = String(body.branch ?? '').trim();
     const clientId = parseInt(String(body.clientId ?? ''), 10);
     const brand = String(body.brand ?? '').trim();
     const model = String(body.model ?? '').trim();
@@ -454,7 +445,6 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
       technician = req.user._id;
     }
 
-    if (!branch) return res.status(400).json({ error: 'branch is required' });
     if (!Number.isFinite(clientId)) return res.status(400).json({ error: 'clientId is required' });
     if (!brand) return res.status(400).json({ error: 'brand is required' });
     if (!model) return res.status(400).json({ error: 'model is required' });
@@ -462,10 +452,9 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
     if (!type) return res.status(400).json({ error: 'type is required' });
     if (!technician) return res.status(400).json({ error: 'technician is required' });
 
-    // Product must exist and be active for the selected branch.
-    const productDoc = await Product.findOne({ branch, product: type, state: 'active' }).lean();
+    const productDoc = await Product.findOne({ product: type, state: 'active' }).lean();
     if (!productDoc) {
-      return res.status(400).json({ error: 'Product not available for this branch' });
+      return res.status(400).json({ error: 'Product not available' });
     }
 
     const client = await Client.findOne({ clientesid: clientId }).lean();
@@ -510,7 +499,6 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
       state,
       deliveryArrivedAt: state === 'delivery' ? new Date() : undefined,
       type,
-      branch,
       clientId,
       clientName: client.razonsocial ?? client.nombrecomercial ?? `Client ${clientId}`,
       clientIdentification: client.identificacion ?? '',
@@ -592,8 +580,6 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
     // Immutable: order number and customer tracking code must never change via PATCH
     delete body.code;
     delete body.no;
-
-    if (body.branch != null) doc.branch = String(body.branch ?? '').trim();
 
     if (body.clientId != null) {
       const clientId = parseInt(String(body.clientId ?? ''), 10);
@@ -703,7 +689,6 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
           orderNo: String(doc.no ?? ''),
           fromState: String(stateBefore ?? ''),
           toState: String(stateAfter ?? ''),
-          branch: String(doc.branch ?? ''),
         });
       } catch (mailErr) {
         console.error('Order progress email (patch) error:', mailErr);

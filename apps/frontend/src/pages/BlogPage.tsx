@@ -65,7 +65,6 @@ export function BlogPage() {
                       : '—'}
                   </time>
                   <span>{order.type}</span>
-                  <span>{order.branch}</span>
                   <span className="font-mono text-slate-600">#{order.code}</span>
                 </div>
               </div>

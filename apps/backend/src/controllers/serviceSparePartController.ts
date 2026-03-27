@@ -4,7 +4,6 @@ import { ServiceSparePart } from '../models/ServiceSparePart.js';
 function toResponse(item: any) {
   return {
     id: item._id,
-    branch: item.branch,
     type: item.type,
     name: item.name,
     amount: item.amount ?? 0,
@@ -17,7 +16,7 @@ function toResponse(item: any) {
 export async function getAllServicesSpareParts(_req: Request, res: Response): Promise<Response | void> {
   try {
     const items = await ServiceSparePart.find()
-      .sort({ branch: 1, type: 1, name: 1 })
+      .sort({ type: 1, name: 1 })
       .lean();
     res.json({ items: items.map(toResponse) });
   } catch (err) {
@@ -40,8 +39,7 @@ export async function getServiceSparePartById(req: Request, res: Response): Prom
 
 export async function createServiceSparePart(req: Request, res: Response): Promise<Response | void> {
   try {
-    const { branch, type, name, amount, price, details, state } = req.body as {
-      branch: string;
+    const { type, name, amount, price, details, state } = req.body as {
       type: 'service' | 'replacement';
       name: string;
       amount?: number;
@@ -50,20 +48,18 @@ export async function createServiceSparePart(req: Request, res: Response): Promi
       state?: 'active' | 'inactive';
     };
 
-    const trimmedBranch = String(branch ?? '').trim();
     const trimmedName = String(name ?? '').trim();
     const trimmedDetails = details != null ? String(details).trim() : '';
     const normalizedType = type === 'replacement' ? 'replacement' : 'service';
 
-    if (!trimmedBranch || !trimmedName) {
-      return res.status(400).json({ error: 'branch and name are required' });
+    if (!trimmedName) {
+      return res.status(400).json({ error: 'name is required' });
     }
     if (price == null || Number.isNaN(Number(price))) {
       return res.status(400).json({ error: 'price is required' });
     }
 
     const doc = await ServiceSparePart.create({
-      branch: trimmedBranch,
       type: normalizedType,
       name: trimmedName,
       amount: amount == null ? 0 : Number(amount),
@@ -76,7 +72,7 @@ export async function createServiceSparePart(req: Request, res: Response): Promi
   } catch (err) {
     const error = err as Error & { code?: number };
     if (error.code === 11000) {
-      return res.status(409).json({ error: 'This item already exists for the selected branch' });
+      return res.status(409).json({ error: 'This item already exists' });
     }
     console.error('Create service/spare part error:', err);
     res.status(500).json({ error: 'Server error' });
@@ -86,8 +82,7 @@ export async function createServiceSparePart(req: Request, res: Response): Promi
 export async function updateServiceSparePart(req: Request, res: Response): Promise<Response | void> {
   try {
     const { id } = req.params;
-    const { branch, type, name, amount, price, details, state } = req.body as {
-      branch?: string;
+    const { type, name, amount, price, details, state } = req.body as {
       type?: 'service' | 'replacement';
       name?: string;
       amount?: number;
@@ -99,7 +94,6 @@ export async function updateServiceSparePart(req: Request, res: Response): Promi
     const doc: any = await ServiceSparePart.findById(id);
     if (!doc) return res.status(404).json({ error: 'Service/spare part not found' });
 
-    if (branch !== undefined) doc.branch = String(branch).trim();
     if (type !== undefined) doc.type = type === 'replacement' ? 'replacement' : 'service';
     if (name !== undefined) doc.name = String(name).trim();
     if (amount !== undefined) doc.amount = Number(amount);
@@ -112,7 +106,7 @@ export async function updateServiceSparePart(req: Request, res: Response): Promi
   } catch (err) {
     const error = err as Error & { code?: number };
     if (error.code === 11000) {
-      return res.status(409).json({ error: 'This item already exists for the selected branch' });
+      return res.status(409).json({ error: 'This item already exists' });
     }
     console.error('Update service/spare part error:', err);
     res.status(500).json({ error: 'Server error' });

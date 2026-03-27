@@ -13,10 +13,6 @@ export function ExpandableAccessoryRow({ data }: Props) {
           <p className="font-medium text-slate-700 dark:text-slate-300">{data.id}</p>
         </div>
         <div>
-          <span className="text-slate-500 dark:text-slate-400">Branch</span>
-          <p className="font-medium text-slate-700 dark:text-slate-300">{data.branch}</p>
-        </div>
-        <div>
           <span className="text-slate-500 dark:text-slate-400">Artifact</span>
           <p className="font-medium text-slate-700 dark:text-slate-300">{data.artifact}</p>
         </div>

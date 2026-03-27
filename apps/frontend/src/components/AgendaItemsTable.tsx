@@ -12,7 +12,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { getOrders, type OrderListItem } from '../api/orders';
 
 export interface AgendaItem {
-  branch: string;
   date: string;
   customer: string;
   area: string;
@@ -23,7 +22,6 @@ export interface AgendaItem {
 }
 
 const columns: TableColumn<AgendaItem>[] = [
-  { id: 'branch', name: 'Branch', selector: (row) => row.branch, sortable: true },
   {
     id: 'date',
     name: 'Date',
@@ -88,7 +86,6 @@ export function AgendaItemsTable() {
       const formattedDate = created ? `${yyyy}-${mm}-${dd}` : '';
 
       return {
-        branch: o.branch,
         date: formattedDate,
         customer: o.customer,
         area: o.area,
@@ -141,7 +138,7 @@ export function AgendaItemsTable() {
       <DataTableWithToolbar<AgendaItem>
         data={data}
         columns={columns}
-        searchFields={['branch', 'customer', 'service', 'state']}
+        searchFields={['customer', 'service', 'state']}
         searchPlaceholder="Search..."
         dateColumnId="date"
         defaultStartDate={defaultStartDate}

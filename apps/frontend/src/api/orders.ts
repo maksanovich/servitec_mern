@@ -23,7 +23,6 @@ export interface OrderListItem {
   technicalReport: string;
   total: number;
   advancement: number;
-  branch: string;
 }
 
 export async function getOrders(
@@ -46,7 +45,6 @@ export async function getOrders(
 }
 
 export interface CreateOrderPayload {
-  branch: string;
   clientId: number;
   brand: string;
   model: string;
@@ -123,7 +121,6 @@ export interface OrderDetail {
   state: OrderState;
   area: OrderArea;
   type: string;
-  branch: string;
 
   clientId: number;
   customer: string;
@@ -158,7 +155,6 @@ export interface OrderTrackPublic {
   state: OrderState;
   area: OrderArea;
   type: string;
-  branch: string;
   customer: string;
   brand: string;
   model: string;
@@ -180,7 +176,6 @@ export interface OrderShowcaseItem {
   brand: string;
   model: string;
   series: string;
-  branch: string;
   photoBeforeRepair: string;
   photoAfterRepair: string;
   equipmentCondition: string;
@@ -189,7 +184,6 @@ export interface OrderShowcaseItem {
 }
 
 export type UpdateOrderPayload = Partial<{
-  branch: string;
   clientId: number;
   brand: string;
   model: string;

@@ -24,7 +24,6 @@ import { AdminPlaceholder } from './pages/admin/AdminPlaceholder';
 import { ProfilePage } from './pages/admin/ProfilePage';
 
 import { CompanyPage } from './pages/admin/CompanyPage';
-import { BranchPage } from './pages/admin/BranchPage';
 import { RolePage } from './pages/admin/RolePage';
 import { UserPage } from './pages/admin/UserPage';
 
@@ -215,14 +214,6 @@ function App() {
               element={
                 <RequirePage page="/admin/company">
                   <CompanyPage />
-                </RequirePage>
-              }
-            />
-            <Route
-              path="branch"
-              element={
-                <RequirePage page="/admin/branch">
-                  <BranchPage />
                 </RequirePage>
               }
             />

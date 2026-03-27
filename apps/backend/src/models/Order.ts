@@ -19,7 +19,6 @@ export interface IOrder extends Omit<Document, 'model'> {
   area: OrderArea;
   state: OrderState;
   type: string;
-  branch: string;
 
   clientId: number;
   clientName: string;
@@ -78,7 +77,6 @@ const orderSchema = new mongoose.Schema<IOrder>(
       required: true,
     },
     type: { type: String, required: true, trim: true },
-    branch: { type: String, required: true, trim: true, index: true },
 
     clientId: { type: Number, required: true, index: true },
     clientName: { type: String, required: true, trim: true },

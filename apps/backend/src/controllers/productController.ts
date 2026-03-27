@@ -1,10 +1,9 @@
 import { Request, Response } from 'express';
 import { Product } from '../models/Product.js';
 
-function toResponse(item: { _id: unknown; branch: string; product: string; state?: string }) {
+function toResponse(item: { _id: unknown; product: string; state?: string }) {
   return {
     id: item._id,
-    branch: item.branch,
     product: item.product,
     state: item.state === 'inactive' ? 'inactive' : 'active',
   };
@@ -12,14 +11,12 @@ function toResponse(item: { _id: unknown; branch: string; product: string; state
 
 export async function getProducts(req: Request, res: Response): Promise<Response | void> {
   try {
-    const branch = typeof req.query.branch === 'string' ? req.query.branch.trim() : '';
     const state = typeof req.query.state === 'string' ? req.query.state.trim() : '';
 
     const filter: Record<string, unknown> = {};
-    if (branch) filter.branch = branch;
     if (state === 'active' || state === 'inactive') filter.state = state;
 
-    const products = await Product.find(filter).sort({ branch: 1, product: 1 }).lean();
+    const products = await Product.find(filter).sort({ product: 1 }).lean();
     res.json({ products: products.map(toResponse) });
   } catch (err) {
     console.error('Get products error:', err);
@@ -31,7 +28,7 @@ export async function getProducts(req: Request, res: Response): Promise<Response
 export async function getProductsPublic(req: Request, res: Response): Promise<Response | void> {
   try {
     const products = await Product.find({ state: 'active' })
-      .sort({ branch: 1, product: 1 })
+      .sort({ product: 1 })
       .lean();
     res.json({ products: products.map(toResponse) });
   } catch (err) {
@@ -54,21 +51,17 @@ export async function getProductById(req: Request, res: Response): Promise<Respo
 
 export async function createProduct(req: Request, res: Response): Promise<Response | void> {
   try {
-    const { branch, product, state } = req.body as {
-      branch: string;
+    const { product, state } = req.body as {
       product: string;
       state?: 'active' | 'inactive';
     };
 
-    const trimmedBranch = String(branch ?? '').trim();
     const trimmedProduct = String(product ?? '').trim();
     const normalizedState = state === 'inactive' ? 'inactive' : 'active';
 
-    if (!trimmedBranch) return res.status(400).json({ error: 'branch is required' });
     if (!trimmedProduct) return res.status(400).json({ error: 'product is required' });
 
     const doc = await Product.create({
-      branch: trimmedBranch,
       product: trimmedProduct,
       state: normalizedState,
     });
@@ -77,7 +70,7 @@ export async function createProduct(req: Request, res: Response): Promise<Respon
   } catch (err) {
     const error = err as Error & { code?: number };
     if (error.code === 11000) {
-      return res.status(409).json({ error: 'This product already exists for the selected branch' });
+      return res.status(409).json({ error: 'This product already exists' });
     }
     console.error('Create product error:', err);
     res.status(500).json({ error: 'Server error' });
@@ -87,8 +80,7 @@ export async function createProduct(req: Request, res: Response): Promise<Respon
 export async function updateProduct(req: Request, res: Response): Promise<Response | void> {
   try {
     const { id } = req.params;
-    const { branch, product, state } = req.body as {
-      branch?: string;
+    const { product, state } = req.body as {
       product?: string;
       state?: 'active' | 'inactive';
     };
@@ -96,7 +88,6 @@ export async function updateProduct(req: Request, res: Response): Promise<Respon
     const doc: any = await Product.findById(id);
     if (!doc) return res.status(404).json({ error: 'Product not found' });
 
-    if (branch !== undefined) doc.branch = String(branch ?? '').trim();
     if (product !== undefined) doc.product = String(product ?? '').trim();
     if (state !== undefined && (state === 'active' || state === 'inactive')) doc.state = state;
 
@@ -105,7 +96,7 @@ export async function updateProduct(req: Request, res: Response): Promise<Respon
   } catch (err) {
     const error = err as Error & { code?: number };
     if (error.code === 11000) {
-      return res.status(409).json({ error: 'This product already exists for the selected branch' });
+      return res.status(409).json({ error: 'This product already exists' });
     }
     console.error('Update product error:', err);
     res.status(500).json({ error: 'Server error' });
