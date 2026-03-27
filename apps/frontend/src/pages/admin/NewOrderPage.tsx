@@ -34,7 +34,6 @@ import type { TableColumn } from 'react-data-table-component';
 import type { SelectOption } from '../../components/ui';
 import type { ServiceSparePartItem } from '../../api/servicesSpareParts';
 import { useAuth } from '../../contexts/AuthContext';
-import { getBranches } from '../../api/branches';
 import { getClients } from '../../api/clients';
 import { createBrand, getBrands } from '../../api/brands';
 import { createModel, getModels } from '../../api/models';
@@ -106,7 +105,6 @@ export function NewOrderPage() {
   const { id } = useParams<{ id?: string }>();
   const isEditMode = !!id;
 
-  const [branchOptions, setBranchOptions] = useState<SelectOption[]>([]);
   const [customerOptions, setCustomerOptions] = useState<SelectOption[]>([]);
   const [customerQuery, setCustomerQuery] = useState('');
   const [customerLoading, setCustomerLoading] = useState(false);
@@ -118,7 +116,6 @@ export function NewOrderPage() {
   const [technicianOptions, setTechnicianOptions] = useState<SelectOption[]>([]);
   const [submitError, setSubmitError] = useState<{ text: string; contactClientId?: number } | null>(null);
 
-  const [branch, setBranch] = useState('');
   const [customer, setCustomer] = useState('');
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
@@ -141,7 +138,6 @@ export function NewOrderPage() {
   // Tracks the budget quantities at the moment this page loaded (edit mode) so we can enforce
   // replacement stock limits while editing.
   const initialBudgetQtyRef = useRef<Map<string, number>>(new Map());
-  const [branchError, setBranchError] = useState('');
   const [quickAddError, setQuickAddError] = useState<string | null>(null);
   const [quickAddBrandLoading, setQuickAddBrandLoading] = useState(false);
   const [quickAddModelLoading, setQuickAddModelLoading] = useState(false);
@@ -167,8 +163,7 @@ export function NewOrderPage() {
     (async () => {
       try {
         const orderPromise = isEditMode && id ? getOrderById(token, id) : Promise.resolve(null);
-        const [branchesRes, clientsRes, brandsRes, modelsRes, accessoriesRes, usersRes, orderRes] = await Promise.allSettled([
-          getBranches(token),
+        const [clientsRes, brandsRes, modelsRes, accessoriesRes, usersRes, orderRes] = await Promise.allSettled([
           getClients(token, { page: 1, limit: 100 }),
           getBrands(token),
           getModels(token),
@@ -178,13 +173,6 @@ export function NewOrderPage() {
         ]);
 
         if (!mounted) return;
-
-        const branches = branchesRes.status === 'fulfilled' ? branchesRes.value.branches : [];
-        setBranchOptions(
-          branches
-            .filter((b) => b.state !== 'inactive')
-            .map((b) => ({ value: b.branchName, label: b.branchName }))
-        );
 
         const clientsResp = clientsRes.status === 'fulfilled' ? clientsRes.value : { clients: [] };
         setCustomerOptions(
@@ -253,7 +241,6 @@ export function NewOrderPage() {
         const orderResp = orderRes.status === 'fulfilled' ? orderRes.value : null;
         if (orderResp?.order) {
           const o = orderResp.order;
-          setBranch(o.branch ?? '');
           setCustomer(String(o.clientId ?? ''));
           setBrand(o.brand ?? '');
           setModel(o.model ?? '');
@@ -291,7 +278,6 @@ export function NewOrderPage() {
       } catch (e) {
         console.error(e);
         if (mounted) {
-          setBranchOptions([]);
           setCustomerOptions([]);
           setBrandOptions([]);
           setAllModels([]);
@@ -315,17 +301,11 @@ export function NewOrderPage() {
   useEffect(() => {
     if (!token) return;
 
-    if (!branch) {
-      setProductOptions([]);
-      if (!isEditMode) setProduct('');
-      return;
-    }
-
     let mounted = true;
     (async () => {
       setProductsLoading(true);
       try {
-        const { products } = await getProducts(token, { branch, state: 'active' });
+        const { products } = await getProducts(token, { state: 'active' });
         if (!mounted) return;
 
         setProductOptions(products.map((p) => ({ value: p.product, label: p.product })));
@@ -349,7 +329,7 @@ export function NewOrderPage() {
     return () => {
       mounted = false;
     };
-  }, [token, branch, isEditMode]);
+  }, [token, isEditMode]);
 
   useEffect(() => {
     if (!token) return;
@@ -427,14 +407,14 @@ export function NewOrderPage() {
   }, [allModels, brand, normalizeKey]);
 
   const accessoryOptions = useMemo(() => {
-    const filtered = branch ? accessoriesData.filter((a) => a.branch === branch) : accessoriesData;
+    const filtered = accessoriesData;
     const unique = new Map<string, string>();
     for (const a of filtered) {
       const key = a.artifact;
       if (!unique.has(key)) unique.set(key, key);
     }
     return Array.from(unique.values()).sort().map((label) => ({ id: label, label }));
-  }, [accessoriesData, branch]);
+  }, [accessoriesData]);
 
   const effectiveProductOptions = useMemo(() => {
     const trimmed = product.trim();
@@ -446,9 +426,9 @@ export function NewOrderPage() {
   }, [product, productOptions, isEditMode]);
 
   const availableServices = useMemo(() => {
-    const filtered = branch ? servicesData.filter((s) => s.branch === branch) : servicesData;
+    const filtered = servicesData;
     return filtered.filter((s) => s.state !== 'inactive');
-  }, [servicesData, branch]);
+  }, [servicesData]);
 
   const servicesById = useMemo(() => {
     const m = new Map<string, ServiceSparePartItem>();
@@ -591,11 +571,6 @@ export function NewOrderPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!branch) {
-      setBranchError('Required Branch');
-      return;
-    }
-    setBranchError('');
     setSubmitError(null);
     try {
       if (!token) {
@@ -629,7 +604,6 @@ export function NewOrderPage() {
       }
 
       const payload = {
-        branch,
         clientId: parseInt(customer, 10),
         brand,
         model,
@@ -708,12 +682,8 @@ export function NewOrderPage() {
   }, [brand, openQuickAddModal]);
 
   const handleQuickAddProduct = useCallback(() => {
-    if (!branch.trim()) {
-      setQuickAddError('Select a branch before adding a product.');
-      return;
-    }
     openQuickAddModal('product');
-  }, [branch, openQuickAddModal]);
+  }, [openQuickAddModal]);
 
   const handleQuickAddSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -761,7 +731,6 @@ export function NewOrderPage() {
         setModel(created.model);
       } else {
         const { product: created } = await createCatalogProduct(token, {
-          branch: branch.trim(),
           product: value,
           state: 'active',
         });
@@ -783,7 +752,7 @@ export function NewOrderPage() {
       setQuickAddModelLoading(false);
       setQuickAddProductLoading(false);
     }
-  }, [brand, branch, normalizeKey, quickAddType, quickAddValue, token]);
+  }, [brand, normalizeKey, quickAddType, quickAddValue, token]);
 
   const servicesColumns: TableColumn<ServiceSparePartItem>[] = useMemo(
     () => [
@@ -854,19 +823,10 @@ export function NewOrderPage() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
-                <label className={labelClass()}>Branch <span className="text-red-500 dark:text-red-400">*</span></label>
+                <label className={labelClass()}>Location <span className="text-red-500 dark:text-red-400">*</span></label>
                 {wrapWithIcon(
                   Building2,
-                  <SearchableSelect
-                    options={branchOptions}
-                    placeholder="-- Select --"
-                    value={branch}
-                    onValueChange={setBranch}
-                    buttonClassName={`${branchError ? 'border-red-500' : ''}`}
-                  />
-                )}
-                {branchError && (
-                  <p className="mt-1 text-xs text-red-500 dark:text-red-400">{branchError}</p>
+                  <Input value="Main" disabled />
                 )}
               </div>
               <div>
@@ -973,14 +933,14 @@ export function NewOrderPage() {
                         size="sm"
                         className="h-9 px-3"
                         onClick={handleQuickAddProduct}
-                        disabled={quickAddProductLoading || !branch.trim()}
+                        disabled={quickAddProductLoading}
                         isLoading={quickAddProductLoading}
                       >
                         + Add
                       </Button>
                     </div>
                     {!effectiveProductOptions.length && (
-                      <p className="text-xs text-red-600 dark:text-red-400">No active products for this branch.</p>
+                      <p className="text-xs text-red-600 dark:text-red-400">No active products available.</p>
                     )}
                   </div>
                 )}
@@ -1406,9 +1366,6 @@ export function NewOrderPage() {
             />
             {quickAddType === 'model' && brand.trim() && (
               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Brand: {brand}</p>
-            )}
-            {quickAddType === 'product' && branch.trim() && (
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Branch: {branch}</p>
             )}
           </div>
 

@@ -117,7 +117,7 @@ export function ProductsPage() {
   const exportExcel = () => exportTableToExcel(columns, filteredDataRef.current, exportOptions);
 
   const handleFormSubmit = useCallback(
-    async (data: { branch: string; product: string; state: 'active' | 'inactive' }) => {
+    async (data: { product: string; state: 'active' | 'inactive' }) => {
       if (!token) return;
       if (editingProduct) {
         await updateProduct(token, editingProduct.id, data);
@@ -144,7 +144,7 @@ export function ProductsPage() {
         <DataTableWithToolbar<Product>
           data={products}
           columns={columns}
-          searchFields={['branch', 'product']}
+          searchFields={['product']}
           searchPlaceholder="Look for:"
           pageSizeOptions={[10, 25, 50, 100]}
           defaultPageSize={10}
@@ -192,7 +192,7 @@ export function ProductsPage() {
         title="Delete product"
         message={
           deleteConfirm
-            ? `Are you sure you want to delete "${deleteConfirm.branch} - ${deleteConfirm.product}"? This action cannot be undone.`
+            ? `Are you sure you want to delete "${deleteConfirm.product}"? This action cannot be undone.`
             : ''
         }
         confirmLabel="Delete"

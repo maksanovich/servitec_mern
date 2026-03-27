@@ -4,7 +4,6 @@ export type ServiceSparePartType = 'service' | 'replacement';
 export type ServiceSparePartState = 'active' | 'inactive';
 
 export interface IServiceSparePart extends Document {
-  branch: string;
   type: ServiceSparePartType;
   name: string;
   amount: number;
@@ -15,11 +14,6 @@ export interface IServiceSparePart extends Document {
 
 const serviceSparePartSchema = new mongoose.Schema<IServiceSparePart>(
   {
-    branch: {
-      type: String,
-      required: true,
-      trim: true,
-    },
     type: {
       type: String,
       enum: ['service', 'replacement'],
@@ -54,8 +48,7 @@ const serviceSparePartSchema = new mongoose.Schema<IServiceSparePart>(
   { timestamps: true }
 );
 
-// Prevent duplicates per branch/type/name.
-serviceSparePartSchema.index({ branch: 1, type: 1, name: 1 }, { unique: true });
+serviceSparePartSchema.index({ type: 1, name: 1 }, { unique: true });
 
 export const ServiceSparePart: MongooseModel<IServiceSparePart> =
   mongoose.model<IServiceSparePart>('ServiceSparePart', serviceSparePartSchema);

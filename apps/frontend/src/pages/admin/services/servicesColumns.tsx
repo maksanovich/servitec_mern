@@ -126,16 +126,6 @@ function formatPrice(price: number) {
 export function getServicesColumns(actions: ServiceSparePartColumnActions): TableColumn<ServiceSparePartItem>[] {
   return [
     {
-      id: 'branch',
-      name: 'Branch',
-      selector: (row) => row.branch,
-      sortable: true,
-      width: '160px',
-      cell: (row) => (
-        <span className="text-slate-700 dark:text-slate-300">{row.branch}</span>
-      ),
-    },
-    {
       id: 'type',
       name: 'Type',
       selector: (row) => row.type,

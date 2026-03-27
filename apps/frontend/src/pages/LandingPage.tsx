@@ -103,8 +103,8 @@ function AboutSection() {
           view before and after photos, and read technical notes at any time.
         </p>
         <p className="text-slate-600 leading-relaxed">
-          We serve multiple branches and offer a wide range of repair solutions for various
-          equipment types. Your satisfaction and equipment longevity are our priorities.
+          We offer a wide range of repair solutions for various equipment types. Your satisfaction
+          and equipment longevity are our priorities.
         </p>
       </div>
     </section>
@@ -137,33 +137,17 @@ function ProductsSection() {
 
   if (products.length === 0) return null;
 
-  const byBranch = products.reduce<Record<string, Product[]>>((acc, p) => {
-    const b = p.branch || 'Other';
-    if (!acc[b]) acc[b] = [];
-    acc[b].push(p);
-    return acc;
-  }, {});
-
   return (
     <section className="py-12 md:py-16">
       <h2 className="text-2xl font-bold text-slate-900 mb-6">Our Products & Services</h2>
-      <div className="space-y-6">
-        {Object.entries(byBranch).map(([branch, items]) => (
-          <div key={branch}>
-            <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-3">
-              {branch}
-            </h3>
-            <div className="flex flex-wrap gap-3">
-              {items.map((p) => (
-                <span
-                  key={p.id}
-                  className="px-4 py-2 bg-slate-100 text-slate-800 rounded-lg font-medium"
-                >
-                  {p.product}
-                </span>
-              ))}
-            </div>
-          </div>
+      <div className="flex flex-wrap gap-3">
+        {products.map((p) => (
+          <span
+            key={p.id}
+            className="px-4 py-2 bg-slate-100 text-slate-800 rounded-lg font-medium"
+          >
+            {p.product}
+          </span>
         ))}
       </div>
     </section>
@@ -232,7 +216,7 @@ function OrderShowcaseSection() {
                 {order.brand} / {order.model}
               </p>
               <p className="text-xs text-slate-500 mb-3">
-                {order.type} · {order.branch}
+                {order.type}
               </p>
               {(order.equipmentCondition || order.technicalReport) && (
                 <button

@@ -107,16 +107,6 @@ const stateLabel: Record<string, string> = {
 
 export const getAccessoriesColumns = (actions: AccessoryColumnActions): TableColumn<Accessory>[] => [
   {
-    id: 'branch',
-    name: 'Branch',
-    selector: (row) => row.branch,
-    sortable: true,
-    minWidth: '180px',
-    cell: (row) => (
-      <span className="text-slate-700 dark:text-slate-300">{row.branch}</span>
-    ),
-  },
-  {
     id: 'artifact',
     name: 'Artifact',
     selector: (row) => row.artifact,

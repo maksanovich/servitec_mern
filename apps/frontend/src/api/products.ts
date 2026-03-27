@@ -4,7 +4,6 @@ export type ProductState = 'active' | 'inactive';
 
 export interface Product {
   id: string;
-  branch: string;
   product: string;
   state: ProductState;
 }
@@ -18,12 +17,11 @@ export async function getProductsPublic(): Promise<{ products: Product[] }> {
 
 export async function getProducts(
   token: string | null,
-  params: { branch?: string; state?: ProductState } = {}
+  params: { state?: ProductState } = {}
 ): Promise<{ products: Product[] }> {
   if (!token) return { products: [] };
 
   const sp = new URLSearchParams();
-  if (params.branch) sp.set('branch', params.branch);
   if (params.state) sp.set('state', params.state);
 
   const qs = sp.toString();
@@ -46,7 +44,7 @@ export async function getProductById(
 
 export async function createProduct(
   token: string | null,
-  body: { branch: string; product: string; state?: ProductState }
+  body: { product: string; state?: ProductState }
 ): Promise<{ product: Product }> {
   if (!token) throw new Error('Not authenticated');
   const res = await apiFetch('/products', {
@@ -63,7 +61,7 @@ export async function createProduct(
 export async function updateProduct(
   token: string | null,
   id: string,
-  body: Partial<{ branch: string; product: string; state: ProductState }>
+  body: Partial<{ product: string; state: ProductState }>
 ): Promise<{ product: Product }> {
   if (!token) throw new Error('Not authenticated');
   const res = await apiFetch(`/products/${id}`, {

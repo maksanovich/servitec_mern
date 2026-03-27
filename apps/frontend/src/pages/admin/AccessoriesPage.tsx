@@ -83,17 +83,15 @@ export function AccessoriesPage() {
     setModalOpen(true);
   }, []);
 
-  const handleFormSubmit = async (data: { branch: string; artifact: string; state: 'active' | 'inactive' }) => {
+  const handleFormSubmit = async (data: { artifact: string; state: 'active' | 'inactive' }) => {
     if (!token) return;
     if (editingAccessory) {
       await accessoriesApi.updateAccessory(token, editingAccessory.id, {
-        branch: data.branch,
         artifact: data.artifact,
         state: data.state,
       });
     } else {
       await accessoriesApi.createAccessory(token, {
-        branch: data.branch,
         artifact: data.artifact,
         state: data.state,
       });
@@ -135,7 +133,7 @@ export function AccessoriesPage() {
         <DataTableWithToolbar<Accessory>
           data={accessories}
           columns={columns}
-          searchFields={['branch', 'artifact']}
+          searchFields={['artifact']}
           searchPlaceholder="Look for:"
           pageSizeOptions={[10, 25, 50, 100]}
           defaultPageSize={10}
@@ -192,7 +190,7 @@ export function AccessoriesPage() {
         title="Delete accessory"
         message={
           deleteConfirm
-            ? `Are you sure you want to delete "${deleteConfirm.branch} - ${deleteConfirm.artifact}"? This action cannot be undone.`
+            ? `Are you sure you want to delete "${deleteConfirm.artifact}"? This action cannot be undone.`
             : ''
         }
         confirmLabel="Delete"

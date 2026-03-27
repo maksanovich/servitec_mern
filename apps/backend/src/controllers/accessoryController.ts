@@ -1,10 +1,9 @@
 import { Request, Response } from 'express';
 import { Accessory } from '../models/Accessory.js';
 
-function toResponse(accessory: { _id: unknown; branch: string; artifact: string; state?: string }) {
+function toResponse(accessory: { _id: unknown; artifact: string; state?: string }) {
   return {
     id: accessory._id,
-    branch: accessory.branch,
     artifact: accessory.artifact,
     state: accessory.state === 'inactive' ? 'inactive' : 'active',
   };
@@ -12,12 +11,11 @@ function toResponse(accessory: { _id: unknown; branch: string; artifact: string;
 
 export async function getAllAccessories(_req: Request, res: Response): Promise<Response | void> {
   try {
-    const accessories = await Accessory.find().sort({ branch: 1, artifact: 1 }).lean();
+    const accessories = await Accessory.find().sort({ artifact: 1 }).lean();
     res.json({
       accessories: accessories.map((a) =>
         toResponse({
           _id: a._id,
-          branch: a.branch,
           artifact: a.artifact,
           state: a.state,
         })
@@ -39,7 +37,6 @@ export async function getAccessoryById(req: Request, res: Response): Promise<Res
     res.json({
       accessory: toResponse({
         _id: accessory._id,
-        branch: accessory.branch,
         artifact: accessory.artifact,
         state: accessory.state,
       }),
@@ -52,16 +49,14 @@ export async function getAccessoryById(req: Request, res: Response): Promise<Res
 
 export async function createAccessory(req: Request, res: Response): Promise<Response | void> {
   try {
-    const { branch, artifact, state } = req.body as {
-      branch: string;
+    const { artifact, state } = req.body as {
       artifact: string;
       state?: 'active' | 'inactive';
     };
-    if (!branch || !artifact) {
-      return res.status(400).json({ error: 'branch and artifact are required' });
+    if (!artifact) {
+      return res.status(400).json({ error: 'artifact is required' });
     }
     const doc = await Accessory.create({
-      branch: String(branch).trim(),
       artifact: String(artifact).trim(),
       state: state === 'inactive' ? 'inactive' : 'active',
     });
@@ -69,7 +64,6 @@ export async function createAccessory(req: Request, res: Response): Promise<Resp
     res.status(201).json({
       accessory: toResponse({
         _id: obj._id,
-        branch: obj.branch,
         artifact: obj.artifact,
         state: obj.state,
       }),
@@ -77,7 +71,7 @@ export async function createAccessory(req: Request, res: Response): Promise<Resp
   } catch (err) {
     const error = err as Error & { code?: number };
     if (error.code === 11000) {
-      return res.status(409).json({ error: 'This accessory already exists for the selected branch' });
+      return res.status(409).json({ error: 'This accessory already exists' });
     }
     console.error('Create accessory error:', err);
     res.status(500).json({ error: 'Server error' });
@@ -87,8 +81,7 @@ export async function createAccessory(req: Request, res: Response): Promise<Resp
 export async function updateAccessory(req: Request, res: Response): Promise<Response | void> {
   try {
     const { id } = req.params;
-    const { branch, artifact, state } = req.body as {
-      branch?: string;
+    const { artifact, state } = req.body as {
       artifact?: string;
       state?: 'active' | 'inactive';
     };
@@ -96,7 +89,6 @@ export async function updateAccessory(req: Request, res: Response): Promise<Resp
     if (!doc) {
       return res.status(404).json({ error: 'Accessory not found' });
     }
-    if (branch !== undefined) doc.branch = String(branch).trim();
     if (artifact !== undefined) doc.artifact = String(artifact).trim();
     if (state !== undefined && (state === 'active' || state === 'inactive')) {
       doc.state = state;
@@ -106,7 +98,6 @@ export async function updateAccessory(req: Request, res: Response): Promise<Resp
     res.json({
       accessory: toResponse({
         _id: obj._id,
-        branch: obj.branch,
         artifact: obj.artifact,
         state: obj.state,
       }),
@@ -114,7 +105,7 @@ export async function updateAccessory(req: Request, res: Response): Promise<Resp
   } catch (err) {
     const error = err as Error & { code?: number };
     if (error.code === 11000) {
-      return res.status(409).json({ error: 'This accessory already exists for the selected branch' });
+      return res.status(409).json({ error: 'This accessory already exists' });
     }
     console.error('Update accessory error:', err);
     res.status(500).json({ error: 'Server error' });

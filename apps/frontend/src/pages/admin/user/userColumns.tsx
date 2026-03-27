@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronDown, Pencil, Trash2, GitBranch } from 'lucide-react';
+import { ChevronDown, Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '../../../components/ui';
 import type { TableColumn } from '../../../components/datatable';
 import type { User } from './types';
@@ -15,7 +15,6 @@ const MENU_WIDTH = 180;
 export interface UserColumnActions {
   onEdit: (user: User) => void;
   onDelete: (user: User) => void;
-  onAssignBranch?: (user: User) => void;
   /** When true, Delete is disabled (e.g. for super admin users). */
   isDeleteDisabled?: (user: User) => boolean;
 }
@@ -24,13 +23,11 @@ function ActionDropdown({
   user,
   onEdit,
   onDelete,
-  onAssignBranch,
   isDeleteDisabled,
 }: {
   user: User;
   onEdit: (user: User) => void;
   onDelete: (user: User) => void;
-  onAssignBranch?: (user: User) => void;
   isDeleteDisabled?: (user: User) => boolean;
 }) {
   const deleteDisabled = !!isDeleteDisabled?.(user);
@@ -113,18 +110,6 @@ function ActionDropdown({
             >
               <Pencil className="w-4 h-4" /> Edit
             </button>
-            {onAssignBranch && (
-              <button
-                type="button"
-                className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
-                onClick={() => {
-                  onAssignBranch(user);
-                  setOpen(false);
-                }}
-              >
-                <GitBranch className="w-4 h-4" /> Assign branch
-              </button>
-            )}
             <button
               type="button"
               disabled={deleteDisabled}
@@ -169,7 +154,6 @@ function getActionDropdown(actions: UserColumnActions) {
       user={row}
       onEdit={actions.onEdit}
       onDelete={actions.onDelete}
-      onAssignBranch={actions.onAssignBranch}
       isDeleteDisabled={actions.isDeleteDisabled}
     />
   );

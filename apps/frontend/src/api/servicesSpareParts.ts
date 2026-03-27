@@ -5,7 +5,6 @@ export type ServiceSparePartState = 'active' | 'inactive';
 
 export interface ServiceSparePartItem {
   id: string;
-  branch: string;
   type: ServiceSparePartType;
   name: string;
   amount: number;
