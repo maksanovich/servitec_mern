@@ -34,22 +34,20 @@ function getSmtpTransport() {
     SMTP_FROM_NAME,
   } = process.env;
 
-  const portNum = Number(SMTP_PORT);
-  const port = Number.isFinite(portNum) ? portNum : 465;
-
   if (!SMTP_HOST || !SMTP_PORT || !SMTP_USERNAME || !SMTP_PASSWORD || !SMTP_FROM) {
     throw new Error('Missing required SMTP_* env vars');
   }
 
   return nodemailer.createTransport({
     host: SMTP_HOST,
-    port,
-    secure: port === 465, // Gmail usually uses 465 with TLS
+    // Force SendGrid mode requested by user: 587 + STARTTLS
+    port: 587,
+    secure: false,
+    requireTLS: true,
     auth: {
       user: SMTP_USERNAME,
       pass: SMTP_PASSWORD,
     },
-    // Keep connection reliability decent; adjust if your SMTP provider requires different settings.
     connectionTimeout: 10_000,
     greetingTimeout: 10_000,
   });
