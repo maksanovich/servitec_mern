@@ -373,10 +373,12 @@ export async function getOrderTrackByCode(req: Request, res: Response): Promise<
 
     const order = await Order.findOne({ code: raw }).lean();
     if (!order) return res.status(404).json({ error: 'Order not found' });
-    const client = await Client.findOne({ clientesid: Number((order as any).clientId ?? 0) })
-      .select('telefono1 telefono2 telefono3')
-      .lean();
-    const phone = getClientPreferredPhone(client);
+    const technicianId = String((order as any).technician ?? '').trim();
+    let phone = '';
+    if (technicianId) {
+      const technician = await User.findById(technicianId).select('phone').lean();
+      phone = String((technician as any)?.phone ?? '').trim();
+    }
     return res.json({
       order: {
         ...toPublicTrackResponse(order),

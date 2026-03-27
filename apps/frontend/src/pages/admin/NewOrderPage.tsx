@@ -5,6 +5,7 @@ import {
   Building2,
   User,
   Tag,
+  Package,
   Cpu,
   Hash,
   BarChart3,
@@ -26,6 +27,7 @@ import {
   SearchableSelect,
   DatePicker,
   Loader,
+  Modal,
 } from '../../components/ui';
 import { DataTableWithToolbar } from '../../components/datatable';
 import type { TableColumn } from 'react-data-table-component';
@@ -34,11 +36,11 @@ import type { ServiceSparePartItem } from '../../api/servicesSpareParts';
 import { useAuth } from '../../contexts/AuthContext';
 import { getBranches } from '../../api/branches';
 import { getClients } from '../../api/clients';
-import { getBrands } from '../../api/brands';
-import { getModels } from '../../api/models';
+import { createBrand, getBrands } from '../../api/brands';
+import { createModel, getModels } from '../../api/models';
 import { getAccessories, type Accessory } from '../../api/accessories';
 import { getServicesSpareParts, canAddCatalogItemToBudget } from '../../api/servicesSpareParts';
-import { getProducts } from '../../api/products';
+import { createProduct as createCatalogProduct, getProducts } from '../../api/products';
 import { getAssignableTechnicians, type User as ApiUser } from '../../api/users';
 import { createOrder, CreateOrderError, getOrderById, updateOrder } from '../../api/orders';
 import { uploadImage } from '../../api/uploads';
@@ -140,6 +142,13 @@ export function NewOrderPage() {
   // replacement stock limits while editing.
   const initialBudgetQtyRef = useRef<Map<string, number>>(new Map());
   const [branchError, setBranchError] = useState('');
+  const [quickAddError, setQuickAddError] = useState<string | null>(null);
+  const [quickAddBrandLoading, setQuickAddBrandLoading] = useState(false);
+  const [quickAddModelLoading, setQuickAddModelLoading] = useState(false);
+  const [quickAddProductLoading, setQuickAddProductLoading] = useState(false);
+  const [quickAddOpen, setQuickAddOpen] = useState(false);
+  const [quickAddType, setQuickAddType] = useState<'brand' | 'model' | 'product' | null>(null);
+  const [quickAddValue, setQuickAddValue] = useState('');
 
   const [photoBeforeRepair, setPhotoBeforeRepair] = useState<string | null>(null);
   const [photoAfterRepair, setPhotoAfterRepair] = useState<string | null>(null);
@@ -679,6 +688,103 @@ export function NewOrderPage() {
     navigate('/admin/order');
   };
 
+  const openQuickAddModal = useCallback((type: 'brand' | 'model' | 'product') => {
+    setQuickAddError(null);
+    setQuickAddType(type);
+    setQuickAddValue('');
+    setQuickAddOpen(true);
+  }, []);
+
+  const handleQuickAddBrand = useCallback(() => {
+    openQuickAddModal('brand');
+  }, [openQuickAddModal]);
+
+  const handleQuickAddModel = useCallback(() => {
+    if (!brand.trim()) {
+      setQuickAddError('Select a brand before adding a model.');
+      return;
+    }
+    openQuickAddModal('model');
+  }, [brand, openQuickAddModal]);
+
+  const handleQuickAddProduct = useCallback(() => {
+    if (!branch.trim()) {
+      setQuickAddError('Select a branch before adding a product.');
+      return;
+    }
+    openQuickAddModal('product');
+  }, [branch, openQuickAddModal]);
+
+  const handleQuickAddSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!token) {
+      setQuickAddError('Not authenticated.');
+      return;
+    }
+    if (!quickAddType) return;
+
+    const value = quickAddValue.trim();
+    if (!value) {
+      setQuickAddError('Name is required.');
+      return;
+    }
+
+    setQuickAddError(null);
+    if (quickAddType === 'brand') setQuickAddBrandLoading(true);
+    if (quickAddType === 'model') setQuickAddModelLoading(true);
+    if (quickAddType === 'product') setQuickAddProductLoading(true);
+
+    try {
+      if (quickAddType === 'brand') {
+        const { brand: created } = await createBrand(token, { name: value, state: 'active' });
+        setBrandOptions((prev) => {
+          const next = new Map(prev.map((b) => [normalizeKey(b.value), b]));
+          next.set(normalizeKey(created.name), { value: created.name, label: created.name });
+          return Array.from(next.values()).sort((a, b) => a.label.localeCompare(b.label));
+        });
+        setBrand(created.name);
+      } else if (quickAddType === 'model') {
+        const { model: created } = await createModel(token, {
+          brand: brand.trim(),
+          model: value,
+          state: 'active',
+        });
+        setAllModels((prev) => {
+          const exists = prev.some(
+            (m) => normalizeKey(m.brand) === normalizeKey(created.brand) && normalizeKey(m.model) === normalizeKey(created.model)
+          );
+          if (exists) return prev;
+          return [...prev, { brand: created.brand, model: created.model }];
+        });
+        setModel(created.model);
+      } else {
+        const { product: created } = await createCatalogProduct(token, {
+          branch: branch.trim(),
+          product: value,
+          state: 'active',
+        });
+        setProductOptions((prev) => {
+          const next = new Map(prev.map((p) => [normalizeKey(p.value), p]));
+          next.set(normalizeKey(created.product), { value: created.product, label: created.product });
+          return Array.from(next.values()).sort((a, b) => a.label.localeCompare(b.label));
+        });
+        setProduct(created.product);
+      }
+
+      setQuickAddOpen(false);
+      setQuickAddType(null);
+      setQuickAddValue('');
+    } catch (err) {
+      setQuickAddError(err instanceof Error ? err.message : 'Failed to create item');
+    } finally {
+      setQuickAddBrandLoading(false);
+      setQuickAddModelLoading(false);
+      setQuickAddProductLoading(false);
+    }
+  }, [brand, branch, normalizeKey, quickAddType, quickAddValue, token]);
+
   const servicesColumns: TableColumn<ServiceSparePartItem>[] = useMemo(
     () => [
       { id: 'name', name: 'Service/Spare Parts', selector: (r) => r.name, sortable: true },
@@ -780,34 +886,64 @@ export function NewOrderPage() {
               </div>
               <div>
                 <label className={labelClass()}>Brand <span className="text-red-500 dark:text-red-400">*</span></label>
-                {wrapWithIcon(
-                  Tag,
-                  <SearchableSelect
-                    options={brandOptions}
-                    placeholder="-- Select --"
-                    value={brand}
-                    onValueChange={setBrand}
-                  />
-                )}
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    {wrapWithIcon(
+                      Tag,
+                      <SearchableSelect
+                        options={brandOptions}
+                        placeholder="-- Select --"
+                        value={brand}
+                        onValueChange={setBrand}
+                      />
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="h-9 px-3"
+                    onClick={handleQuickAddBrand}
+                    disabled={quickAddBrandLoading}
+                    isLoading={quickAddBrandLoading}
+                  >
+                    + Add
+                  </Button>
+                </div>
               </div>
               <div>
                 <label className={labelClass()}>Model <span className="text-red-500 dark:text-red-400">*</span></label>
-                {wrapWithIcon(
-                  Cpu,
-                  <SearchableSelect
-                    options={modelOptions}
-                    placeholder="-- Select --"
-                    value={model}
-                    onValueChange={setModel}
-                  />
-                )}
+                <div className="flex items-center gap-2">
+                  <div className="flex-1">
+                    {wrapWithIcon(
+                      Cpu,
+                      <SearchableSelect
+                        options={modelOptions}
+                        placeholder="-- Select --"
+                        value={model}
+                        onValueChange={setModel}
+                      />
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="h-9 px-3"
+                    onClick={handleQuickAddModel}
+                    disabled={quickAddModelLoading || !brand.trim()}
+                    isLoading={quickAddModelLoading}
+                  >
+                    + Add
+                  </Button>
+                </div>
               </div>
               <div>
                 <label className={labelClass()}>Series <span className="text-red-500 dark:text-red-400">*</span></label>
                 <Input
                   leftIcon={Hash}
                   value={series}
-                  onChange={(e) => setSeries(e.target.value)}
+                  onChange={(e) => setSeries(e.target.value.toUpperCase())}
                   placeholder="Serial / Series"
                 />
               </div>
@@ -817,24 +953,36 @@ export function NewOrderPage() {
                   <div className="pt-2">
                     <Loader size="md" />
                   </div>
-                ) : effectiveProductOptions.length ? (
-                  <div className="flex flex-wrap gap-3 pt-2">
-                    {effectiveProductOptions.map((opt) => (
-                      <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="product"
-                          value={opt.value}
-                          checked={product === opt.value}
-                          onChange={() => setProduct(opt.value)}
-                          className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                        />
-                        <span className="text-sm text-slate-700 dark:text-slate-300">{opt.label}</span>
-                      </label>
-                    ))}
-                  </div>
                 ) : (
-                  <p className="pt-2 text-xs text-red-600 dark:text-red-400">No active products for this branch.</p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        {wrapWithIcon(
+                          Package,
+                          <SearchableSelect
+                            options={effectiveProductOptions}
+                            placeholder="-- Select --"
+                            value={product}
+                            onValueChange={setProduct}
+                          />
+                        )}
+                      </div>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        className="h-9 px-3"
+                        onClick={handleQuickAddProduct}
+                        disabled={quickAddProductLoading || !branch.trim()}
+                        isLoading={quickAddProductLoading}
+                      >
+                        + Add
+                      </Button>
+                    </div>
+                    {!effectiveProductOptions.length && (
+                      <p className="text-xs text-red-600 dark:text-red-400">No active products for this branch.</p>
+                    )}
+                  </div>
                 )}
               </div>
               <div>
@@ -1220,6 +1368,79 @@ export function NewOrderPage() {
           </Button>
         </div>
       </form>
+
+      <Modal
+        open={quickAddOpen}
+        onClose={() => {
+          if (quickAddBrandLoading || quickAddModelLoading || quickAddProductLoading) return;
+          setQuickAddOpen(false);
+          setQuickAddType(null);
+          setQuickAddValue('');
+          setQuickAddError(null);
+        }}
+        title={
+          quickAddType === 'brand'
+            ? 'Add brand'
+            : quickAddType === 'model'
+              ? 'Add model'
+              : 'Add product'
+        }
+        size="sm"
+      >
+        <form onSubmit={handleQuickAddSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+              {quickAddType === 'brand' ? 'Brand name' : quickAddType === 'model' ? 'Model name' : 'Product name'}
+            </label>
+            <Input
+              value={quickAddValue}
+              onChange={(e) => setQuickAddValue(e.target.value)}
+              placeholder={
+                quickAddType === 'brand'
+                  ? 'e.g. HP'
+                  : quickAddType === 'model'
+                    ? 'e.g. LATITUDE 5420'
+                    : 'e.g. MOTHERBOARD'
+              }
+              autoFocus
+            />
+            {quickAddType === 'model' && brand.trim() && (
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Brand: {brand}</p>
+            )}
+            {quickAddType === 'product' && branch.trim() && (
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Branch: {branch}</p>
+            )}
+          </div>
+
+          {quickAddError && (
+            <p className="text-sm text-red-600 dark:text-red-400">{quickAddError}</p>
+          )}
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => {
+                if (quickAddBrandLoading || quickAddModelLoading || quickAddProductLoading) return;
+                setQuickAddOpen(false);
+                setQuickAddType(null);
+                setQuickAddValue('');
+                setQuickAddError(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              isLoading={quickAddBrandLoading || quickAddModelLoading || quickAddProductLoading}
+              disabled={quickAddBrandLoading || quickAddModelLoading || quickAddProductLoading}
+            >
+              Create
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }
