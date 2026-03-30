@@ -157,7 +157,6 @@ function ProductsSection() {
 function OrderShowcaseSection() {
   const [orders, setOrders] = useState<OrderShowcaseItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState<number | null>(null);
 
   useEffect(() => {
     getOrdersShowcase(6)
@@ -188,10 +187,11 @@ function OrderShowcaseSection() {
         See before & after results and technical notes from our finished repairs.
       </p>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {orders.map((order, i) => (
-          <div
+        {orders.map((order) => (
+          <Link
             key={order.code}
-            className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow"
+            to={`/blog/${encodeURIComponent(order.code)}`}
+            className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow block text-left"
           >
             <div className="grid grid-cols-2 gap-0 border-b border-slate-100">
               <div className="p-2 bg-slate-50">
@@ -215,35 +215,12 @@ function OrderShowcaseSection() {
               <p className="font-mono text-sm font-semibold text-slate-900 mb-1">
                 {order.brand} / {order.model}
               </p>
-              <p className="text-xs text-slate-500 mb-3">
-                {order.type}
-              </p>
-              {(order.equipmentCondition || order.technicalReport) && (
-                <button
-                  onClick={() => setSelected(selected === i ? null : i)}
-                  className="text-sm text-[var(--color-accent)] hover:underline font-medium"
-                >
-                  {selected === i ? 'Hide notes' : 'Technical notes'}
-                </button>
-              )}
-              {selected === i && (
-                <div className="mt-3 pt-3 border-t border-slate-100 text-sm text-slate-600 space-y-2">
-                  {order.equipmentCondition && (
-                    <p>
-                      <span className="font-semibold text-slate-700">Condition: </span>
-                      {order.equipmentCondition}
-                    </p>
-                  )}
-                  {order.technicalReport && (
-                    <p>
-                      <span className="font-semibold text-slate-700">Report: </span>
-                      {order.technicalReport}
-                    </p>
-                  )}
-                </div>
-              )}
+              <p className="text-xs text-slate-500 mb-3">{order.type}</p>
+              <span className="text-sm text-[var(--color-accent)] font-medium">
+                View full story →
+              </span>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </section>
