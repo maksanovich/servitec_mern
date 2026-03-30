@@ -9,6 +9,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { LandingPage } from './pages/LandingPage';
 import { BlogPage } from './pages/BlogPage';
+import { BlogPostPage } from './pages/BlogPostPage';
 import { TrackPage } from './pages/TrackPage';
 import { PreDiagnosisPage } from './pages/PreDiagnosisPage';
 
@@ -46,6 +47,7 @@ function App() {
           <Route path="/" element={<Layout />}>
             <Route index element={<LandingPage />} />
             <Route path="blog" element={<BlogPage />} />
+            <Route path="blog/:code" element={<BlogPostPage />} />
             <Route path="track" element={<TrackPage />} />
             <Route path="diagnosis" element={<PreDiagnosisPage />} />
           </Route>

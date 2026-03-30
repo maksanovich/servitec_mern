@@ -258,3 +258,15 @@ export async function getOrdersShowcase(limit = 6): Promise<{ orders: OrderShowc
   return data;
 }
 
+export async function getOrderShowcaseByCode(
+  code: string
+): Promise<{ order: OrderShowcaseItem } | null> {
+  const trimmed = code.trim();
+  if (!trimmed) return null;
+  const res = await publicApiFetch(`/orders/showcase/${encodeURIComponent(trimmed)}`);
+  const data = await res.json();
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(data.error || 'Failed to fetch showcase entry');
+  return data;
+}
+

@@ -424,6 +424,54 @@ export async function getOrdersShowcase(req: Request, res: Response): Promise<Re
   }
 }
 
+/** Public: one delivered/finished showcase entry by order code (for blog post URLs). */
+export async function getOrderShowcaseByCode(req: Request, res: Response): Promise<Response | void> {
+  try {
+    const raw = String(req.params.code ?? '').trim();
+    if (!raw) {
+      return res.status(400).json({ error: 'Code is required' });
+    }
+    const order = await Order.findOne({
+      code: raw,
+      state: { $in: ['delivery', 'finished'] },
+    })
+      .select('code type brand model series photoBeforeRepair photoAfterRepair equipmentCondition technicalReport createdAt')
+      .lean();
+    if (!order) {
+      return res.status(404).json({ error: 'Not found' });
+    }
+    const o = order as {
+      code: string;
+      type: string;
+      brand: string;
+      model: string;
+      series: string;
+      photoBeforeRepair?: string;
+      photoAfterRepair?: string;
+      equipmentCondition?: string;
+      technicalReport?: string;
+      createdAt?: Date;
+    };
+    return res.json({
+      order: {
+        code: o.code,
+        type: o.type,
+        brand: o.brand,
+        model: o.model,
+        series: o.series,
+        photoBeforeRepair: String(o.photoBeforeRepair ?? ''),
+        photoAfterRepair: String(o.photoAfterRepair ?? ''),
+        equipmentCondition: String(o.equipmentCondition ?? ''),
+        technicalReport: String(o.technicalReport ?? ''),
+        createdAt: o.createdAt ? new Date(o.createdAt).toISOString() : undefined,
+      },
+    });
+  } catch (err) {
+    console.error('Order showcase by code error:', err);
+    return res.status(500).json({ error: 'Server error' });
+  }
+}
+
 export async function createOrder(req: AuthRequest, res: Response): Promise<Response | void> {
   try {
     const body = req.body as Record<string, unknown>;
