@@ -7,6 +7,7 @@ import {
   getOrderById,
   getOrders,
   getOrderTrackByCode,
+  getOrderTechnicalReportByCode,
   getOrdersShowcase,
   getOrderShowcaseByCode,
   patchOrder,
@@ -15,6 +16,7 @@ import {
 
 const router = Router();
 
+router.get('/track/:code/technical-report', getOrderTechnicalReportByCode);
 router.get('/track/:code', getOrderTrackByCode);
 router.get('/showcase', getOrdersShowcase);
 router.get('/showcase/:code', getOrderShowcaseByCode);
