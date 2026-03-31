@@ -3,6 +3,8 @@ import mongoose, { Document, Model } from 'mongoose';
 export type OrderPriority = 'low' | 'normal' | 'high' | 'urgent';
 export type OrderArea = 'entrance' | 'maintenance' | 'warehouse' | 'delivery' | 'waiting-parts';
 export type OrderState = 'income' | 'maintenance' | 'warehouse' | 'delivery' | 'waiting' | 'no_solution' | 'finished';
+/** Which progress-stage pipeline applies (standard repair vs warranty). */
+export type OrderWorkflow = 'standard' | 'warranty';
 
 export interface IOrderBudgetLine {
   serviceId: string;
@@ -39,6 +41,7 @@ export interface IOrder extends Omit<Document, 'model'> {
   technicalReport: string;
   diagnosis: boolean;
   warranty: boolean;
+  workflow: OrderWorkflow;
   password?: string;
   fianceeDate?: string;
   advancement: number;
@@ -98,6 +101,7 @@ const orderSchema = new mongoose.Schema<IOrder>(
     technicalReport: { type: String, default: '', trim: true },
     diagnosis: { type: Boolean, default: false },
     warranty: { type: Boolean, default: false },
+    workflow: { type: String, enum: ['standard', 'warranty'], default: 'standard' },
     password: { type: String, default: '' },
     fianceeDate: { type: String, default: '' },
     advancement: { type: Number, default: 0 },
@@ -119,6 +123,7 @@ const orderSchema = new mongoose.Schema<IOrder>(
 orderSchema.index({ no: 1 }, { unique: true });
 orderSchema.index({ state: 1, deliveryArrivedAt: 1 });
 orderSchema.index({ code: 1 }, { unique: true });
+orderSchema.index({ workflow: 1 });
 
 export const Order: Model<IOrder> = mongoose.model<IOrder>('Order', orderSchema);
 

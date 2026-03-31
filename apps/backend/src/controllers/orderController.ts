@@ -3,7 +3,14 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import PDFDocument from 'pdfkit';
-import { Order, type IOrderBudgetLine, type OrderArea, type OrderPriority, type OrderState } from '../models/Order.js';
+import {
+  Order,
+  type IOrderBudgetLine,
+  type OrderArea,
+  type OrderPriority,
+  type OrderState,
+  type OrderWorkflow,
+} from '../models/Order.js';
 import { OrderProgressStage } from '../models/OrderProgressStage.js';
 import { Client } from '../models/Client.js';
 import { Product } from '../models/Product.js';
@@ -13,7 +20,7 @@ import { sendOrderProgressEmail } from '../services/smtpService.js';
 import { applyBudgetLinesReplacementStockDelta } from '../services/replacementStockService.js';
 import type { AuthRequest } from '../middleware/auth.js';
 import { PRINT_ORDER_MESSAGES, STATUS_UPDATE_MESSAGES } from '../constants/messages.js';
-import { seedDefaultStagesIfEmpty } from './orderProgressStageController.js';
+import { ensureWarrantyStages, seedDefaultStagesIfEmpty } from './orderProgressStageController.js';
 import {
   buildTechnicalReportDocxBuffer,
   isOrderEligibleForTechnicalReport,
@@ -151,25 +158,82 @@ function deriveLegacyStateFromLegacyArea(area: OrderArea): OrderState {
   }
 }
 
-function inferProgressStageKeyFromOrder(
-  o: any,
-  stagesByLegacyArea: Map<OrderArea, string>,
-  defaultStageKey = ''
-): string {
+type StageLean = { key: string; legacyArea: OrderArea; sortOrder: number; workflow?: string };
+
+type StageInferenceContext = {
+  stages: StageLean[];
+  stagesByLegacyArea: Map<OrderArea, string>;
+  defaultStageKey: string;
+  firstStageKeyByWorkflow: Map<OrderWorkflow, string>;
+};
+
+function normalizeOrderWorkflow(o: { workflow?: unknown; warranty?: unknown }): OrderWorkflow {
+  const w = String(o?.workflow ?? '').trim();
+  if (w === 'warranty' || w === 'standard') return w;
+  return o?.warranty === true || String(o?.warranty ?? '') === 'yes' ? 'warranty' : 'standard';
+}
+
+function inferProgressStageKeyFromOrder(o: any, ctx: StageInferenceContext): string {
   const raw = normalizeProgressStageKey(o?.progressStageKey);
   if (raw) return raw;
-
+  const wf = normalizeOrderWorkflow(o);
+  const first = ctx.firstStageKeyByWorkflow.get(wf);
+  if (first) return first;
   const legacyArea = String(o?.area ?? '').trim() as OrderArea;
-  const inferred = stagesByLegacyArea.get(legacyArea);
-  return inferred || defaultStageKey || '';
+  const pool = ctx.stages
+    .filter((s) => String(s.workflow ?? 'standard') === wf && s.legacyArea === legacyArea)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+  if (pool[0]?.key) return String(pool[0].key);
+  const inferred = ctx.stagesByLegacyArea.get(legacyArea);
+  return inferred || ctx.defaultStageKey || '';
+}
+
+async function loadStageInferenceContext(): Promise<StageInferenceContext> {
+  await seedDefaultStagesIfEmpty();
+  await ensureWarrantyStages();
+  const stages = (await OrderProgressStage.find().sort({ workflow: 1, sortOrder: 1 }).lean()) as StageLean[];
+  const stagesByLegacyArea = new Map<OrderArea, string>();
+  for (const s of stages) {
+    if (String(s.workflow ?? 'standard') !== 'standard') continue;
+    const legacyArea = String(s?.legacyArea ?? '') as OrderArea;
+    if (!legacyArea) continue;
+    if (!stagesByLegacyArea.has(legacyArea)) stagesByLegacyArea.set(legacyArea, String(s?.key ?? ''));
+  }
+  const firstStageKeyByWorkflow = new Map<OrderWorkflow, string>();
+  for (const wf of ['standard', 'warranty'] as const) {
+    const first = stages.find((s) => String(s.workflow ?? 'standard') === wf);
+    firstStageKeyByWorkflow.set(wf, String(first?.key ?? ''));
+  }
+  const defaultStageKey = firstStageKeyByWorkflow.get('standard') ?? String(stages[0]?.key ?? '');
+  return { stages, stagesByLegacyArea, defaultStageKey, firstStageKeyByWorkflow };
+}
+
+/** Backfill `workflow` on legacy orders (before explicit field existed). */
+async function syncLegacyOrderWorkflowFields(): Promise<void> {
+  try {
+    await Order.updateMany(
+      { $or: [{ workflow: { $exists: false } }, { workflow: null }, { workflow: '' }] },
+      [{ $set: { workflow: { $cond: ['$warranty', 'warranty', 'standard'] } } }]
+    );
+  } catch (e) {
+    console.warn('syncLegacyOrderWorkflowFields:', e);
+  }
+}
+
+function emptyStageInferenceContext(): StageInferenceContext {
+  return {
+    stages: [],
+    stagesByLegacyArea: new Map(),
+    defaultStageKey: '',
+    firstStageKeyByWorkflow: new Map(),
+  };
 }
 
 function toListResponse(
   o: any,
   usersById: Map<string, { name: string; identification: string }>,
   clientPhonesById: Map<number, string> = new Map<number, string>(),
-  stagesByLegacyArea: Map<OrderArea, string> = new Map<OrderArea, string>(),
-  defaultStageKey = ''
+  ctx: StageInferenceContext = emptyStageInferenceContext()
 ) {
   return {
     id: o._id,
@@ -179,7 +243,8 @@ function toListResponse(
     priority: o.priority,
     state: o.state,
     area: o.area,
-    progressStageKey: inferProgressStageKeyFromOrder(o, stagesByLegacyArea, defaultStageKey),
+    workflow: normalizeOrderWorkflow(o),
+    progressStageKey: inferProgressStageKeyFromOrder(o, ctx),
     type: o.type,
     equipment: `${o.brand}(${o.model})`,
     series: o.series,
@@ -198,8 +263,7 @@ function toDetailResponse(
   o: any,
   usersById: Map<string, { name: string; identification: string }> = new Map<string, { name: string; identification: string }>(),
   customerPhone = '',
-  stagesByLegacyArea: Map<OrderArea, string> = new Map<OrderArea, string>(),
-  defaultStageKey = ''
+  ctx: StageInferenceContext = emptyStageInferenceContext()
 ) {
   const accessories = Array.isArray(o.accessories) ? o.accessories.map((a: any) => String(a).trim()).filter(Boolean) : [];
   const budgetLines = Array.isArray(o.budgetLines)
@@ -220,7 +284,8 @@ function toDetailResponse(
     priority: o.priority,
     state: o.state,
     area: o.area,
-    progressStageKey: inferProgressStageKeyFromOrder(o, stagesByLegacyArea, defaultStageKey),
+    workflow: normalizeOrderWorkflow(o),
+    progressStageKey: inferProgressStageKeyFromOrder(o, ctx),
     type: o.type,
 
     clientId: o.clientId,
@@ -250,12 +315,13 @@ function toDetailResponse(
   };
 }
 
-function toPublicTrackResponse(o: any, stagesByLegacyArea: Map<OrderArea, string> = new Map<OrderArea, string>(), defaultStageKey = '') {
+function toPublicTrackResponse(o: any, ctx: StageInferenceContext = emptyStageInferenceContext()) {
   return {
     code: o.code,
     state: o.state,
     area: o.area,
-    progressStageKey: inferProgressStageKeyFromOrder(o, stagesByLegacyArea, defaultStageKey),
+    workflow: normalizeOrderWorkflow(o),
+    progressStageKey: inferProgressStageKeyFromOrder(o, ctx),
     type: o.type,
     customer: o.clientName,
     brand: o.brand,
@@ -327,21 +393,18 @@ export async function getOrders(req: AuthRequest, res: Response): Promise<Respon
     const area = typeof req.query.area === 'string' ? req.query.area.trim() : '';
     const state = typeof req.query.state === 'string' ? req.query.state.trim() : '';
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+    const workflowQ = typeof req.query.workflow === 'string' ? req.query.workflow.trim().toLowerCase() : '';
     const limit = Math.min(200, Math.max(1, parseInt(String(req.query.limit), 10) || 50));
 
-    await seedDefaultStagesIfEmpty();
-    const stages = await OrderProgressStage.find().sort({ sortOrder: 1 }).lean();
-    const stagesByLegacyArea = new Map<OrderArea, string>();
-    for (const s of stages as any[]) {
-      const legacyArea = String(s?.legacyArea ?? '') as OrderArea;
-      if (!legacyArea) continue;
-      if (!stagesByLegacyArea.has(legacyArea)) stagesByLegacyArea.set(legacyArea, String(s?.key ?? ''));
-    }
-    const defaultStageKey = String(stages?.[0]?.key ?? '');
+    await syncLegacyOrderWorkflowFields();
+    const ctx = await loadStageInferenceContext();
 
     const filter: Record<string, unknown> = {};
     if (req.user && isTechnicianRole(req.user.role, req.user.roleName)) {
       filter.technician = req.user._id;
+    }
+    if (workflowQ === 'standard' || workflowQ === 'warranty') {
+      filter.workflow = workflowQ;
     }
     if (area) filter.area = area;
     if (state) filter.state = state;
@@ -410,7 +473,7 @@ export async function getOrders(req: AuthRequest, res: Response): Promise<Respon
     }
 
     return res.json({
-      orders: orders.map((o: any) => toListResponse(o, usersById, clientPhonesById, stagesByLegacyArea, defaultStageKey)),
+      orders: orders.map((o: any) => toListResponse(o, usersById, clientPhonesById, ctx)),
     });
   } catch (err) {
     console.error('Get orders error:', err);
@@ -427,15 +490,8 @@ export async function getOrderById(req: AuthRequest, res: Response): Promise<Res
     if (!order) return res.status(404).json({ error: 'Order not found' });
     if (denyIfTechnicianNotAssignee(req, res, (order as any).technician)) return;
 
-    await seedDefaultStagesIfEmpty();
-    const stages = await OrderProgressStage.find().sort({ sortOrder: 1 }).lean();
-    const stagesByLegacyArea = new Map<OrderArea, string>();
-    for (const s of stages as any[]) {
-      const legacyArea = String(s?.legacyArea ?? '') as OrderArea;
-      if (!legacyArea) continue;
-      if (!stagesByLegacyArea.has(legacyArea)) stagesByLegacyArea.set(legacyArea, String(s?.key ?? ''));
-    }
-    const defaultStageKey = String(stages?.[0]?.key ?? '');
+    await syncLegacyOrderWorkflowFields();
+    const ctx = await loadStageInferenceContext();
 
     const usersById = new Map<string, { name: string; identification: string }>();
     const technicianId = String((order as any).technician ?? '').trim();
@@ -453,7 +509,7 @@ export async function getOrderById(req: AuthRequest, res: Response): Promise<Res
       .select('telefono1 telefono2 telefono3')
       .lean();
     return res.json({
-      order: toDetailResponse(order, usersById, getClientPreferredPhone(client), stagesByLegacyArea, defaultStageKey),
+      order: toDetailResponse(order, usersById, getClientPreferredPhone(client), ctx),
     });
   } catch (err) {
     console.error('Get order by id error:', err);
@@ -478,18 +534,11 @@ export async function getOrderTrackByCode(req: Request, res: Response): Promise<
       const technician = await User.findById(technicianId).select('phone').lean();
       phone = String((technician as any)?.phone ?? '').trim();
     }
-    await seedDefaultStagesIfEmpty();
-    const stages = await OrderProgressStage.find().sort({ sortOrder: 1 }).lean();
-    const stagesByLegacyArea = new Map<OrderArea, string>();
-    for (const s of stages as any[]) {
-      const legacyArea = String(s?.legacyArea ?? '') as OrderArea;
-      if (!legacyArea) continue;
-      if (!stagesByLegacyArea.has(legacyArea)) stagesByLegacyArea.set(legacyArea, String(s?.key ?? ''));
-    }
-    const defaultStageKey = String(stages?.[0]?.key ?? '');
+    await syncLegacyOrderWorkflowFields();
+    const ctx = await loadStageInferenceContext();
     return res.json({
       order: {
-        ...toPublicTrackResponse(order, stagesByLegacyArea, defaultStageKey),
+        ...toPublicTrackResponse(order, ctx),
         whatsappLink: buildTrackWhatsAppLink({
           phone,
           code: String((order as any).code ?? ''),
@@ -702,13 +751,15 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
     if (!type) return res.status(400).json({ error: 'type is required' });
     if (!technician) return res.status(400).json({ error: 'technician is required' });
 
-    await seedDefaultStagesIfEmpty();
+    await ensureWarrantyStages();
+    const warrantyFlag = String(body.warranty ?? 'no') === 'yes' || body.warranty === true;
+    const orderWorkflow: OrderWorkflow = warrantyFlag ? 'warranty' : 'standard';
+
     // If a fine-grained progress stage is provided, it overrides legacy area/state.
     let progressStageKey = normalizeProgressStageKey(body.progressStageKey);
     if (progressStageKey) {
       const stage = await OrderProgressStage.findOne({ key: progressStageKey }).lean();
-      if (stage) {
-        // Keep legacy fields in sync so existing workflow and customer tracking continue working.
+      if (stage && String((stage as any).workflow ?? 'standard') === orderWorkflow) {
         (area as any) = stage.legacyArea;
         (state as any) = deriveLegacyStateFromLegacyArea(stage.legacyArea);
       } else {
@@ -716,8 +767,13 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
       }
     }
     if (!progressStageKey) {
-      const stagesForArea = await OrderProgressStage.find({ legacyArea: area }).sort({ sortOrder: 1 }).lean();
-      progressStageKey = String(stagesForArea?.[0]?.key ?? '');
+      const stagesForWorkflow = await OrderProgressStage.find({ workflow: orderWorkflow }).sort({ sortOrder: 1 }).lean();
+      const first = stagesForWorkflow[0] as { key?: string; legacyArea?: OrderArea } | undefined;
+      progressStageKey = String(first?.key ?? '');
+      if (first?.legacyArea) {
+        (area as any) = first.legacyArea;
+        (state as any) = deriveLegacyStateFromLegacyArea(first.legacyArea);
+      }
     }
 
     const productDoc = await Product.findOne({ product: type, state: 'active' }).lean();
@@ -778,7 +834,8 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
       equipmentCondition: String(body.equipmentCondition ?? '').trim(),
       technicalReport: String(body.technicalReport ?? '').trim(),
       diagnosis: String(body.diagnosis ?? 'no') === 'yes' || body.diagnosis === true,
-      warranty: String(body.warranty ?? 'no') === 'yes' || body.warranty === true,
+      warranty: warrantyFlag,
+      workflow: orderWorkflow,
       fianceeDate: String(body.fianceeDate ?? '').trim(),
       advancement: Number.isFinite(advancement) ? advancement : 0,
       accessories,
@@ -824,7 +881,8 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
         });
       }
     }
-    return res.status(201).json({ order: toListResponse(obj, usersById) });
+    const ctx = await loadStageInferenceContext();
+    return res.status(201).json({ order: toListResponse(obj, usersById, new Map<number, string>(), ctx) });
   } catch (err) {
     const error = err as Error & { code?: number };
     if (error.code === 11000) {
@@ -851,20 +909,43 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
     delete body.no;
 
     const hasProgressStageKeyUpdate = body.progressStageKey != null;
+
+    if (body.warranty != null) {
+      const prevWf = normalizeOrderWorkflow(doc.toObject());
+      doc.warranty = String(body.warranty ?? 'no') === 'yes' || body.warranty === true;
+      (doc as any).workflow = doc.warranty ? 'warranty' : 'standard';
+      const nextWf = (doc as any).workflow as OrderWorkflow;
+      if (prevWf !== nextWf) {
+        await ensureWarrantyStages();
+        const stagesForWf = await OrderProgressStage.find({ workflow: nextWf }).sort({ sortOrder: 1 }).lean();
+        const keys = new Set(stagesForWf.map((s) => String(s.key)));
+        if (!keys.has(String(doc.progressStageKey ?? ''))) {
+          const first = stagesForWf[0];
+          if (first) {
+            doc.progressStageKey = String(first.key);
+            doc.area = first.legacyArea as OrderArea;
+            doc.state = deriveLegacyStateFromLegacyArea(first.legacyArea as OrderArea);
+          }
+        }
+      }
+    }
+
     if (hasProgressStageKeyUpdate) {
       const nextKey = normalizeProgressStageKey(body.progressStageKey);
-      await seedDefaultStagesIfEmpty();
+      await ensureWarrantyStages();
       if (nextKey) {
         const stage = await OrderProgressStage.findOne({ key: nextKey }).lean();
         if (!stage) return res.status(400).json({ error: 'Unknown progressStageKey' });
+        const wf = normalizeOrderWorkflow(doc.toObject());
+        if (String((stage as any).workflow ?? 'standard') !== wf) {
+          return res.status(400).json({ error: 'progressStageKey does not match this order workflow' });
+        }
         doc.progressStageKey = nextKey;
         doc.area = stage.legacyArea;
         doc.state = deriveLegacyStateFromLegacyArea(stage.legacyArea);
       } else {
-        // Clearing is allowed, but we keep legacy fields unchanged.
         doc.progressStageKey = '';
       }
-      // progressStageKey drives legacy fields; ignore explicit legacy updates in the same request.
       delete body.area;
       delete body.state;
     }
@@ -911,7 +992,6 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
     if (body.technicalReport != null) doc.technicalReport = String(body.technicalReport ?? '').trim();
 
     if (body.diagnosis != null) doc.diagnosis = String(body.diagnosis ?? 'no') === 'yes' || body.diagnosis === true;
-    if (body.warranty != null) doc.warranty = String(body.warranty ?? 'no') === 'yes' || body.warranty === true;
 
     if (body.fianceeDate != null) doc.fianceeDate = String(body.fianceeDate ?? '').trim();
     if (body.advancement != null) {
@@ -1004,8 +1084,14 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
       }
     }
 
+    const ctx = await loadStageInferenceContext();
     return res.json({
-      order: toDetailResponse(obj, usersById, getClientPreferredPhone(await Client.findOne({ clientesid: obj.clientId }).select('telefono1 telefono2 telefono3').lean())),
+      order: toDetailResponse(
+        obj,
+        usersById,
+        getClientPreferredPhone(await Client.findOne({ clientesid: obj.clientId }).select('telefono1 telefono2 telefono3').lean()),
+        ctx
+      ),
       whatsappLink: statusWhatsappLink,
     });
   } catch (err) {
@@ -1139,7 +1225,8 @@ export async function printOrderPdf(req: AuthRequest, res: Response): Promise<Re
       }
     }
 
-    const detail = toDetailResponse(orderDoc, usersById);
+    const ctx = await loadStageInferenceContext();
+    const detail = toDetailResponse(orderDoc, usersById, '', ctx);
 
     const company = await Company.findOne().lean();
 

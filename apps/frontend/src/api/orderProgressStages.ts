@@ -1,5 +1,5 @@
 import { apiFetch, publicApiFetch } from './client';
-import type { OrderArea, OrderState } from './orders';
+import type { OrderArea, OrderState, OrderWorkflow } from './orders';
 
 export type OrderProgressStageLegacyArea = OrderArea;
 
@@ -9,6 +9,7 @@ export interface OrderProgressStage {
   label: string;
   description: string;
   sortOrder: number;
+  workflow: OrderWorkflow;
   legacyArea: OrderProgressStageLegacyArea;
   legacyState: OrderState;
   budgetEditable: boolean;
@@ -16,16 +17,23 @@ export interface OrderProgressStage {
   requiresDeliveryAdvance: boolean;
 }
 
-export async function getOrderProgressStagesPublic(): Promise<{ stages: OrderProgressStage[] }> {
-  const res = await publicApiFetch('/order-progress-stages/public');
+export async function getOrderProgressStagesPublic(
+  workflow?: OrderWorkflow
+): Promise<{ stages: OrderProgressStage[] }> {
+  const qs = workflow ? `?workflow=${encodeURIComponent(workflow)}` : '';
+  const res = await publicApiFetch(`/order-progress-stages/public${qs}`);
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error || 'Failed to fetch order progress stages');
   return data;
 }
 
-export async function getOrderProgressStagesAdmin(token: string | null): Promise<{ stages: OrderProgressStage[] }> {
+export async function getOrderProgressStagesAdmin(
+  token: string | null,
+  workflow?: OrderWorkflow
+): Promise<{ stages: OrderProgressStage[] }> {
   if (!token) throw new Error('Not authenticated');
-  const res = await apiFetch('/order-progress-stages', { token });
+  const qs = workflow ? `?workflow=${encodeURIComponent(workflow)}` : '';
+  const res = await apiFetch(`/order-progress-stages${qs}`, { token });
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error || 'Failed to fetch order progress stages');
   return data;
@@ -33,7 +41,14 @@ export async function getOrderProgressStagesAdmin(token: string | null): Promise
 
 export async function createOrderProgressStage(
   token: string | null,
-  payload: { key: string; label: string; description?: string; sortOrder?: number; legacyArea: OrderArea }
+  payload: {
+    key: string;
+    label: string;
+    description?: string;
+    sortOrder?: number;
+    legacyArea: OrderArea;
+    workflow?: OrderWorkflow;
+  }
 ): Promise<{ stage: OrderProgressStage }> {
   if (!token) throw new Error('Not authenticated');
   const res = await apiFetch('/order-progress-stages', {
@@ -50,7 +65,7 @@ export async function createOrderProgressStage(
 export async function updateOrderProgressStage(
   token: string | null,
   id: string,
-  payload: Partial<{ label: string; description?: string; sortOrder: number; legacyArea: OrderArea }>
+  payload: Partial<{ label: string; description?: string; sortOrder: number; legacyArea: OrderArea; workflow: OrderWorkflow }>
 ): Promise<{ stage: OrderProgressStage }> {
   if (!token) throw new Error('Not authenticated');
   const res = await apiFetch(`/order-progress-stages/${encodeURIComponent(id)}`, {

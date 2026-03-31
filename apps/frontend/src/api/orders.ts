@@ -3,6 +3,7 @@ import { apiFetch, publicApiFetch } from './client';
 export type OrderPriority = 'low' | 'normal' | 'high' | 'urgent';
 export type OrderArea = 'entrance' | 'maintenance' | 'warehouse' | 'delivery' | 'waiting-parts';
 export type OrderState = 'income' | 'maintenance' | 'warehouse' | 'delivery' | 'waiting' | 'no_solution' | 'finished';
+export type OrderWorkflow = 'standard' | 'warranty';
 
 export interface OrderListItem {
   id: string;
@@ -28,13 +29,14 @@ export interface OrderListItem {
 
 export async function getOrders(
   token: string | null,
-  params: { area?: string; state?: string; search?: string; limit?: number } = {}
+  params: { area?: string; state?: string; search?: string; limit?: number; workflow?: OrderWorkflow } = {}
 ): Promise<{ orders: OrderListItem[] }> {
   if (!token) return { orders: [] };
   const sp = new URLSearchParams();
   if (params.area) sp.set('area', params.area);
   if (params.state) sp.set('state', params.state);
   if (params.search) sp.set('search', params.search);
+  if (params.workflow) sp.set('workflow', params.workflow);
   if (params.limit != null) sp.set('limit', String(params.limit));
   const qs = sp.toString();
   const res = await apiFetch(qs ? `/orders?${qs}` : '/orders', { token });
@@ -157,6 +159,7 @@ export interface OrderTrackPublic {
   state: OrderState;
   area: OrderArea;
   progressStageKey?: string;
+  workflow?: OrderWorkflow;
   type: string;
   customer: string;
   brand: string;
