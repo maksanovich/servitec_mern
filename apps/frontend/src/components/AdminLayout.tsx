@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import logoUrl from '../assets/images/logo.png';
+import headerLogoUrl from '../assets/images/header-logo.png';
 import noImageUrl from '../assets/images/profile.png';
 import { useAuth } from '../contexts/AuthContext';
 import { useCompany } from '../contexts/CompanyContext';
@@ -227,9 +228,16 @@ export function AdminLayout() {
         <div className={`border-b border-slate-200 dark:border-slate-700 flex items-center ${sidebarCollapsed ? 'p-3 justify-center' : 'p-4'}`}>
           <Link to="/admin" className="flex justify-center w-full text-slate-900 dark:text-white font-semibold">
             <img
-              src={company?.logo?.trim() || logoUrl}
+              src={
+                company?.logo?.trim() ||
+                (sidebarCollapsed ? headerLogoUrl : logoUrl)
+              }
               alt={company?.companyName || 'Company'}
-              className="h-auto w-44 object-contain"
+              className={
+                sidebarCollapsed
+                  ? 'h-10 w-10 object-contain'
+                  : 'h-auto w-44 object-contain'
+              }
             />
           </Link>
         </div>
