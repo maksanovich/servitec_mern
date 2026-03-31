@@ -12,6 +12,7 @@ export interface OrderListItem {
   priority: OrderPriority;
   state: OrderState;
   area: OrderArea;
+  progressStageKey?: string;
   type: string;
   equipment: string;
   series: string;
@@ -120,6 +121,7 @@ export interface OrderDetail {
   priority: OrderPriority;
   state: OrderState;
   area: OrderArea;
+  progressStageKey?: string;
   type: string;
 
   clientId: number;
@@ -154,6 +156,7 @@ export interface OrderTrackPublic {
   code: string;
   state: OrderState;
   area: OrderArea;
+  progressStageKey?: string;
   type: string;
   customer: string;
   brand: string;
@@ -189,6 +192,7 @@ export type UpdateOrderPayload = Partial<{
   model: string;
   series: string;
   type: string;
+  progressStageKey: string;
   area: OrderArea;
   state: OrderState;
   technician: string;

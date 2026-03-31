@@ -5,12 +5,17 @@ import { ChevronDown, DollarSign, Package, RefreshCw, Printer, Pencil, Truck, Wr
 import { Badge } from '../../../components/ui';
 import type { TableColumn } from '../../../components/datatable';
 import type { Order } from './types';
+import type { OrderProgressStage } from '../../../api/orderProgressStages';
 import { priorityVariant, stateVariant, stateLabel } from './constants';
 
 const actionBtnClass =
   'p-1.5 rounded text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200 transition-colors';
 
 const MENU_WIDTH = 160;
+
+/** Stable keys — when at approval, offer a direct jump to repair (skip e.g. waiting-for-parts). */
+const APPROVAL_STAGE_KEY = 'approval';
+const REPAIR_STAGE_KEY = 'repair';
 
 function onEditBudget(order: Order) {
   console.log('Edit budget', order);
@@ -380,20 +385,211 @@ function ActionDropdown({
   );
 }
 
+// Keep legacy ActionDropdown implementation (unused) while newer stage-based menu is used.
+// The `void` reference silences TypeScript's unused-function warning.
+void ActionDropdown;
+
+function StageActionDropdown({
+  order,
+  stages,
+  onRequestDelete,
+  isDeleteLoading,
+  onMoveToStage,
+  onEditBudgetClick,
+}: {
+  order: Order;
+  stages: OrderProgressStage[];
+  onRequestDelete: (order: Order) => void;
+  isDeleteLoading?: boolean;
+  onMoveToStage?: (order: Order, toStageKey: string) => void;
+  onEditBudgetClick?: (order: Order) => void;
+}) {
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (!open || !buttonRef.current) {
+      setPosition(null);
+      return;
+    }
+    const rect = buttonRef.current.getBoundingClientRect();
+    setPosition({ top: rect.bottom + 4, left: rect.right - MENU_WIDTH });
+  }, [open]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      const target = e.target as Node;
+      if (open && buttonRef.current && !buttonRef.current.contains(target) && menuRef.current && !menuRef.current.contains(target)) setOpen(false);
+    }
+    if (open) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+    return;
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleScrollOrResize() {
+      setOpen(false);
+    }
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    window.addEventListener('resize', handleScrollOrResize);
+    return () => {
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+    };
+  }, [open]);
+
+  const stageIndex = stages.findIndex((s) => s.key === (order.progressStageKey ?? ''));
+  const currentStage = stageIndex >= 0 ? stages[stageIndex] : null;
+  const prevStage = stageIndex > 0 ? stages[stageIndex - 1] : null;
+  const nextStage = stageIndex >= 0 && stageIndex < stages.length - 1 ? stages[stageIndex + 1] : null;
+  const repairStageDirect = stages.find((s) => s.key === REPAIR_STAGE_KEY);
+  const showDirectRepair =
+    onMoveToStage &&
+    repairStageDirect &&
+    (order.progressStageKey ?? '') === APPROVAL_STAGE_KEY &&
+    nextStage?.key !== REPAIR_STAGE_KEY;
+
+  function onDelete(ord: Order) {
+    if (isDeleteLoading) return;
+    onRequestDelete(ord);
+  }
+
+  const menuContent = open && position && (
+    <div
+      ref={menuRef}
+      role="menu"
+      className="fixed z-[9999] min-w-[160px] rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-lg py-1"
+      style={{ top: position.top, left: position.left }}
+    >
+      {prevStage && onMoveToStage && (
+        <button
+          type="button"
+          className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
+          onClick={() => {
+            onMoveToStage(order, prevStage.key);
+            setOpen(false);
+          }}
+        >
+          Prev: {prevStage.label}
+        </button>
+      )}
+
+      {nextStage && onMoveToStage && (
+        <button
+          type="button"
+          className="flex w-full items-center gap-2 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-200 hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20"
+          onClick={() => {
+            onMoveToStage(order, nextStage.key);
+            setOpen(false);
+          }}
+        >
+          {nextStage.label}
+        </button>
+      )}
+
+      {showDirectRepair && repairStageDirect && (
+        <button
+          type="button"
+          className="flex w-full items-center gap-2 px-3 py-2 text-sm text-sky-700 dark:text-sky-200 hover:bg-sky-500/10 dark:hover:bg-sky-500/20"
+          title="Move directly to repair (skip intermediate stages)"
+          onClick={() => {
+            if (!onMoveToStage) return;
+            onMoveToStage(order, repairStageDirect.key);
+            setOpen(false);
+          }}
+        >
+          <Wrench className="w-4 h-4 shrink-0" />
+          {repairStageDirect.label}
+        </button>
+      )}
+
+      {currentStage?.budgetEditable && onEditBudgetClick && (
+        <button
+          type="button"
+          className="flex w-full items-center gap-2 px-3 py-2 text-sm text-amber-700 dark:text-amber-200 hover:bg-amber-500/10 dark:hover:bg-amber-500/20"
+          onClick={() => {
+            onEditBudgetClick(order);
+            setOpen(false);
+          }}
+        >
+          Edit budget
+        </button>
+      )}
+
+      <button
+        type="button"
+        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
+        onClick={() => {
+          onPrint(order);
+          setOpen(false);
+        }}
+      >
+        <Printer className="w-4 h-4" /> Print
+      </button>
+
+      <button
+        type="button"
+        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-amber-700 dark:text-amber-200 hover:bg-slate-100 dark:hover:bg-slate-700"
+        onClick={() => {
+          navigate(`/admin/order/${order.id}/edit`);
+          setOpen(false);
+        }}
+      >
+        <Pencil className="w-4 h-4" /> Edit
+      </button>
+
+      <button
+        type="button"
+        className="flex w-full items-center gap-2 px-3 py-2 text-sm text-rose-700 dark:text-rose-200 hover:bg-rose-500/10 dark:hover:bg-rose-500/20 disabled:opacity-50"
+        onClick={() => {
+          onDelete(order);
+          setOpen(false);
+        }}
+        disabled={isDeleteLoading}
+      >
+        <Trash2 className="w-4 h-4" /> {isDeleteLoading ? 'Deleting…' : 'Delete'}
+      </button>
+    </div>
+  );
+
+  return (
+    <div className="relative inline-block">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={actionBtnClass}
+        title="Actions"
+        aria-label="Actions"
+        aria-expanded={open}
+      >
+        <ChevronDown className="w-4 h-4" />
+      </button>
+      {menuContent && createPortal(menuContent, document.body)}
+    </div>
+  );
+}
+
 export function getOrdersColumns(
   onRequestDelete: (order: Order) => void,
   isDeleteLoading?: boolean,
   options?: {
-    onMaintenanceClick?: (order: Order) => void;
-    onStoreClick?: (order: Order) => void;
-    onReplacementClick?: (order: Order) => void;
+    stages?: OrderProgressStage[];
+    onMoveToStage?: (order: Order, toStageKey: string) => void;
     onEditBudgetClick?: (order: Order) => void;
-    onDeliverClick?: (order: Order) => void;
-    onWaitingPartsClick?: (order: Order) => void;
-    onResumeMaintenanceClick?: (order: Order) => void;
+    /** When true, omit State — redundant with the selected stage tab filter. */
+    hideStateColumn?: boolean;
   }
 ): TableColumn<Order>[] {
-  return [
+  const stageByKey = new Map<string, OrderProgressStage>((options?.stages ?? []).map((s) => [s.key, s]));
+
+  const columns: TableColumn<Order>[] = [
   {
     id: 'no',
     name: 'No.',
@@ -427,7 +623,7 @@ export function getOrdersColumns(
     sortable: true,
     width: '150px',
     cell: (row) => (
-      <Badge variant={stateVariant[row.state]}>{stateLabel[row.state]}</Badge>
+      <Badge variant={stateVariant[row.state]}>{stageByKey.get(row.progressStageKey ?? '')?.label ?? stateLabel[row.state]}</Badge>
     ),
   },
   {
@@ -504,21 +700,22 @@ export function getOrdersColumns(
     sortable: false,
     width: '80px',
     cell: (row) => (
-      <ActionDropdown
+      <StageActionDropdown
         order={row}
+        stages={options?.stages ?? []}
         onRequestDelete={onRequestDelete}
         isDeleteLoading={isDeleteLoading}
-        onMaintenanceClick={options?.onMaintenanceClick}
-        onStoreClick={options?.onStoreClick}
-        onReplacementClick={options?.onReplacementClick}
+        onMoveToStage={options?.onMoveToStage}
         onEditBudgetClick={options?.onEditBudgetClick}
-        onDeliverClick={options?.onDeliverClick}
-        onWaitingPartsClick={options?.onWaitingPartsClick}
-        onResumeMaintenanceClick={options?.onResumeMaintenanceClick}
       />
     ),
   },
 ];
+
+  if (options?.hideStateColumn) {
+    return columns.filter((c) => c.id !== 'state');
+  }
+  return columns;
 }
 
 export const ordersColumns = getOrdersColumns(() => {});

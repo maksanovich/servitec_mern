@@ -1,51 +1,72 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { trackOrderByCode, type OrderTrackPublic } from '../api/orders';
-import { AREA_TABS, stateLabel } from './admin/orders/constants';
+import { stateLabel } from './admin/orders/constants';
 import noImageUrl from '../assets/images/noimage.png';
+import type { OrderProgressStage } from '../api/orderProgressStages';
+import { getOrderProgressStagesPublic } from '../api/orderProgressStages';
 
-type RepairStep = {
-  id: string;
-  label: string;
-  states: OrderTrackPublic['state'][];
-  description: string;
-};
+type TimelineStage = Pick<OrderProgressStage, 'key' | 'label' | 'description' | 'sortOrder'>;
 
-const REPAIR_TIMELINE: RepairStep[] = [
+const FALLBACK_STAGES: TimelineStage[] = [
   {
-    id: 'received',
-    label: 'Received',
-    states: ['income'],
+    key: 'inbound-receiving',
+    label: 'Inbound/Receiving',
     description: 'Your equipment was received and registered by our team.',
+    sortOrder: 0,
   },
   {
-    id: 'diagnosis',
+    key: 'diagnosis',
     label: 'Diagnosis',
-    states: ['maintenance', 'waiting', 'no_solution'],
     description: 'Technicians are checking the issue and defining the repair plan.',
+    sortOrder: 1,
   },
   {
-    id: 'repair',
-    label: 'Repair / Parts',
-    states: ['warehouse'],
-    description: 'Repair completed and quality check in progress.',
+    key: 'approval',
+    label: 'Approval',
+    description: 'Confirming approval for the suggested repair/parts.',
+    sortOrder: 2,
   },
   {
-    id: 'delivery',
-    label: 'Ready for Delivery',
-    states: ['delivery', 'finished'],
-    description: 'Your equipment is ready for pickup or has already been delivered.',
+    key: 'waiting-parts',
+    label: 'Waiting for spare parts',
+    description: 'We are waiting for the required spare parts to arrive.',
+    sortOrder: 3,
+  },
+  {
+    key: 'repair',
+    label: 'Repair',
+    description: 'Repair in progress and parts replacement.',
+    sortOrder: 4,
+  },
+  {
+    key: 'testing',
+    label: 'Testing',
+    description: 'Final testing and quality check before warehouse prep.',
+    sortOrder: 5,
+  },
+  {
+    key: 'warehouse-ready',
+    label: 'Warehouse/Ready for delivery',
+    description: 'The equipment is ready in the warehouse for delivery.',
+    sortOrder: 6,
+  },
+  {
+    key: 'delivery',
+    label: 'Delivery',
+    description: 'Your equipment is ready for pickup or already delivered.',
+    sortOrder: 7,
   },
 ];
 
-function getCurrentTimelineStep(state: OrderTrackPublic['state']): number {
-  const idx = REPAIR_TIMELINE.findIndex((step) => step.states.includes(state));
+function getCurrentStageIndex(stageKey: string | undefined, stages: TimelineStage[]): number {
+  if (!stageKey) return 0;
+  const idx = stages.findIndex((s) => s.key === stageKey);
   return idx === -1 ? 0 : idx;
 }
 
-function getTimelineProgress(state: OrderTrackPublic['state']): number {
-  const step = getCurrentTimelineStep(state);
-  if (REPAIR_TIMELINE.length <= 1) return 0;
-  return Math.round((step / (REPAIR_TIMELINE.length - 1)) * 100);
+function getTimelineProgress(currentIndex: number, stagesLength: number): number {
+  if (stagesLength <= 1) return 0;
+  return Math.round((currentIndex / (stagesLength - 1)) * 100);
 }
 
 export function TrackPage() {
@@ -53,6 +74,35 @@ export function TrackPage() {
   const [order, setOrder] = useState<OrderTrackPublic | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [stages, setStages] = useState<TimelineStage[]>(FALLBACK_STAGES);
+  const [stagesLoading, setStagesLoading] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setStagesLoading(true);
+        const { stages: list } = await getOrderProgressStagesPublic();
+        if (!mounted) return;
+        setStages(
+          (list ?? [])
+            .map((s) => ({ key: s.key, label: s.label, description: s.description, sortOrder: s.sortOrder } as TimelineStage))
+            .sort((a, b) => a.sortOrder - b.sortOrder)
+        );
+      } catch (e) {
+        if (!mounted) return;
+        setStages(FALLBACK_STAGES);
+      } finally {
+        if (mounted) setStagesLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const currentStageIndex = getCurrentStageIndex(order?.progressStageKey, stages);
+  const timelineProgress = getTimelineProgress(currentStageIndex, stages.length);
 
   const handleTrack = async (e: FormEvent) => {
     e.preventDefault();
@@ -106,23 +156,22 @@ export function TrackPage() {
 
       {order && (
         <div className="mt-8 space-y-6 border border-slate-200 rounded-xl p-6 bg-white shadow-sm">
-          <div className="rounded-lg border border-indigo-100 bg-indigo-50 px-4 py-4">
+          <div className="rounded-lg border border-indigo-100 bg-indigo-50 px-4 py-4" aria-busy={stagesLoading}>
             <div className="flex items-center justify-between gap-4 mb-3">
               <p className="text-sm font-semibold text-indigo-900">Live repair progress</p>
-              <p className="text-sm font-semibold text-indigo-800">{getTimelineProgress(order.state)}%</p>
+                <p className="text-sm font-semibold text-indigo-800">{timelineProgress}%</p>
             </div>
             <div className="h-2 bg-indigo-100 rounded-full overflow-hidden mb-4">
               <div
                 className="h-full bg-indigo-600 transition-all duration-500"
-                style={{ width: `${getTimelineProgress(order.state)}%` }}
+                  style={{ width: `${timelineProgress}%` }}
               />
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {REPAIR_TIMELINE.map((step, index) => {
-                const current = getCurrentTimelineStep(order.state);
-                const isDone = index <= current;
+              {stages.map((step, index) => {
+                const isDone = index <= currentStageIndex;
                 return (
-                  <div key={step.id} className="flex items-center gap-2">
+                  <div key={step.key} className="flex items-center gap-2">
                     <span
                       className={`h-2.5 w-2.5 rounded-full ${isDone ? 'bg-indigo-600' : 'bg-slate-300'}`}
                       aria-hidden="true"
@@ -134,9 +183,7 @@ export function TrackPage() {
                 );
               })}
             </div>
-            <p className="mt-3 text-xs text-indigo-900">
-              {REPAIR_TIMELINE[getCurrentTimelineStep(order.state)]?.description}
-            </p>
+              <p className="mt-3 text-xs text-indigo-900">{stages[currentStageIndex]?.description}</p>
           </div>
 
           <div>
@@ -145,14 +192,10 @@ export function TrackPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-            <div>
+            <div className="sm:col-span-2">
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</p>
-              <p className="font-medium text-slate-900">{stateLabel[order.state]}</p>
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Area</p>
               <p className="font-medium text-slate-900">
-                {AREA_TABS.find((a) => a.id === order.area)?.label ?? order.area}
+                {stages.find((s) => s.key === order.progressStageKey)?.label ?? stateLabel[order.state]}
               </p>
             </div>
             <div className="sm:col-span-2">

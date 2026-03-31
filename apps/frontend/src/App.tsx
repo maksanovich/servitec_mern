@@ -19,6 +19,7 @@ import { DashboardPage } from './pages/admin/DashboardPage';
 
 import { OrdersPage } from './pages/admin/OrdersPage';
 import { NewOrderPage } from './pages/admin/NewOrderPage';
+import { OrderStagesPage } from './pages/admin/OrderStagesPage';
 import { OrderPrintPage } from './pages/admin/OrderPrintPage';
 
 import { AdminPlaceholder } from './pages/admin/AdminPlaceholder';
@@ -104,6 +105,14 @@ function App() {
               element={
                 <RequirePage page="/admin/order">
                   <OrdersPage />
+                </RequirePage>
+              }
+            />
+            <Route
+              path="order/stages"
+              element={
+                <RequirePage page="/admin/order">
+                  <OrderStagesPage />
                 </RequirePage>
               }
             />

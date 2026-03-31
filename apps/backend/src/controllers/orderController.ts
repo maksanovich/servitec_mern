@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import PDFDocument from 'pdfkit';
 import { Order, type IOrderBudgetLine, type OrderArea, type OrderPriority, type OrderState } from '../models/Order.js';
+import { OrderProgressStage } from '../models/OrderProgressStage.js';
 import { Client } from '../models/Client.js';
 import { Product } from '../models/Product.js';
 import { User } from '../models/User.js';
@@ -11,6 +12,7 @@ import { sendOrderProgressEmail } from '../services/smtpService.js';
 import { applyBudgetLinesReplacementStockDelta } from '../services/replacementStockService.js';
 import type { AuthRequest } from '../middleware/auth.js';
 import { PRINT_ORDER_MESSAGES, STATUS_UPDATE_MESSAGES } from '../constants/messages.js';
+import { seedDefaultStagesIfEmpty } from './orderProgressStageController.js';
 
 /** Matches backend `getAssignableTechnicians` / frontend technician detection. */
 function isTechnicianRole(slug: string, roleName?: string): boolean {
@@ -97,10 +99,44 @@ function getClientPreferredPhone(client: any): string {
   return String(client?.telefono1 ?? client?.telefono2 ?? client?.telefono3 ?? '').trim();
 }
 
+function normalizeProgressStageKey(raw: unknown): string {
+  return String(raw ?? '').trim();
+}
+
+function deriveLegacyStateFromLegacyArea(area: OrderArea): OrderState {
+  switch (area) {
+    case 'entrance':
+      return 'income';
+    case 'maintenance':
+      return 'maintenance';
+    case 'warehouse':
+      return 'warehouse';
+    case 'delivery':
+      return 'delivery';
+    case 'waiting-parts':
+      return 'waiting';
+  }
+}
+
+function inferProgressStageKeyFromOrder(
+  o: any,
+  stagesByLegacyArea: Map<OrderArea, string>,
+  defaultStageKey = ''
+): string {
+  const raw = normalizeProgressStageKey(o?.progressStageKey);
+  if (raw) return raw;
+
+  const legacyArea = String(o?.area ?? '').trim() as OrderArea;
+  const inferred = stagesByLegacyArea.get(legacyArea);
+  return inferred || defaultStageKey || '';
+}
+
 function toListResponse(
   o: any,
   usersById: Map<string, { name: string; identification: string }>,
-  clientPhonesById: Map<number, string> = new Map<number, string>()
+  clientPhonesById: Map<number, string> = new Map<number, string>(),
+  stagesByLegacyArea: Map<OrderArea, string> = new Map<OrderArea, string>(),
+  defaultStageKey = ''
 ) {
   return {
     id: o._id,
@@ -110,6 +146,7 @@ function toListResponse(
     priority: o.priority,
     state: o.state,
     area: o.area,
+    progressStageKey: inferProgressStageKeyFromOrder(o, stagesByLegacyArea, defaultStageKey),
     type: o.type,
     equipment: `${o.brand}(${o.model})`,
     series: o.series,
@@ -127,7 +164,9 @@ function toListResponse(
 function toDetailResponse(
   o: any,
   usersById: Map<string, { name: string; identification: string }> = new Map<string, { name: string; identification: string }>(),
-  customerPhone = ''
+  customerPhone = '',
+  stagesByLegacyArea: Map<OrderArea, string> = new Map<OrderArea, string>(),
+  defaultStageKey = ''
 ) {
   const accessories = Array.isArray(o.accessories) ? o.accessories.map((a: any) => String(a).trim()).filter(Boolean) : [];
   const budgetLines = Array.isArray(o.budgetLines)
@@ -148,6 +187,7 @@ function toDetailResponse(
     priority: o.priority,
     state: o.state,
     area: o.area,
+    progressStageKey: inferProgressStageKeyFromOrder(o, stagesByLegacyArea, defaultStageKey),
     type: o.type,
 
     clientId: o.clientId,
@@ -177,11 +217,12 @@ function toDetailResponse(
   };
 }
 
-function toPublicTrackResponse(o: any) {
+function toPublicTrackResponse(o: any, stagesByLegacyArea: Map<OrderArea, string> = new Map<OrderArea, string>(), defaultStageKey = '') {
   return {
     code: o.code,
     state: o.state,
     area: o.area,
+    progressStageKey: inferProgressStageKeyFromOrder(o, stagesByLegacyArea, defaultStageKey),
     type: o.type,
     customer: o.clientName,
     brand: o.brand,
@@ -255,6 +296,16 @@ export async function getOrders(req: AuthRequest, res: Response): Promise<Respon
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
     const limit = Math.min(200, Math.max(1, parseInt(String(req.query.limit), 10) || 50));
 
+    await seedDefaultStagesIfEmpty();
+    const stages = await OrderProgressStage.find().sort({ sortOrder: 1 }).lean();
+    const stagesByLegacyArea = new Map<OrderArea, string>();
+    for (const s of stages as any[]) {
+      const legacyArea = String(s?.legacyArea ?? '') as OrderArea;
+      if (!legacyArea) continue;
+      if (!stagesByLegacyArea.has(legacyArea)) stagesByLegacyArea.set(legacyArea, String(s?.key ?? ''));
+    }
+    const defaultStageKey = String(stages?.[0]?.key ?? '');
+
     const filter: Record<string, unknown> = {};
     if (req.user && isTechnicianRole(req.user.role, req.user.roleName)) {
       filter.technician = req.user._id;
@@ -325,7 +376,9 @@ export async function getOrders(req: AuthRequest, res: Response): Promise<Respon
       clientPhonesById.set(id, getClientPreferredPhone(c));
     }
 
-    return res.json({ orders: orders.map((o: any) => toListResponse(o, usersById, clientPhonesById)) });
+    return res.json({
+      orders: orders.map((o: any) => toListResponse(o, usersById, clientPhonesById, stagesByLegacyArea, defaultStageKey)),
+    });
   } catch (err) {
     console.error('Get orders error:', err);
     return res.status(500).json({ error: 'Server error' });
@@ -340,6 +393,16 @@ export async function getOrderById(req: AuthRequest, res: Response): Promise<Res
     const order = await Order.findById(id).lean();
     if (!order) return res.status(404).json({ error: 'Order not found' });
     if (denyIfTechnicianNotAssignee(req, res, (order as any).technician)) return;
+
+    await seedDefaultStagesIfEmpty();
+    const stages = await OrderProgressStage.find().sort({ sortOrder: 1 }).lean();
+    const stagesByLegacyArea = new Map<OrderArea, string>();
+    for (const s of stages as any[]) {
+      const legacyArea = String(s?.legacyArea ?? '') as OrderArea;
+      if (!legacyArea) continue;
+      if (!stagesByLegacyArea.has(legacyArea)) stagesByLegacyArea.set(legacyArea, String(s?.key ?? ''));
+    }
+    const defaultStageKey = String(stages?.[0]?.key ?? '');
 
     const usersById = new Map<string, { name: string; identification: string }>();
     const technicianId = String((order as any).technician ?? '').trim();
@@ -356,7 +419,9 @@ export async function getOrderById(req: AuthRequest, res: Response): Promise<Res
     const client = await Client.findOne({ clientesid: Number((order as any).clientId ?? 0) })
       .select('telefono1 telefono2 telefono3')
       .lean();
-    return res.json({ order: toDetailResponse(order, usersById, getClientPreferredPhone(client)) });
+    return res.json({
+      order: toDetailResponse(order, usersById, getClientPreferredPhone(client), stagesByLegacyArea, defaultStageKey),
+    });
   } catch (err) {
     console.error('Get order by id error:', err);
     return res.status(500).json({ error: 'Server error' });
@@ -380,9 +445,18 @@ export async function getOrderTrackByCode(req: Request, res: Response): Promise<
       const technician = await User.findById(technicianId).select('phone').lean();
       phone = String((technician as any)?.phone ?? '').trim();
     }
+    await seedDefaultStagesIfEmpty();
+    const stages = await OrderProgressStage.find().sort({ sortOrder: 1 }).lean();
+    const stagesByLegacyArea = new Map<OrderArea, string>();
+    for (const s of stages as any[]) {
+      const legacyArea = String(s?.legacyArea ?? '') as OrderArea;
+      if (!legacyArea) continue;
+      if (!stagesByLegacyArea.has(legacyArea)) stagesByLegacyArea.set(legacyArea, String(s?.key ?? ''));
+    }
+    const defaultStageKey = String(stages?.[0]?.key ?? '');
     return res.json({
       order: {
-        ...toPublicTrackResponse(order),
+        ...toPublicTrackResponse(order, stagesByLegacyArea, defaultStageKey),
         whatsappLink: buildTrackWhatsAppLink({
           phone,
           code: String((order as any).code ?? ''),
@@ -482,8 +556,8 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
     const series = String(body.series ?? '').trim();
     const type = String(body.type ?? '').trim();
 
-    const area = String(body.area ?? '').trim() as OrderArea;
-    const state = String(body.state ?? '').trim() as OrderState;
+    let area = String(body.area ?? '').trim() as OrderArea;
+    let state = String(body.state ?? '').trim() as OrderState;
     const priority = (String(body.priority ?? '').trim() as OrderPriority) || 'normal';
     let technician = String(body.technician ?? '').trim();
     if (req.user && isTechnicianRole(req.user.role)) {
@@ -499,6 +573,24 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
     if (!series) return res.status(400).json({ error: 'series is required' });
     if (!type) return res.status(400).json({ error: 'type is required' });
     if (!technician) return res.status(400).json({ error: 'technician is required' });
+
+    await seedDefaultStagesIfEmpty();
+    // If a fine-grained progress stage is provided, it overrides legacy area/state.
+    let progressStageKey = normalizeProgressStageKey(body.progressStageKey);
+    if (progressStageKey) {
+      const stage = await OrderProgressStage.findOne({ key: progressStageKey }).lean();
+      if (stage) {
+        // Keep legacy fields in sync so existing workflow and customer tracking continue working.
+        (area as any) = stage.legacyArea;
+        (state as any) = deriveLegacyStateFromLegacyArea(stage.legacyArea);
+      } else {
+        progressStageKey = '';
+      }
+    }
+    if (!progressStageKey) {
+      const stagesForArea = await OrderProgressStage.find({ legacyArea: area }).sort({ sortOrder: 1 }).lean();
+      progressStageKey = String(stagesForArea?.[0]?.key ?? '');
+    }
 
     const productDoc = await Product.findOne({ product: type, state: 'active' }).lean();
     if (!productDoc) {
@@ -545,6 +637,7 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
       priority,
       area,
       state,
+        progressStageKey,
       deliveryArrivedAt: state === 'delivery' ? new Date() : undefined,
       type,
       clientId,
@@ -629,6 +722,25 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
     delete body.code;
     delete body.no;
 
+    const hasProgressStageKeyUpdate = body.progressStageKey != null;
+    if (hasProgressStageKeyUpdate) {
+      const nextKey = normalizeProgressStageKey(body.progressStageKey);
+      await seedDefaultStagesIfEmpty();
+      if (nextKey) {
+        const stage = await OrderProgressStage.findOne({ key: nextKey }).lean();
+        if (!stage) return res.status(400).json({ error: 'Unknown progressStageKey' });
+        doc.progressStageKey = nextKey;
+        doc.area = stage.legacyArea;
+        doc.state = deriveLegacyStateFromLegacyArea(stage.legacyArea);
+      } else {
+        // Clearing is allowed, but we keep legacy fields unchanged.
+        doc.progressStageKey = '';
+      }
+      // progressStageKey drives legacy fields; ignore explicit legacy updates in the same request.
+      delete body.area;
+      delete body.state;
+    }
+
     if (body.clientId != null) {
       const clientId = parseInt(String(body.clientId ?? ''), 10);
       if (!Number.isFinite(clientId)) return res.status(400).json({ error: 'clientId is required' });
@@ -648,6 +760,14 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
 
     if (body.area != null) doc.area = String(body.area ?? '').trim() as OrderArea;
     if (body.state != null) doc.state = String(body.state ?? '').trim() as OrderState;
+
+    // If the order comes from legacy UI (no progressStageKey sent), infer stage from legacy area.
+    // This keeps the admin stage tabs accurate for older orders that never stored progressStageKey.
+    if (!hasProgressStageKeyUpdate && (body.area != null || body.state != null)) {
+      await seedDefaultStagesIfEmpty();
+      const stagesForArea = await OrderProgressStage.find({ legacyArea: doc.area }).sort({ sortOrder: 1 }).lean();
+      doc.progressStageKey = String(stagesForArea?.[0]?.key ?? '');
+    }
     if (body.priority != null) doc.priority = (String(body.priority ?? '').trim() as OrderPriority) || 'normal';
 
     if (body.technician != null) {
