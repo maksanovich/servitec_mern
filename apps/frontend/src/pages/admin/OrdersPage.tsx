@@ -40,7 +40,7 @@ import {
 import { OrderExpandedRow } from './orders/OrderExpandedRow';
 import { toast } from 'sonner';
 import { useAuth } from '../../contexts/AuthContext';
-import { deleteOrder, getOrders, updateOrder, getOrderById, type OrderBudgetLine } from '../../api/orders';
+import { deleteOrder, getOrders, updateOrder, getOrderById, type OrderBudgetLine, OrderWorkflow } from '../../api/orders';
 import { getOrderProgressStagesPublic, type OrderProgressStage } from '../../api/orderProgressStages';
 import { getServicesSpareParts, canAddCatalogItemToBudget, type ServiceSparePartItem } from '../../api/servicesSpareParts';
 import { uploadImage } from '../../api/uploads';
@@ -83,6 +83,7 @@ export function OrdersPage() {
   const MAX_ORDER_PHOTO_BYTES = 150 * 1024 * 1024; // 150MB (>= 100MB)
   const ACCEPT_ORDER_IMAGES = 'image/jpeg,image/png,image/webp,image/gif';
 
+  const [workflowView, setWorkflowView] = useState<OrderWorkflow>('standard');
   const [stages, setStages] = useState<OrderProgressStage[]>([]);
   const [stagesLoading, setStagesLoading] = useState(false);
   const [activeStageKey, setActiveStageKey] = useState<string>('');
@@ -130,7 +131,7 @@ export function OrdersPage() {
     (async () => {
       try {
         setStagesLoading(true);
-        const { stages: list } = await getOrderProgressStagesPublic();
+        const { stages: list } = await getOrderProgressStagesPublic(workflowView);
         if (!mounted) return;
         setStages(list);
         setActiveStageKey((prev) => (prev && list.some((s) => s.key === prev) ? prev : list[0]?.key ?? ''));
@@ -146,13 +147,13 @@ export function OrdersPage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [workflowView]);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const { orders: list } = await getOrders(token, { limit: 200 });
+        const { orders: list } = await getOrders(token, { limit: 200, workflow: workflowView });
         if (mounted) setOrders(list as unknown as Order[]);
       } catch (e) {
         console.error(e);
@@ -162,7 +163,7 @@ export function OrdersPage() {
     return () => {
       mounted = false;
     };
-  }, [token]);
+  }, [token, workflowView]);
 
   const dataByStage = useMemo(() => {
     if (!activeStageKey) return [];
@@ -175,12 +176,12 @@ export function OrdersPage() {
 
   const refetchOrders = useCallback(async () => {
     try {
-      const { orders: list } = await getOrders(token, { limit: 200 });
+      const { orders: list } = await getOrders(token, { limit: 200, workflow: workflowView });
       setOrders(list as unknown as Order[]);
     } catch (e) {
       console.error(e);
     }
-  }, [token]);
+  }, [token, workflowView]);
 
   const openWhatsappUpdate = useCallback((whatsappLink?: string, targetWindow?: Window | null) => {
     const link = String(whatsappLink ?? '').trim();
@@ -669,7 +670,25 @@ export function OrdersPage() {
           title="Orders - DIGITALSERVER TECHNICAL SERVICE"
           breadcrumb={[{ label: 'Operations', icon: Home }, { label: 'Orders' }]}
         />
-        <div className='flex items-center gap-2'>
+        <div className="flex flex-col items-stretch sm:flex-row sm:items-center gap-2">
+          <ButtonGroup className="sm:mr-auto">
+            <Button
+              type="button"
+              variant={workflowView === 'standard' ? 'primary' : 'secondary'}
+              size="md"
+              onClick={() => setWorkflowView('standard')}
+            >
+              Standard repair
+            </Button>
+            <Button
+              type="button"
+              variant={workflowView === 'warranty' ? 'primary' : 'secondary'}
+              size="md"
+              onClick={() => setWorkflowView('warranty')}
+            >
+              Warranty
+            </Button>
+          </ButtonGroup>
           <Link to="/admin/order/new">
             <Button
               variant="emerald"

@@ -5,6 +5,8 @@ export type OrderArea =
   | 'delivery'
   | 'waiting-parts';
 
+export type OrderWorkflow = 'standard' | 'warranty';
+
 export interface Order {
   id: string;
   no: string;
@@ -13,6 +15,8 @@ export interface Order {
   state: 'income' | 'maintenance' | 'warehouse' | 'delivery' | 'waiting' | 'no_solution' | 'finished';
   area: OrderArea;
   progressStageKey?: string;
+  /** Standard repair vs warranty pipeline (from API). */
+  workflow?: OrderWorkflow;
   type: string;
   equipment: string;
   series: string;

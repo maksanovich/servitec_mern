@@ -9,6 +9,7 @@ import { stateLabel } from './admin/orders/constants';
 import noImageUrl from '../assets/images/noimage.png';
 import type { OrderProgressStage } from '../api/orderProgressStages';
 import { getOrderProgressStagesPublic } from '../api/orderProgressStages';
+import type { OrderWorkflow } from '../api/orders';
 
 type TimelineStage = Pick<OrderProgressStage, 'key' | 'label' | 'description' | 'sortOrder'>;
 
@@ -70,8 +71,9 @@ function getCurrentStageIndex(stageKey: string | undefined, stages: TimelineStag
 }
 
 function getTimelineProgress(currentIndex: number, stagesLength: number): number {
-  if (stagesLength <= 1) return 0;
-  return Math.round((currentIndex / (stagesLength - 1)) * 100);
+  if (stagesLength <= 0) return 0;
+  const clamped = Math.max(0, Math.min(currentIndex, stagesLength - 1));
+  return Math.round(((clamped + 1) / stagesLength) * 100);
 }
 
 export function TrackPage() {
@@ -85,11 +87,16 @@ export function TrackPage() {
   const [reportError, setReportError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!order) {
+      setStages(FALLBACK_STAGES);
+      return;
+    }
     let mounted = true;
+    const wf: OrderWorkflow = order.workflow === 'warranty' ? 'warranty' : 'standard';
     (async () => {
       try {
         setStagesLoading(true);
-        const { stages: list } = await getOrderProgressStagesPublic();
+        const { stages: list } = await getOrderProgressStagesPublic(wf);
         if (!mounted) return;
         setStages(
           (list ?? [])
@@ -106,7 +113,7 @@ export function TrackPage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [order?.workflow, order?.code]);
 
   const currentStageIndex = getCurrentStageIndex(order?.progressStageKey, stages);
   const timelineProgress = getTimelineProgress(currentStageIndex, stages.length);

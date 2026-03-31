@@ -16,6 +16,8 @@ const MENU_WIDTH = 160;
 /** Stable keys — when at approval, offer a direct jump to repair (skip e.g. waiting-for-parts). */
 const APPROVAL_STAGE_KEY = 'approval';
 const REPAIR_STAGE_KEY = 'repair';
+const WARRANTY_WAIT_APPROVAL_KEY = 'warranty-waiting-provider-approval';
+const WARRANTY_SOLUTION_KEY = 'warranty-solution-in-progress';
 
 function onEditBudget(order: Order) {
   console.log('Edit budget', order);
@@ -449,11 +451,19 @@ function StageActionDropdown({
   const prevStage = stageIndex > 0 ? stages[stageIndex - 1] : null;
   const nextStage = stageIndex >= 0 && stageIndex < stages.length - 1 ? stages[stageIndex + 1] : null;
   const repairStageDirect = stages.find((s) => s.key === REPAIR_STAGE_KEY);
+  const warrantySolutionStageDirect = stages.find((s) => s.key === WARRANTY_SOLUTION_KEY);
   const showDirectRepair =
     onMoveToStage &&
     repairStageDirect &&
+    order.workflow !== 'warranty' &&
     (order.progressStageKey ?? '') === APPROVAL_STAGE_KEY &&
     nextStage?.key !== REPAIR_STAGE_KEY;
+  const showDirectWarrantySolution =
+    onMoveToStage &&
+    warrantySolutionStageDirect &&
+    order.workflow === 'warranty' &&
+    (order.progressStageKey ?? '') === WARRANTY_WAIT_APPROVAL_KEY &&
+    nextStage?.key !== WARRANTY_SOLUTION_KEY;
 
   function onDelete(ord: Order) {
     if (isDeleteLoading) return;
@@ -506,6 +516,22 @@ function StageActionDropdown({
         >
           <Wrench className="w-4 h-4 shrink-0" />
           {repairStageDirect.label}
+        </button>
+      )}
+
+      {showDirectWarrantySolution && warrantySolutionStageDirect && (
+        <button
+          type="button"
+          className="flex w-full items-center gap-2 px-3 py-2 text-sm text-sky-700 dark:text-sky-200 hover:bg-sky-500/10 dark:hover:bg-sky-500/20"
+          title="Move directly to in-process solution"
+          onClick={() => {
+            if (!onMoveToStage) return;
+            onMoveToStage(order, warrantySolutionStageDirect.key);
+            setOpen(false);
+          }}
+        >
+          <Wrench className="w-4 h-4 shrink-0" />
+          {warrantySolutionStageDirect.label}
         </button>
       )}
 

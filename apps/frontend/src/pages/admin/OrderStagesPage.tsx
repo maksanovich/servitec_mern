@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Home, Plus, ArrowUp, ArrowDown, Trash2, Pencil } from 'lucide-react';
-import { PageHeader, Card, Button, ConfirmDialog, Modal, Input, Select, Loader } from '../../components/ui';
+import { PageHeader, Card, Button, ButtonGroup, ConfirmDialog, Modal, Input, Select, Loader } from '../../components/ui';
 import { useAuth } from '../../contexts/AuthContext';
 import {
   createOrderProgressStage,
@@ -9,13 +9,14 @@ import {
   updateOrderProgressStage,
   type OrderProgressStage,
 } from '../../api/orderProgressStages';
-import type { OrderArea } from '../../api/orders';
+import type { OrderArea, OrderWorkflow } from '../../api/orders';
 
 type StageForm = {
   key: string;
   label: string;
   description: string;
   legacyArea: OrderArea;
+  workflow: OrderWorkflow;
 };
 
 const LEGACY_AREA_OPTIONS: Array<{ value: OrderArea; label: string }> = [
@@ -32,6 +33,7 @@ function legacyAreaLabel(area: OrderArea): string {
 
 export function OrderStagesPage() {
   const { token } = useAuth();
+  const [workflowView, setWorkflowView] = useState<OrderWorkflow>('standard');
   const [loading, setLoading] = useState(true);
   const [stages, setStages] = useState<OrderProgressStage[]>([]);
 
@@ -41,6 +43,7 @@ export function OrderStagesPage() {
     label: '',
     description: '',
     legacyArea: 'maintenance',
+    workflow: 'standard',
   });
   const [formError, setFormError] = useState<string | null>(null);
   const [formSaving, setFormSaving] = useState(false);
@@ -60,14 +63,14 @@ export function OrderStagesPage() {
     if (!token) return;
     setLoading(true);
     try {
-      const { stages: list } = await getOrderProgressStagesAdmin(token);
+      const { stages: list } = await getOrderProgressStagesAdmin(token, workflowView);
       setStages(list);
     } catch (e) {
       setStages([]);
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, workflowView]);
 
   useEffect(() => {
     fetchStages();
@@ -85,9 +88,10 @@ export function OrderStagesPage() {
       label: '',
       description: '',
       legacyArea: 'maintenance',
+      workflow: workflowView,
     });
     setFormOpen(true);
-  }, []);
+  }, [workflowView]);
 
   const closeNewStageModal = useCallback(() => {
     if (formSaving) return;
@@ -105,6 +109,7 @@ export function OrderStagesPage() {
         label: form.label,
         description: form.description,
         legacyArea: form.legacyArea,
+        workflow: form.workflow,
       };
       const { stage } = await createOrderProgressStage(token, payload);
       setFormOpen(false);
@@ -225,7 +230,25 @@ export function OrderStagesPage() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader title="Order Stages - DIGITALSERVER TECHNICAL SERVICE" breadcrumb={[{ label: 'Operations', icon: Home }, { label: 'Order Stages' }]} />
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <ButtonGroup>
+            <Button
+              type="button"
+              variant={workflowView === 'standard' ? 'primary' : 'secondary'}
+              size="md"
+              onClick={() => setWorkflowView('standard')}
+            >
+              Standard repair
+            </Button>
+            <Button
+              type="button"
+              variant={workflowView === 'warranty' ? 'primary' : 'secondary'}
+              size="md"
+              onClick={() => setWorkflowView('warranty')}
+            >
+              Warranty
+            </Button>
+          </ButtonGroup>
           <Button variant="secondary" size="md" onClick={openNewStageModal} leftIcon={Plus}>
             Add stage
           </Button>
