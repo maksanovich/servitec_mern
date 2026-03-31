@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import PDFDocument from 'pdfkit';
 import { Order, type IOrderBudgetLine, type OrderArea, type OrderPriority, type OrderState } from '../models/Order.js';
 import { OrderProgressStage } from '../models/OrderProgressStage.js';
@@ -1065,6 +1066,15 @@ export async function printOrderPdf(req: AuthRequest, res: Response): Promise<Re
         } catch {
           logoBuffer = null;
         }
+      }
+    }
+
+    if (!logoBuffer) {
+      try {
+        const assetsDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '../assets');
+        logoBuffer = fs.readFileSync(path.join(assetsDir, 'logo.png'));
+      } catch {
+        logoBuffer = null;
       }
     }
 
