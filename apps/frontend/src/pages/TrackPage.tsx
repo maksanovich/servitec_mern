@@ -1,5 +1,10 @@
 import { useState, FormEvent, useEffect } from 'react';
-import { trackOrderByCode, type OrderTrackPublic } from '../api/orders';
+import {
+  trackOrderByCode,
+  downloadTechnicalReportDocx,
+  isOrderEligibleForTechnicalReport,
+  type OrderTrackPublic,
+} from '../api/orders';
 import { stateLabel } from './admin/orders/constants';
 import noImageUrl from '../assets/images/noimage.png';
 import type { OrderProgressStage } from '../api/orderProgressStages';
@@ -76,6 +81,8 @@ export function TrackPage() {
   const [loading, setLoading] = useState(false);
   const [stages, setStages] = useState<TimelineStage[]>(FALLBACK_STAGES);
   const [stagesLoading, setStagesLoading] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -111,6 +118,7 @@ export function TrackPage() {
     setLoading(true);
     setError(null);
     setOrder(null);
+    setReportError(null);
     try {
       const { order: o } = await trackOrderByCode(code);
       setOrder(o);
@@ -219,6 +227,35 @@ export function TrackPage() {
               </div>
             )}
           </div>
+
+          {isOrderEligibleForTechnicalReport(order) && (
+            <div className="border-t border-slate-200 pt-6">
+              <p className="text-sm font-semibold text-slate-800 mb-2">Technical report</p>
+              <button
+                type="button"
+                disabled={reportLoading}
+                onClick={async () => {
+                  setReportError(null);
+                  setReportLoading(true);
+                  try {
+                    await downloadTechnicalReportDocx(order.code);
+                  } catch (err) {
+                    setReportError(err instanceof Error ? err.message : 'Download failed');
+                  } finally {
+                    setReportLoading(false);
+                  }
+                }}
+                className="inline-flex items-center px-4 py-2.5 rounded-lg bg-slate-900 text-white font-semibold hover:bg-slate-800 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {reportLoading ? 'Preparing…' : 'Download technical report (.docx)'}
+              </button>
+              {reportError && (
+                <p className="mt-2 text-sm text-red-600" role="alert">
+                  {reportError}
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="border-t border-slate-200 pt-6">
             <p className="text-sm font-semibold text-slate-800 mb-3">Repair Trust Card</p>

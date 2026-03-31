@@ -14,6 +14,10 @@ import { applyBudgetLinesReplacementStockDelta } from '../services/replacementSt
 import type { AuthRequest } from '../middleware/auth.js';
 import { PRINT_ORDER_MESSAGES, STATUS_UPDATE_MESSAGES } from '../constants/messages.js';
 import { seedDefaultStagesIfEmpty } from './orderProgressStageController.js';
+import {
+  buildTechnicalReportDocxBuffer,
+  isOrderEligibleForTechnicalReport,
+} from '../services/technicalReportDocx.js';
 
 /** Matches backend `getAssignableTechnicians` / frontend technician detection. */
 function isTechnicianRole(slug: string, roleName?: string): boolean {
@@ -29,6 +33,34 @@ function denyIfTechnicianNotAssignee(req: AuthRequest, res: Response, orderTechn
   if (tid === req.user._id) return false;
   res.status(404).json({ error: 'Order not found' });
   return true;
+}
+
+/** Load image bytes for order photos stored as `/uploads/...` URLs or base64 / data URLs. */
+function resolveStoredImageBuffer(raw: unknown): Buffer | null {
+  const trimmed = String(raw ?? '').trim();
+  if (!trimmed) return null;
+  // Do not treat arbitrary remote URLs as base64 (avoids garbage buffers and docx errors).
+  if (/^https?:\/\//i.test(trimmed) && !trimmed.includes('/uploads/')) {
+    return null;
+  }
+  try {
+    const normalized = trimmed.replaceAll('\\', '/');
+    const uploadIdx = normalized.indexOf('/uploads/');
+    if (uploadIdx >= 0) {
+      const uploadRoot = path.resolve(process.cwd(), 'uploads');
+      const rel = normalized.slice(uploadIdx + '/uploads/'.length);
+      const filePath = path.join(uploadRoot, rel);
+      if (!fs.existsSync(filePath)) return null;
+      return fs.readFileSync(filePath);
+    }
+    const base64Match = /^data:image\/[a-zA-Z0-9.+-]+;base64,(.+)$/.exec(trimmed);
+    const base64 = base64Match ? base64Match[1] : trimmed;
+    const decoded = Buffer.from(base64, 'base64');
+    if (!decoded.length) return null;
+    return decoded;
+  } catch {
+    return null;
+  }
 }
 
 function normalizeOrderPhotoForCreate(raw: unknown): { ok: true; value: string } | { ok: false; error: string } {
@@ -467,6 +499,101 @@ export async function getOrderTrackByCode(req: Request, res: Response): Promise<
     });
   } catch (err) {
     console.error('Track order error:', err);
+    return res.status(500).json({ error: 'Server error' });
+  }
+}
+
+/** Public: download technical report Word document by tracking code (no auth). */
+export async function getOrderTechnicalReportByCode(req: Request, res: Response): Promise<Response | void> {
+  try {
+    const raw = String(req.params.code ?? '')
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '');
+    if (raw.length < 4) return res.status(400).json({ error: 'Invalid tracking code' });
+
+    const order = await Order.findOne({ code: raw }).lean();
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    if (!isOrderEligibleForTechnicalReport(order as { area?: string; state?: string })) {
+      return res.status(403).json({ error: 'Report is not available for this order status yet' });
+    }
+
+    const technicianId = String((order as any).technician ?? '').trim();
+    const usersById = new Map<string, { name: string; identification: string }>();
+    if (technicianId) {
+      const u = await User.findById(technicianId).select('name identification').lean();
+      if (u) {
+        usersById.set(String(u._id), {
+          name: String((u as any).name ?? ''),
+          identification: String((u as any).identification ?? ''),
+        });
+      }
+    }
+    const technical = formatTechnician((order as any).technician, usersById);
+
+    const company = await Company.findOne().lean();
+
+    let logoBuffer: Buffer | null = null;
+    if (company?.logo) {
+      const trimmed = String(company.logo).trim();
+      if (trimmed) {
+        try {
+          const normalized = trimmed.replaceAll('\\', '/');
+          const uploadIdx = normalized.indexOf('/uploads/');
+          if (uploadIdx >= 0) {
+            const uploadRoot = path.resolve(process.cwd(), 'uploads');
+            const rel = normalized.slice(uploadIdx + '/uploads/'.length);
+            const logoPath = path.join(uploadRoot, rel);
+            logoBuffer = fs.readFileSync(logoPath);
+          } else {
+            const base64Match = /^data:image\/[a-zA-Z0-9.+-]+;base64,(.+)$/.exec(trimmed);
+            const base64 = base64Match ? base64Match[1] : trimmed;
+            logoBuffer = Buffer.from(base64, 'base64');
+          }
+        } catch {
+          logoBuffer = null;
+        }
+      }
+    }
+    if (!logoBuffer) {
+      try {
+        const assetsDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '../assets');
+        logoBuffer = fs.readFileSync(path.join(assetsDir, 'logo.png'));
+      } catch {
+        logoBuffer = null;
+      }
+    }
+
+    const budgetLinesRaw = Array.isArray((order as any).budgetLines) ? (order as any).budgetLines : [];
+    const budgetLines = (budgetLinesRaw as IOrderBudgetLine[]).map((l) => ({
+      name: String(l?.name ?? ''),
+      total: Number.isFinite(Number(l?.total)) ? Number(l.total) : 0,
+    }));
+
+    const photoBeforeBuffer = resolveStoredImageBuffer((order as any).photoBeforeRepair);
+    const photoAfterBuffer = resolveStoredImageBuffer((order as any).photoAfterRepair);
+
+    const buffer = await buildTechnicalReportDocxBuffer({
+      trackingCode: raw,
+      brand: String((order as any).brand ?? ''),
+      model: String((order as any).model ?? ''),
+      series: String((order as any).series ?? ''),
+      type: String((order as any).type ?? ''),
+      equipmentCondition: String((order as any).equipmentCondition ?? ''),
+      technicalReport: String((order as any).technicalReport ?? ''),
+      budgetLines,
+      technicianName: technical || '—',
+      companyName: company?.companyName?.trim() || 'Servitec',
+      logoBuffer,
+      photoBeforeBuffer,
+      photoAfterBuffer,
+    });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename="reporte-tecnico-${raw}.docx"`);
+    return res.send(buffer);
+  } catch (err) {
+    console.error('Technical report download error:', err);
     return res.status(500).json({ error: 'Server error' });
   }
 }

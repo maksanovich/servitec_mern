@@ -255,6 +255,35 @@ export async function trackOrderByCode(code: string): Promise<{ order: OrderTrac
   return data;
 }
 
+/** Same rules as backend: warehouse / delivery / finished, or warehouse area. */
+export function isOrderEligibleForTechnicalReport(o: Pick<OrderTrackPublic, 'state' | 'area'>): boolean {
+  return (
+    o.state === 'warehouse' ||
+    o.state === 'delivery' ||
+    o.state === 'finished' ||
+    o.area === 'warehouse'
+  );
+}
+
+export async function downloadTechnicalReportDocx(code: string): Promise<void> {
+  const trimmed = code.trim();
+  if (!trimmed) throw new Error('Tracking code is required');
+  const res = await publicApiFetch(`/orders/track/${encodeURIComponent(trimmed)}/technical-report`);
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error((data as { error?: string }).error || 'Failed to download report');
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `reporte-tecnico-${trimmed}.docx`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
 export async function getOrdersShowcase(limit = 6): Promise<{ orders: OrderShowcaseItem[] }> {
   const res = await publicApiFetch(`/orders/showcase?limit=${limit}`);
   const data = await res.json();
