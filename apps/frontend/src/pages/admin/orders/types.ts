@@ -12,6 +12,7 @@ export interface Order {
   priority: 'low' | 'normal' | 'high' | 'urgent';
   state: 'income' | 'maintenance' | 'warehouse' | 'delivery' | 'waiting' | 'no_solution' | 'finished';
   area: OrderArea;
+  progressStageKey?: string;
   type: string;
   equipment: string;
   series: string;

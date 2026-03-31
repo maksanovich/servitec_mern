@@ -1,6 +1,30 @@
 import { useMemo, useRef, useCallback, useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Home, Wrench, FileText, FileSpreadsheet, Plus, Minus, X, Upload } from 'lucide-react';
+import {
+  Home,
+  Wrench,
+  FileText,
+  FileSpreadsheet,
+  Plus,
+  Minus,
+  X,
+  Upload,
+  DoorOpen,
+  Package,
+  Truck,
+  Clock,
+  Hammer,
+  Cpu,
+  ClipboardList,
+  Sparkles,
+  Layers,
+  CircleDot,
+  ScanLine,
+  FlaskConical,
+  Cog,
+  Settings2,
+  type LucideIcon,
+} from 'lucide-react';
 import { PageHeader, Card, Button, ButtonGroup, ConfirmDialog, Modal, Input, Loader } from '../../components/ui';
 import {
   DataTableWithToolbar,
@@ -11,21 +35,39 @@ import {
 import type { TableColumn } from 'react-data-table-component';
 import {
   type Order,
-  type OrderArea,
-  AREA_TABS,
   getOrdersColumns,
 } from './orders';
 import { OrderExpandedRow } from './orders/OrderExpandedRow';
 import { toast } from 'sonner';
 import { useAuth } from '../../contexts/AuthContext';
 import { deleteOrder, getOrders, updateOrder, getOrderById, type OrderBudgetLine } from '../../api/orders';
+import { getOrderProgressStagesPublic, type OrderProgressStage } from '../../api/orderProgressStages';
 import { getServicesSpareParts, canAddCatalogItemToBudget, type ServiceSparePartItem } from '../../api/servicesSpareParts';
 import { uploadImage } from '../../api/uploads';
 import noImageUrl from '../../assets/images/noimage.png';
 
-export type { Order, OrderArea };
+export type { Order };
 
 const exportOptions = { title: 'Orders', filename: 'orders' };
+
+/** One icon per tab index so stages that share a legacy area still look distinct. */
+const STAGE_TAB_ICONS: LucideIcon[] = [
+  DoorOpen,
+  Wrench,
+  Package,
+  Truck,
+  Clock,
+  Hammer,
+  Cpu,
+  ClipboardList,
+  Sparkles,
+  Layers,
+  CircleDot,
+  ScanLine,
+  FlaskConical,
+  Cog,
+  Settings2,
+];
 
 interface BudgetLineItem {
   id: string;
@@ -41,19 +83,21 @@ export function OrdersPage() {
   const MAX_ORDER_PHOTO_BYTES = 150 * 1024 * 1024; // 150MB (>= 100MB)
   const ACCEPT_ORDER_IMAGES = 'image/jpeg,image/png,image/webp,image/gif';
 
-  const [activeArea, setActiveArea] = useState<OrderArea>('entrance');
+  const [stages, setStages] = useState<OrderProgressStage[]>([]);
+  const [stagesLoading, setStagesLoading] = useState(false);
+  const [activeStageKey, setActiveStageKey] = useState<string>('');
   const filteredDataRef = useRef<Order[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<Order | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const [statusConfirm, setStatusConfirm] = useState<{
+  const [moveConfirm, setMoveConfirm] = useState<{
     order: Order;
-    action: 'to-maintenance' | 'to-warehouse' | 'to-entrance' | 'to-delivery' | 'to-waiting-parts' | 'from-waiting-parts';
+    toStageKey: string;
   } | null>(null);
-  const [statusLoading, setStatusLoading] = useState(false);
-  const [statusError, setStatusError] = useState<string | null>(null);
+  const [moveLoading, setMoveLoading] = useState(false);
+  const [moveError, setMoveError] = useState<string | null>(null);
 
   const [budgetOrder, setBudgetOrder] = useState<Order | null>(null);
   const [budgetLines, setBudgetLines] = useState<BudgetLineItem[]>([]);
@@ -66,18 +110,43 @@ export function OrdersPage() {
   const [budgetError, setBudgetError] = useState<string | null>(null);
 
   const [deliveryOrder, setDeliveryOrder] = useState<Order | null>(null);
+  const [deliveryTargetStageKey, setDeliveryTargetStageKey] = useState<string>('');
   const [deliveryAdvance, setDeliveryAdvance] = useState<number>(0);
   const [deliveryLoading, setDeliveryLoading] = useState(false);
   const [deliverySaving, setDeliverySaving] = useState(false);
   const [deliveryError, setDeliveryError] = useState<string | null>(null);
 
   const [warehouseMoveOrder, setWarehouseMoveOrder] = useState<Order | null>(null);
+  const [warehouseTargetStageKey, setWarehouseTargetStageKey] = useState<string>('');
   const [warehouseAfterPhoto, setWarehouseAfterPhoto] = useState<string | null>(null);
   const [warehousePhotoError, setWarehousePhotoError] = useState<string | null>(null);
   const [warehouseAfterPhotoFile, setWarehouseAfterPhotoFile] = useState<File | null>(null);
   const [warehouseSaving, setWarehouseSaving] = useState(false);
   const warehousePhotoInputRef = useRef<HTMLInputElement>(null);
   const warehouseAfterObjectUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        setStagesLoading(true);
+        const { stages: list } = await getOrderProgressStagesPublic();
+        if (!mounted) return;
+        setStages(list);
+        setActiveStageKey((prev) => (prev && list.some((s) => s.key === prev) ? prev : list[0]?.key ?? ''));
+      } catch (e) {
+        console.error(e);
+        if (!mounted) return;
+        setStages([]);
+        setActiveStageKey('');
+      } finally {
+        if (mounted) setStagesLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -95,9 +164,10 @@ export function OrdersPage() {
     };
   }, [token]);
 
-  const dataByArea = useMemo(() => {
-    return orders.filter((o) => o.area === activeArea);
-  }, [activeArea, orders]);
+  const dataByStage = useMemo(() => {
+    if (!activeStageKey) return [];
+    return orders.filter((o) => (o.progressStageKey ?? '') === activeStageKey);
+  }, [activeStageKey, orders]);
 
   const onFilteredDataChange = useCallback((_filters: DataTableFilterState, filteredData: Order[]) => {
     filteredDataRef.current = filteredData;
@@ -314,55 +384,17 @@ export function OrdersPage() {
     }
   }, [token, budgetOrder, budgetLines, refetchOrders]);
 
-  const handleMaintenanceClick = useCallback(
-    async (order: Order) => {
-      if (!token) return;
-      setStatusError(null);
-      setStatusConfirm({ order, action: 'to-maintenance' });
-    },
-    [token]
-  );
-
-  const handleStoreClick = useCallback(
-    (order: Order) => {
-      if (!token) return;
-      setWarehouseMoveOrder(order);
-      if (warehouseAfterObjectUrlRef.current) {
-        URL.revokeObjectURL(warehouseAfterObjectUrlRef.current);
-        warehouseAfterObjectUrlRef.current = null;
-      }
-      setWarehouseAfterPhoto(null);
-      setWarehousePhotoError(null);
-    },
-    [token]
-  );
-
-  const handleReplacementClick = useCallback(
-    async (order: Order) => {
-      if (!token) return;
-      setStatusError(null);
-      setStatusConfirm({ order, action: 'to-entrance' });
-    },
-    [token]
-  );
-
-  const handleWaitingPartsClick = useCallback(
-    async (order: Order) => {
-      if (!token) return;
-      setStatusError(null);
-      setStatusConfirm({ order, action: 'to-waiting-parts' });
-    },
-    [token]
-  );
-
-  const handleResumeMaintenanceClick = useCallback(
-    async (order: Order) => {
-      if (!token) return;
-      setStatusError(null);
-      setStatusConfirm({ order, action: 'from-waiting-parts' });
-    },
-    [token]
-  );
+  const openWarehouseModal = useCallback((order: Order, toStageKey: string) => {
+    setWarehouseTargetStageKey(toStageKey);
+    setWarehouseMoveOrder(order);
+    if (warehouseAfterObjectUrlRef.current) {
+      URL.revokeObjectURL(warehouseAfterObjectUrlRef.current);
+      warehouseAfterObjectUrlRef.current = null;
+    }
+    setWarehouseAfterPhotoFile(null);
+    setWarehouseAfterPhoto(null);
+    setWarehousePhotoError(null);
+  }, []);
 
   const openDeliveryModal = useCallback(
     async (order: Order) => {
@@ -388,76 +420,96 @@ export function OrdersPage() {
     if (deliverySaving) return;
     setDeliveryOrder(null);
     setDeliveryAdvance(0);
+    setDeliveryTargetStageKey('');
     setDeliveryError(null);
   }, [deliverySaving]);
 
-  const handleDeliverySave = useCallback(() => {
+  const handleDeliverySave = useCallback(async () => {
     if (!token || !deliveryOrder) return;
-    setStatusError(null);
-    setStatusConfirm({ order: deliveryOrder, action: 'to-delivery' });
-  }, [token, deliveryOrder]);
-
-  const handleStatusConfirm = useCallback(async () => {
-    if (!token || !statusConfirm) return;
-    const shouldOpenWhatsappTab = statusConfirm.action !== 'to-warehouse';
+    setDeliverySaving(true);
+    setDeliveryError(null);
+    const targetKey = deliveryTargetStageKey || '';
+    const stage = stages.find((s) => s.key === targetKey);
+    const legacyArea = stage?.legacyArea ?? 'delivery';
+    const legacyState = stage?.legacyState ?? 'delivery';
+    const shouldOpenWhatsappTab = legacyState !== deliveryOrder.state;
     const pendingWhatsappTab = shouldOpenWhatsappTab ? window.open('', '_blank') : null;
-    setStatusLoading(true);
-    setStatusError(null);
     try {
-      if (statusConfirm.action === 'to-maintenance') {
-        const resp = await updateOrder(token, statusConfirm.order.id, { area: 'maintenance', state: 'maintenance' });
-        openWhatsappUpdate(resp.whatsappLink, pendingWhatsappTab);
-        await refetchOrders();
-      } else if (statusConfirm.action === 'to-warehouse') {
-        // Moving to warehouse now requires an after-repair photo.
-        // Open a modal so the user can upload it before updating the order.
-        setWarehouseMoveOrder(statusConfirm.order);
-        setWarehouseAfterPhoto(null);
-        setWarehousePhotoError(null);
-        setStatusConfirm(null);
-      } else if (statusConfirm.action === 'to-entrance') {
-        const resp = await updateOrder(token, statusConfirm.order.id, { area: 'entrance', state: 'income' });
-        openWhatsappUpdate(resp.whatsappLink, pendingWhatsappTab);
-        await refetchOrders();
-      } else if (statusConfirm.action === 'to-waiting-parts') {
-        const resp = await updateOrder(token, statusConfirm.order.id, { area: 'waiting-parts', state: 'waiting' });
-        openWhatsappUpdate(resp.whatsappLink, pendingWhatsappTab);
-        await refetchOrders();
-      } else if (statusConfirm.action === 'from-waiting-parts') {
-        const resp = await updateOrder(token, statusConfirm.order.id, { area: 'maintenance', state: 'maintenance' });
-        openWhatsappUpdate(resp.whatsappLink, pendingWhatsappTab);
-        await refetchOrders();
-      } else if (statusConfirm.action === 'to-delivery') {
-        setDeliverySaving(true);
-        setDeliveryError(null);
-        const adv = Number.isFinite(deliveryAdvance) ? deliveryAdvance : 0;
-        const resp = await updateOrder(token, statusConfirm.order.id, {
-          area: 'delivery',
-          state: 'delivery',
-          advancement: adv,
-        });
-        openWhatsappUpdate(resp.whatsappLink, pendingWhatsappTab);
-        await refetchOrders();
-        setDeliveryOrder(null);
-        setDeliveryAdvance(0);
-      }
-      setStatusConfirm(null);
+      const adv = Number.isFinite(deliveryAdvance) ? deliveryAdvance : 0;
+      const resp = await updateOrder(token, deliveryOrder.id, {
+        progressStageKey: targetKey,
+        area: legacyArea,
+        state: legacyState,
+        advancement: adv,
+      });
+      if (shouldOpenWhatsappTab) openWhatsappUpdate(resp.whatsappLink, pendingWhatsappTab);
+      await refetchOrders();
+      setDeliveryOrder(null);
+      setDeliveryAdvance(0);
+      setDeliveryTargetStageKey('');
     } catch (e) {
       if (pendingWhatsappTab) pendingWhatsappTab.close();
-      setStatusError(e instanceof Error ? e.message : 'Failed to update order status');
+      setDeliveryError(e instanceof Error ? e.message : 'Failed to move order');
     } finally {
-      setStatusLoading(false);
-      if (statusConfirm?.action === 'to-delivery') {
-        setDeliverySaving(false);
-      }
+      setDeliverySaving(false);
     }
-  }, [token, statusConfirm, refetchOrders, deliveryAdvance, openWhatsappUpdate]);
+  }, [token, deliveryOrder, deliveryTargetStageKey, stages, deliveryAdvance, refetchOrders, openWhatsappUpdate]);
 
-  const handleStatusCancel = useCallback(() => {
-    if (statusLoading) return;
-    setStatusConfirm(null);
-    setStatusError(null);
-  }, [statusLoading]);
+  const handleMoveConfirm = useCallback(async () => {
+    if (!token || !moveConfirm) return;
+    const toStage = stages.find((s) => s.key === moveConfirm.toStageKey);
+    if (!toStage) return;
+
+    const shouldOpenWhatsappTab = toStage.legacyState !== moveConfirm.order.state;
+    const pendingWhatsappTab = shouldOpenWhatsappTab ? window.open('', '_blank') : null;
+    setMoveLoading(true);
+    setMoveError(null);
+
+    try {
+      const resp = await updateOrder(token, moveConfirm.order.id, {
+        progressStageKey: moveConfirm.toStageKey,
+        area: toStage.legacyArea,
+        state: toStage.legacyState,
+      });
+      if (shouldOpenWhatsappTab) openWhatsappUpdate(resp.whatsappLink, pendingWhatsappTab);
+      await refetchOrders();
+      setMoveConfirm(null);
+    } catch (e) {
+      if (pendingWhatsappTab) pendingWhatsappTab.close();
+      setMoveError(e instanceof Error ? e.message : 'Failed to move order');
+    } finally {
+      setMoveLoading(false);
+    }
+  }, [token, moveConfirm, stages, refetchOrders, openWhatsappUpdate]);
+
+  const handleMoveCancel = useCallback(() => {
+    if (moveLoading) return;
+    setMoveConfirm(null);
+    setMoveError(null);
+  }, [moveLoading]);
+
+  const handleMoveToStage = useCallback(
+    (order: Order, toStageKey: string) => {
+      if (!token) return;
+      const dest = stages.find((s) => s.key === toStageKey);
+      if (!dest) return;
+
+      if (dest.requiresAfterRepairPhoto) {
+        openWarehouseModal(order, toStageKey);
+        return;
+      }
+
+      if (dest.requiresDeliveryAdvance) {
+        setDeliveryTargetStageKey(toStageKey);
+        openDeliveryModal(order);
+        return;
+      }
+
+      setMoveError(null);
+      setMoveConfirm({ order, toStageKey });
+    },
+    [token, stages, openWarehouseModal, openDeliveryModal]
+  );
 
   const closeWarehouseModal = useCallback(() => {
     if (warehouseSaving) return;
@@ -466,6 +518,7 @@ export function OrdersPage() {
       warehouseAfterObjectUrlRef.current = null;
     }
     setWarehouseMoveOrder(null);
+    setWarehouseTargetStageKey('');
     setWarehouseAfterPhoto(null);
     setWarehouseAfterPhotoFile(null);
     setWarehousePhotoError(null);
@@ -499,7 +552,11 @@ export function OrdersPage() {
 
   const handleWarehouseMove = useCallback(async () => {
     if (!token || !warehouseMoveOrder) return;
-    const pendingWhatsappTab = window.open('', '_blank');
+    const stage = stages.find((s) => s.key === warehouseTargetStageKey);
+    const legacyArea = stage?.legacyArea ?? 'warehouse';
+    const legacyState = stage?.legacyState ?? 'warehouse';
+    const shouldOpenWhatsappTab = legacyState !== warehouseMoveOrder.state;
+    const pendingWhatsappTab = shouldOpenWhatsappTab ? window.open('', '_blank') : null;
     setWarehouseSaving(true);
     setWarehousePhotoError(null);
     try {
@@ -521,13 +578,15 @@ export function OrdersPage() {
         return;
       }
       const resp = await updateOrder(token, warehouseMoveOrder.id, {
-        area: 'warehouse',
-        state: 'warehouse',
+        progressStageKey: warehouseTargetStageKey,
+        area: legacyArea,
+        state: legacyState,
         photoAfterRepair: photoValue,
       });
-      openWhatsappUpdate(resp.whatsappLink, pendingWhatsappTab);
+      if (shouldOpenWhatsappTab) openWhatsappUpdate(resp.whatsappLink, pendingWhatsappTab);
       await refetchOrders();
       setWarehouseMoveOrder(null);
+      setWarehouseTargetStageKey('');
       setWarehouseAfterPhoto(null);
       setWarehousePhotoError(null);
       if (warehousePhotoInputRef.current) warehousePhotoInputRef.current.value = '';
@@ -537,29 +596,27 @@ export function OrdersPage() {
     } finally {
       setWarehouseSaving(false);
     }
-  }, [token, warehouseMoveOrder, warehouseAfterPhoto, warehouseAfterPhotoFile, refetchOrders, openWhatsappUpdate]);
+  }, [token, warehouseMoveOrder, warehouseTargetStageKey, warehouseAfterPhoto, warehouseAfterPhotoFile, stages, refetchOrders, openWhatsappUpdate]);
+
+  const sortedStagesForTabs = useMemo(
+    () => [...stages].sort((a, b) => a.sortOrder - b.sortOrder),
+    [stages]
+  );
 
   const tableColumns = useMemo(
     () =>
       getOrdersColumns(handleDeleteClick, deleteLoading, {
-        onMaintenanceClick: handleMaintenanceClick,
-        onStoreClick: handleStoreClick,
-        onReplacementClick: handleReplacementClick,
+        stages,
+        onMoveToStage: handleMoveToStage,
         onEditBudgetClick: handleEditBudgetClick,
-        onDeliverClick: openDeliveryModal,
-        onWaitingPartsClick: handleWaitingPartsClick,
-        onResumeMaintenanceClick: handleResumeMaintenanceClick,
+        hideStateColumn: stages.length > 0,
       }),
     [
       handleDeleteClick,
       deleteLoading,
-      handleMaintenanceClick,
-      handleStoreClick,
-      handleReplacementClick,
+      stages,
+      handleMoveToStage,
       handleEditBudgetClick,
-      openDeliveryModal,
-      handleWaitingPartsClick,
-      handleResumeMaintenanceClick,
     ]
   );
 
@@ -572,7 +629,7 @@ export function OrdersPage() {
 
   const servicesColumns: TableColumn<ServiceSparePartItem>[] = useMemo(
     () => [
-      { id: 'name', name: 'Service/Spare Parts',  width: '300px', selector: (r) => r.name, sortable: true },
+      { id: 'name', name: 'Service/Spare Parts', width: '300px', selector: (r) => r.name, sortable: true },
       { id: 'price', name: 'Price', width: '100px', selector: (r) => r.price, sortable: true, format: (r) => r.price.toFixed(2) },
       { id: 'amount', name: 'Amount', width: '100px', selector: (r) => r.amount, sortable: true },
       {
@@ -612,41 +669,52 @@ export function OrdersPage() {
           title="Orders - DIGITALSERVER TECHNICAL SERVICE"
           breadcrumb={[{ label: 'Operations', icon: Home }, { label: 'Orders' }]}
         />
-        <Link to="/admin/order/new">
-          <Button
-            variant="emerald"
-            size="md"
-            leftIcon={Wrench}
-            className="sm:ml-auto"
-          >
-            New Order
-          </Button>
-        </Link>
+        <div className='flex items-center gap-2'>
+          <Link to="/admin/order/new">
+            <Button
+              variant="emerald"
+              size="md"
+              leftIcon={Wrench}
+              className="sm:ml-auto"
+            >
+              New Order
+            </Button>
+          </Link>
+          <Link to="/admin/order/stages">
+            <Button variant="secondary" size="md" className="sm:ml-2" leftIcon={FileText}>
+              Manage stages
+            </Button>
+          </Link>
+        </div>
       </div>
 
-      {/* Area tabs */}
+      {/* Stage tabs */}
       <div className="flex w-full gap-1 border-b border-slate-200 dark:border-slate-700">
-        {AREA_TABS.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setActiveArea(id)}
-            className={`
-              flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors
-              ${activeArea === id
-                ? 'bg-blue-600 text-white'
-                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'}
-            `}
-          >
-            <Icon className="w-4 h-4" />
-            {label}
-          </button>
-        ))}
+        {stagesLoading && (
+          <div className="flex-1 px-4 py-3 text-sm text-slate-500 dark:text-slate-400">Loading stages…</div>
+        )}
+        {!stagesLoading &&
+          sortedStagesForTabs.map((s, index) => {
+            const Icon = STAGE_TAB_ICONS[index % STAGE_TAB_ICONS.length];
+            const isActive = activeStageKey === s.key;
+            return (
+              <button
+                key={s.key}
+                type="button"
+                onClick={() => setActiveStageKey(s.key)}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors ${isActive ? 'bg-blue-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
+                  }`}
+              >
+                <Icon className="w-4 h-4" />
+                {s.label}
+              </button>
+            );
+          })}
       </div>
 
       <Card className="overflow-hidden">
         <DataTableWithToolbar<Order>
-          data={dataByArea}
+          data={dataByStage}
           columns={tableColumns}
           searchFields={['no', 'code', 'customer', 'technical', 'equipment', 'series', 'type']}
           searchPlaceholder="Look for:"
@@ -996,29 +1064,20 @@ export function OrdersPage() {
         error={deleteError}
       />
       <ConfirmDialog
-        open={!!statusConfirm}
-        onClose={handleStatusCancel}
-        onConfirm={handleStatusConfirm}
-        title="Change order status"
+        open={!!moveConfirm}
+        onClose={handleMoveCancel}
+        onConfirm={handleMoveConfirm}
+        title="Move order"
         message={
-          statusConfirm
-            ? statusConfirm.action === 'to-maintenance'
-              ? `Move order "${statusConfirm.order.no}" to Maintenance?`
-              : statusConfirm.action === 'to-warehouse'
-                ? `Move order "${statusConfirm.order.no}" to Warehouse?`
-                : statusConfirm.action === 'to-entrance'
-                  ? `Move order "${statusConfirm.order.no}" back to Entrance?`
-                  : statusConfirm.action === 'to-waiting-parts'
-                    ? `Put order "${statusConfirm.order.no}" on hold until the spare part arrives? It will appear under Waiting for spare parts.`
-                    : statusConfirm.action === 'from-waiting-parts'
-                      ? `Move order "${statusConfirm.order.no}" back to Maintenance now that the part is available?`
-                      : `Mark order "${statusConfirm.order.no}" as Delivered?`
+          moveConfirm
+            ? `Move order "${moveConfirm.order.no}" to "${stages.find((s) => s.key === moveConfirm.toStageKey)?.label ?? moveConfirm.toStageKey
+            }"?`
             : ''
         }
         confirmLabel="Yes"
         cancelLabel="No"
-        isLoading={statusLoading}
-        error={statusError}
+        isLoading={moveLoading}
+        error={moveError}
       />
     </div>
   );

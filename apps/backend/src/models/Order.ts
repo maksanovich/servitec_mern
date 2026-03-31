@@ -18,6 +18,11 @@ export interface IOrder extends Omit<Document, 'model'> {
   priority: OrderPriority;
   area: OrderArea;
   state: OrderState;
+  /**
+   * Fine-grained progress stage used by the admin “Orders” flow.
+   * If missing, the API will infer it from legacy `area`/`state`.
+   */
+  progressStageKey?: string;
   type: string;
 
   clientId: number;
@@ -76,6 +81,7 @@ const orderSchema = new mongoose.Schema<IOrder>(
       enum: ['income', 'maintenance', 'warehouse', 'delivery', 'waiting', 'no_solution', 'finished'],
       required: true,
     },
+    progressStageKey: { type: String, default: '' },
     type: { type: String, required: true, trim: true },
 
     clientId: { type: Number, required: true, index: true },
