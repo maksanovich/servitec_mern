@@ -10,11 +10,14 @@ import { Download, FileSpreadsheet } from 'lucide-react';
 import { Card, CardHeader, Button, ButtonGroup } from './ui';
 import { useAuth } from '../contexts/AuthContext';
 import { getOrders, type OrderListItem } from '../api/orders';
+import { getOrderProgressStagesAdmin, type OrderProgressStage } from '../api/orderProgressStages';
+import { stateLabel } from '../pages/admin/orders/constants';
 
 export interface AgendaItem {
   date: string;
   customer: string;
-  area: string;
+  /** Resolved label for `progressStageKey` (falls back to legacy state label). */
+  stage: string;
   state: string;
   service: string;
   advancement: string;
@@ -30,7 +33,7 @@ const columns: TableColumn<AgendaItem>[] = [
     sortFunction: (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
   },
   { id: 'customer', name: 'Customer', selector: (row) => row.customer, sortable: true },
-  { id: 'area', name: 'Area', selector: (row) => row.area, sortable: true },
+  { id: 'stage', name: 'Stage', selector: (row) => row.stage, sortable: true },
   { id: 'state', name: 'State', selector: (row) => row.state, sortable: true },
   { id: 'service', name: 'Service', selector: (row) => row.service, sortable: true },
   { id: 'advancement', name: 'Advancement', selector: (row) => row.advancement, sortable: true },
@@ -48,27 +51,48 @@ const exportOptions = { title: 'Agenda Items', filename: 'agenda-items' };
 export function AgendaItemsTable() {
   const { token } = useAuth();
   const [orders, setOrders] = useState<OrderListItem[]>([]);
+  const [stages, setStages] = useState<OrderProgressStage[]>([]);
   const filteredDataRef = useRef<AgendaItem[]>([]);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       if (!token) {
-        if (mounted) setOrders([]);
+        if (mounted) {
+          setOrders([]);
+          setStages([]);
+        }
         return;
       }
       try {
-        const { orders: list } = await getOrders(token, { limit: 200 });
-        if (mounted) setOrders(list);
+        const [{ orders: list }, { stages: stageList }] = await Promise.all([
+          getOrders(token, { limit: 200 }),
+          getOrderProgressStagesAdmin(token),
+        ]);
+        if (mounted) {
+          setOrders(list);
+          setStages(stageList);
+        }
       } catch (err) {
         console.error(err);
-        if (mounted) setOrders([]);
+        if (mounted) {
+          setOrders([]);
+          setStages([]);
+        }
       }
     })();
     return () => {
       mounted = false;
     };
   }, [token]);
+
+  const stageByKey = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const s of stages) {
+      m.set(s.key, s.label);
+    }
+    return m;
+  }, [stages]);
 
   const data: AgendaItem[] = useMemo(() => {
     if (!orders.length) return [];
@@ -85,17 +109,20 @@ export function AgendaItemsTable() {
       const dd = created ? String(created.getDate()).padStart(2, '0') : '';
       const formattedDate = created ? `${yyyy}-${mm}-${dd}` : '';
 
+      const stageLabel =
+        stageByKey.get((o.progressStageKey ?? '').trim()) ?? stateLabel[o.state] ?? o.state;
+
       return {
         date: formattedDate,
         customer: o.customer,
-        area: o.area,
+        stage: stageLabel,
         state: o.state,
         service: o.type,
         advancement: advancementDisplay,
         total: total.toFixed(2),
       };
     });
-  }, [orders]);
+  }, [orders, stageByKey]);
 
   const defaultStartDate = useMemo(() => {
     if (!data.length) return undefined;
@@ -138,7 +165,7 @@ export function AgendaItemsTable() {
       <DataTableWithToolbar<AgendaItem>
         data={data}
         columns={columns}
-        searchFields={['customer', 'service', 'state']}
+        searchFields={['customer', 'service', 'stage', 'state']}
         searchPlaceholder="Search..."
         dateColumnId="date"
         defaultStartDate={defaultStartDate}
