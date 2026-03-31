@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.js';
-import { requirePage } from '../middleware/rbac.js';
+import { requireSuperAdmin } from '../middleware/rbac.js';
 import {
   createOrderProgressStage,
   deleteOrderProgressStage,
@@ -14,7 +14,7 @@ const router = Router();
 router.get('/public', getOrderProgressStagesPublic);
 
 router.use(authMiddleware);
-router.use(requirePage('/admin/order'));
+router.use(requireSuperAdmin);
 
 router.get('/', getOrderProgressStagesAdmin);
 router.post('/', createOrderProgressStage);

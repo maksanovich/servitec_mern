@@ -10,7 +10,7 @@ import { Download, FileSpreadsheet } from 'lucide-react';
 import { Card, CardHeader, Button, ButtonGroup } from './ui';
 import { useAuth } from '../contexts/AuthContext';
 import { getOrders, type OrderListItem } from '../api/orders';
-import { getOrderProgressStagesAdmin, type OrderProgressStage } from '../api/orderProgressStages';
+import { getOrderProgressStagesPublic, type OrderProgressStage } from '../api/orderProgressStages';
 import { stateLabel } from '../pages/admin/orders/constants';
 
 export interface AgendaItem {
@@ -67,7 +67,7 @@ export function AgendaItemsTable() {
       try {
         const [{ orders: list }, { stages: stageList }] = await Promise.all([
           getOrders(token, { limit: 200 }),
-          getOrderProgressStagesAdmin(token),
+          getOrderProgressStagesPublic(),
         ]);
         if (mounted) {
           setOrders(list);

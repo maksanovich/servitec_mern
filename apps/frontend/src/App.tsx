@@ -3,6 +3,7 @@ import { Layout } from './components/Layout';
 import { AdminLayout } from './components/AdminLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { RequirePage } from './components/RequirePage';
+import { RequireSuperAdmin } from './components/RequireSuperAdmin';
 import { AuthProvider } from './contexts/AuthContext';
 import { CompanyProvider } from './contexts/CompanyContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -112,7 +113,9 @@ function App() {
               path="order/stages"
               element={
                 <RequirePage page="/admin/order">
-                  <OrderStagesPage />
+                  <RequireSuperAdmin>
+                    <OrderStagesPage />
+                  </RequireSuperAdmin>
                 </RequirePage>
               }
             />
