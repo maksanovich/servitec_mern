@@ -21,5 +21,7 @@ export async function startScheduler(): Promise<void> {
     timezone: process.env.TZ ?? 'UTC',
   });
 
-  console.log('[Scheduler] Cron jobs registered (hourly sync at :00, delivery reminders daily at 08:00)');
+  console.log(
+    '[Scheduler] Cron jobs registered (hourly: Perseo clients + SpareServer products at :00, delivery reminders daily at 08:00)'
+  );
 }

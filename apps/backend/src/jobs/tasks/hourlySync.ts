@@ -1,5 +1,6 @@
 const perseoService = await import('../../services/perseoService.js');
 const { Client } = await import('../../models/Client.js');
+const { SpareServer } = await import('../../models/SpareServer.js');
 
 function toISODate(value: string): string {
   if (!value) return '';
@@ -61,6 +62,33 @@ export async function runHourlySync(): Promise<void> {
       console.log('[Cron] Clients synced:', saved);
     } else {
       console.log('[Cron] Clients: none to sync');
+    }
+
+    const products = await perseoService.getProducts('');
+    console.log('[Cron] Perseo products fetched:', Array.isArray(products) ? products.length : 0);
+    if (products.length) {
+      let spareSaved = 0;
+      for (const p of products) {
+        const productosid = typeof p.productosid === 'number' ? p.productosid : Number(p.productosid);
+        if (productosid == null || Number.isNaN(productosid)) {
+          console.warn('[Cron] SpareServer: skip row without productosid');
+          continue;
+        }
+        const productocodigo = typeof p.productocodigo === 'string' ? p.productocodigo : String(p.productocodigo ?? '');
+        await SpareServer.findOneAndUpdate(
+          { productosid },
+          {
+            productosid,
+            productocodigo,
+            payload: p as Record<string, unknown>,
+          },
+          { upsert: true, new: true }
+        );
+        spareSaved++;
+      }
+      console.log('[Cron] SpareServer (Perseo products) synced:', spareSaved);
+    } else {
+      console.log('[Cron] SpareServer: none to sync');
     }
 
     const elapsed = Date.now() - start;
