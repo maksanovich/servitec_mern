@@ -1,5 +1,7 @@
 import type { OrderShowcaseItem } from '../api/orders';
 import noImageUrl from '../assets/images/noimage.png';
+import { RichTextHtml } from './ui';
+import { htmlToPlainText } from '../utils/htmlPlainText';
 
 export function BlogShowcaseArticle({ order }: { order: OrderShowcaseItem }) {
   return (
@@ -42,18 +44,18 @@ export function BlogShowcaseArticle({ order }: { order: OrderShowcaseItem }) {
         </div>
       </div>
 
-      {(order.equipmentCondition || order.technicalReport) && (
+      {(htmlToPlainText(order.equipmentCondition ?? '') || htmlToPlainText(order.technicalReport ?? '')) && (
         <div className="px-6 pb-6 pt-0 space-y-4">
-          {order.equipmentCondition && (
+          {htmlToPlainText(order.equipmentCondition ?? '') && (
             <div>
               <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Condition</p>
-              <p className="text-slate-700 leading-relaxed">{order.equipmentCondition}</p>
+              <RichTextHtml html={order.equipmentCondition} className="text-slate-700 leading-relaxed" />
             </div>
           )}
-          {order.technicalReport && (
+          {htmlToPlainText(order.technicalReport ?? '') && (
             <div>
               <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Technical notes</p>
-              <p className="text-slate-700 leading-relaxed">{order.technicalReport}</p>
+              <RichTextHtml html={order.technicalReport} className="text-slate-700 leading-relaxed" />
             </div>
           )}
         </div>

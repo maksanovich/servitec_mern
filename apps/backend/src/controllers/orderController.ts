@@ -25,6 +25,7 @@ import {
   buildTechnicalReportDocxBuffer,
   isOrderEligibleForTechnicalReport,
 } from '../services/technicalReportDocx.js';
+import { htmlToPlainText } from '../utils/htmlPlainText.js';
 
 /** Matches backend `getAssignableTechnicians` / frontend technician detection. */
 function isTechnicianRole(slug: string, roleName?: string): boolean {
@@ -1416,8 +1417,8 @@ export async function printOrderPdf(req: AuthRequest, res: Response): Promise<Re
       y = rowY + 6;
 
       doc.font('Helvetica');
-      doc.text(`Reported issue: ${detail.equipmentCondition || '-'}`, leftX, y);
-      doc.text(`Equipment description: ${detail.technicalReport || '-'}`, leftX, doc.y + 1);
+      doc.text(`Reported issue: ${htmlToPlainText(detail.equipmentCondition ?? '') || '-'}`, leftX, y);
+      doc.text(`Equipment description: ${htmlToPlainText(detail.technicalReport ?? '') || '-'}`, leftX, doc.y + 1);
       doc.text(`Accessories: ${accessoriesText ? `${accessoriesText}.` : '-'}`, leftX, doc.y + 1);
       doc.text(`Technician: ${detail.technical || '-'}`, leftX, doc.y + 3);
 

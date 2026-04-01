@@ -10,6 +10,8 @@ import noImageUrl from '../assets/images/noimage.png';
 import type { OrderProgressStage } from '../api/orderProgressStages';
 import { getOrderProgressStagesPublic } from '../api/orderProgressStages';
 import type { OrderWorkflow } from '../api/orders';
+import { RichTextHtml } from '../components/ui';
+import { htmlToPlainText } from '../utils/htmlPlainText';
 
 type TimelineStage = Pick<OrderProgressStage, 'key' | 'label' | 'description' | 'sortOrder'>;
 
@@ -299,21 +301,21 @@ export function TrackPage() {
             </div>
           )}
 
-          {(order.equipmentCondition || order.technicalReport) && (
+          {(htmlToPlainText(order.equipmentCondition ?? '') || htmlToPlainText(order.technicalReport ?? '')) && (
             <div className="border-t border-slate-200 pt-6">
               <p className="text-sm font-semibold text-slate-800 mb-3">Technical Notes</p>
-              <div className="space-y-2 text-sm text-slate-600">
-                {order.equipmentCondition && (
-                  <p>
-                    <span className="font-medium text-slate-700">Condition: </span>
-                    {order.equipmentCondition}
-                  </p>
+              <div className="space-y-4 text-sm text-slate-900">
+                {htmlToPlainText(order.equipmentCondition ?? '') && (
+                  <div>
+                    <p className="font-medium text-slate-900 mb-1">Condition</p>
+                    <RichTextHtml html={order.equipmentCondition ?? ''} className="text-slate-900" />
+                  </div>
                 )}
-                {order.technicalReport && (
-                  <p>
-                    <span className="font-medium text-slate-700">Report: </span>
-                    {order.technicalReport}
-                  </p>
+                {htmlToPlainText(order.technicalReport ?? '') && (
+                  <div>
+                    <p className="font-medium text-slate-900 mb-1">Report</p>
+                    <RichTextHtml html={order.technicalReport ?? ''} className="text-slate-900" />
+                  </div>
                 )}
               </div>
             </div>

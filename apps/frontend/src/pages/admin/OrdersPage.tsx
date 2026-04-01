@@ -40,6 +40,7 @@ import {
 import { OrderExpandedRow } from './orders/OrderExpandedRow';
 import { toast } from 'sonner';
 import { useAuth } from '../../contexts/AuthContext';
+import { SUPER_ADMIN_SLUG } from '../../constants/adminPages';
 import { deleteOrder, getOrders, updateOrder, getOrderById, type OrderBudgetLine, OrderWorkflow } from '../../api/orders';
 import { getOrderProgressStagesPublic, type OrderProgressStage } from '../../api/orderProgressStages';
 import { getServicesSpareParts, canAddCatalogItemToBudget, type ServiceSparePartItem } from '../../api/servicesSpareParts';
@@ -79,7 +80,7 @@ interface BudgetLineItem {
 }
 
 export function OrdersPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const MAX_ORDER_PHOTO_BYTES = 150 * 1024 * 1024; // 150MB (>= 100MB)
   const ACCEPT_ORDER_IMAGES = 'image/jpeg,image/png,image/webp,image/gif';
 
@@ -699,11 +700,13 @@ export function OrdersPage() {
               New Order
             </Button>
           </Link>
-          <Link to="/admin/order/stages">
-            <Button variant="secondary" size="md" className="sm:ml-2" leftIcon={FileText}>
-              Manage stages
-            </Button>
-          </Link>
+          {user?.role?.slug === SUPER_ADMIN_SLUG && (
+            <Link to="/admin/order/stages">
+              <Button variant="secondary" size="md" className="sm:ml-2" leftIcon={FileText}>
+                Manage stages
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
