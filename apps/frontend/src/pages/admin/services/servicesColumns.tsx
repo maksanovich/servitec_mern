@@ -123,9 +123,28 @@ function formatPrice(price: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(price);
 }
 
-export function getServicesColumns(actions: ServiceSparePartColumnActions): TableColumn<ServiceSparePartItem>[] {
-  return [
-    {
+export interface GetServicesColumnsOptions {
+  /** When false, the Type column is omitted (e.g. Services-only catalog). */
+  includeType?: boolean;
+  /** When false, the Action column is omitted (e.g. read-only Spare Parts view). */
+  includeActions?: boolean;
+  /** When false, the Amount column is omitted (e.g. Services catalog without stock). */
+  includeAmount?: boolean;
+  /** Header for the name column (default: Service / Spare Parts). */
+  nameColumnLabel?: string;
+}
+
+export function getServicesColumns(
+  actions: ServiceSparePartColumnActions,
+  options?: GetServicesColumnsOptions
+): TableColumn<ServiceSparePartItem>[] {
+  const { includeType = true, includeActions = true, includeAmount = true, nameColumnLabel = 'Service / Spare Parts' } =
+    options ?? {};
+
+  const cols: TableColumn<ServiceSparePartItem>[] = [];
+
+  if (includeType) {
+    cols.push({
       id: 'type',
       name: 'Type',
       selector: (row) => row.type,
@@ -134,10 +153,13 @@ export function getServicesColumns(actions: ServiceSparePartColumnActions): Tabl
       cell: (row) => (
         <Badge variant={typeVariant[row.type]}>{typeLabel[row.type]}</Badge>
       ),
-    },
+    });
+  }
+
+  cols.push(
     {
       id: 'name',
-      name: 'Service / Spare Parts',
+      name: nameColumnLabel,
       selector: (row) => row.name,
       sortable: true,
       minWidth: '300px',
@@ -145,16 +167,20 @@ export function getServicesColumns(actions: ServiceSparePartColumnActions): Tabl
         <span className="text-slate-700 dark:text-slate-300">{row.name}</span>
       ),
     },
-    {
-      id: 'amount',
-      name: 'Amount',
-      selector: (row) => row.amount,
-      sortable: true,
-      width: '100px',
-      cell: (row) => (
-        <span className="text-slate-700 dark:text-slate-300">{row.amount}</span>
-      ),
-    },
+    ...(includeAmount
+      ? [
+          {
+            id: 'amount',
+            name: 'Amount',
+            selector: (row: ServiceSparePartItem) => row.amount,
+            sortable: true,
+            width: '100px',
+            cell: (row: ServiceSparePartItem) => (
+              <span className="text-slate-700 dark:text-slate-300">{row.amount}</span>
+            ),
+          } satisfies TableColumn<ServiceSparePartItem>,
+        ]
+      : []),
     {
       id: 'price',
       name: 'Price',
@@ -186,19 +212,24 @@ export function getServicesColumns(actions: ServiceSparePartColumnActions): Tabl
       cell: (row) => (
         <Badge variant={stateVariant[row.state]}>{stateLabel[row.state]}</Badge>
       ),
-    },
-    {
+    }
+  );
+
+  if (includeActions) {
+    cols.push({
       id: 'action',
       name: 'Action',
       sortable: false,
       width: '80px',
       cell: (row) => <ActionDropdown item={row} onEdit={actions.onEdit} onDelete={actions.onDelete} />,
-    },
-  ];
+    });
+  }
+
+  return cols;
 }
 
 /** Static columns for export (no action callbacks). */
-export const servicesColumns: TableColumn<ServiceSparePartItem>[] = getServicesColumns({
-  onEdit: () => {},
-  onDelete: () => {},
-});
+export const servicesColumns: TableColumn<ServiceSparePartItem>[] = getServicesColumns(
+  { onEdit: () => {}, onDelete: () => {} },
+  {}
+);

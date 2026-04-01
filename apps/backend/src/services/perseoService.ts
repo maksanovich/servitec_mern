@@ -64,6 +64,112 @@ export async function getProducts(productocodigo = ''): Promise<PerseoProductRow
     return [];
 }
 
+/** MIME from decoded image bytes (Perseo returns raw base64 without a data URL). */
+function mimeFromImageBuffer(buf: Buffer): string {
+    if (buf.length >= 4 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) {
+        return 'image/png';
+    }
+    if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) {
+        return 'image/jpeg';
+    }
+    if (buf.length >= 6 && buf[0] === 0x47 && buf[1] === 0x49 && buf[2] === 0x46 && buf[3] === 0x38) {
+        return 'image/gif';
+    }
+    if (
+        buf.length >= 12 &&
+        buf.slice(0, 4).toString('ascii') === 'RIFF' &&
+        buf.slice(8, 12).toString('ascii') === 'WEBP'
+    ) {
+        return 'image/webp';
+    }
+    return 'image/jpeg';
+}
+
+/**
+ * Turns Perseo `imagen` values into a string suitable for `<img src>`.
+ * Handles full data URLs, URLs, raw base64 (any length), URL-safe base64, and whitespace in the payload.
+ */
+function normalizePerseoImageSrc(raw: string): string {
+    const s = raw.trim();
+    if (
+        s.startsWith('data:') ||
+        s.startsWith('http://') ||
+        s.startsWith('https://') ||
+        s.startsWith('blob:')
+    ) {
+        return s;
+    }
+    // Do not treat JPEG base64 as a path: FFD8FF… encodes to "/9j/…".
+    if (s.startsWith('/') && !s.startsWith('/9j/')) return s;
+
+    let payload = s.replace(/\s/g, '');
+    const lower = payload.toLowerCase();
+    const b64Marker = ';base64,';
+    const idx = lower.indexOf(b64Marker);
+    if (idx !== -1) {
+        payload = payload.slice(idx + b64Marker.length);
+    } else if (lower.startsWith('base64,')) {
+        payload = payload.slice(7);
+    }
+
+    const standardB64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    if (!/^[A-Za-z0-9+/=]+$/.test(standardB64) || standardB64.length < 4) {
+        return s;
+    }
+
+    let buf: Buffer;
+    try {
+        buf = Buffer.from(standardB64, 'base64');
+    } catch {
+        return s;
+    }
+    if (!buf.length) return s;
+
+    const mime = mimeFromImageBuffer(buf);
+    return `data:${mime};base64,${buf.toString('base64')}`;
+}
+
+function imagenStringFromApiRow(row: unknown): string | null {
+    if (row == null) return null;
+    if (typeof row === 'string') {
+        const t = row.trim();
+        return t || null;
+    }
+    if (typeof row === 'object' && !Array.isArray(row)) {
+        const o = row as Record<string, unknown>;
+        for (const k of ['imagen', 'base64', 'data', 'contenido', 'image']) {
+            const v = o[k];
+            if (typeof v === 'string' && v.trim()) return v.trim();
+        }
+    }
+    return null;
+}
+
+/**
+ * Perseo `productos_imagenes_consulta` — first image for a product (same as DigitalServer perseo.getProductImage).
+ */
+export async function getProductImage(productosid: number): Promise<{ ok: true; src: string } | { ok: false }> {
+    const res = await fetch(`${process.env.PERSEO_DATA_C3_APP}productos_imagenes_consulta`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            api_key: process.env.PERSEO_API ?? '',
+            productosid,
+        }),
+    });
+    if (res.status !== 200) {
+        const text = await res.text().catch(() => '');
+        console.warn('[Perseo] productos_imagenes_consulta failed', res.status, text.slice(0, 200));
+        return { ok: false };
+    }
+    const tempData = (await res.json()) as { productos_imagenes?: unknown };
+    const list = tempData.productos_imagenes;
+    if (!Array.isArray(list) || !list.length) return { ok: false };
+    const imagen = imagenStringFromApiRow(list[0]);
+    if (!imagen) return { ok: false };
+    return { ok: true, src: normalizePerseoImageSrc(imagen) };
+}
+
 /** Payload for Perseo clientes_editar: full client object with usuariomodificacion and fechamodificacion */
 export type PerseoClientEditPayload = {
     clientesid: number;

@@ -37,6 +37,10 @@ export interface DataTableWithToolbarProps<T> {
   expandableRowDisabled?: (row: T) => boolean;
   /** Icons for expand/collapse (e.g. Plus when collapsed, Minus when expanded) */
   expandableIcon?: { collapsed: React.ReactNode; expanded: React.ReactNode };
+  /** Row click (e.g. open detail modal) */
+  onRowClicked?: (row: T, e: React.MouseEvent) => void;
+  pointerOnHover?: boolean;
+  highlightOnHover?: boolean;
 }
 
 function getColumnId(col: TableColumn<unknown>): string | null {
@@ -96,6 +100,9 @@ export function DataTableWithToolbar<T>({
   expandableRowsComponent,
   expandableRowDisabled,
   expandableIcon,
+  onRowClicked,
+  pointerOnHover,
+  highlightOnHover,
 }: DataTableWithToolbarProps<T>) {
   const [search, setSearch] = useState('');
   const [startDate, setStartDate] = useState(defaultStartDate);
@@ -149,6 +156,9 @@ export function DataTableWithToolbar<T>({
           paginationPerPage={pageSize}
           paginationRowsPerPageOptions={pageSizeOptions}
           paginationComponent={DataTablePagination}
+          onRowClicked={onRowClicked}
+          pointerOnHover={pointerOnHover}
+          highlightOnHover={highlightOnHover}
           noDataComponent={noDataComponent ?? (
             <div className="py-12 text-center text-slate-500 dark:text-slate-400">
               No data available in this table.

@@ -19,48 +19,55 @@ interface Props {
   item: ServiceSparePartItem | null;
   onSuccess: () => void;
   onSubmit: (data: Omit<ServiceSparePartItem, 'id'>) => Promise<void>;
+  /** When true, catalog entries are always `service` (Services page). */
+  servicesCatalogOnly?: boolean;
 }
 
-export function ServiceSparePartFormModal({ open, onClose, item, onSuccess, onSubmit }: Props) {
+export function ServiceSparePartFormModal({
+  open,
+  onClose,
+  item,
+  onSuccess,
+  onSubmit,
+  servicesCatalogOnly = false,
+}: Props) {
   const [type, setType] = useState<ServiceSparePartType>('service');
   const [name, setName] = useState('');
   const [price, setPrice] = useState<string>('0');
   const [amount, setAmount] = useState<string>('0');
   const [state, setState] = useState<ServiceSparePartState>('active');
   const [details, setDetails] = useState('');
-
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-
 
   const isEdit = !!item;
 
   useEffect(() => {
     if (!open) return;
     if (item) {
-      setType(item.type);
+      setType(servicesCatalogOnly ? 'service' : item.type);
       setName(item.name);
       setPrice(String(item.price ?? 0));
-      setAmount(String(item.amount ?? 0));
+      if (!servicesCatalogOnly) setAmount(String(item.amount ?? 0));
       setState(item.state ?? 'active');
       setDetails(item.details ?? '');
     } else {
       setType('service');
       setName('');
       setPrice('0');
-      setAmount('0');
+      if (!servicesCatalogOnly) setAmount('0');
       setState('active');
       setDetails('');
     }
     setError(null);
-  }, [open, item]);
+  }, [open, item, servicesCatalogOnly]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedName = name.trim();
     const trimmedDetails = details.trim();
     const priceNum = Number(price);
-    const amountNum = Number(amount);
+    const amountNum = servicesCatalogOnly ? 0 : Number(amount);
 
     if (!trimmedName) {
       setError('Service/spare part name is required.');
@@ -70,7 +77,7 @@ export function ServiceSparePartFormModal({ open, onClose, item, onSuccess, onSu
       setError('Price must be a valid number (0 or greater).');
       return;
     }
-    if (Number.isNaN(amountNum) || amountNum < 0) {
+    if (!servicesCatalogOnly && (Number.isNaN(amountNum) || amountNum < 0)) {
       setError('Amount must be a valid number (0 or greater).');
       return;
     }
@@ -79,7 +86,7 @@ export function ServiceSparePartFormModal({ open, onClose, item, onSuccess, onSu
     setSaving(true);
     try {
       await onSubmit({
-        type,
+        type: servicesCatalogOnly ? 'service' : type,
         name: trimmedName,
         price: priceNum,
         amount: amountNum,
@@ -96,23 +103,38 @@ export function ServiceSparePartFormModal({ open, onClose, item, onSuccess, onSu
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={isEdit ? 'Edit Service / Spare Part' : 'Add New Service / Spare Part'} size="lg">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={
+        servicesCatalogOnly
+          ? isEdit
+            ? 'Edit Service'
+            : 'Add Service'
+          : isEdit
+            ? 'Edit Service / Spare Part'
+            : 'Add New Service / Spare Part'
+      }
+      size="lg"
+    >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-              Type <span className="text-red-500">*</span>
-            </label>
-            <Select
-              options={typeOptions}
-              value={type}
-              onChange={(e) => setType(e.target.value as ServiceSparePartType)}
-            />
-          </div>
+          {!servicesCatalogOnly && (
+            <div>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                Type <span className="text-red-500">*</span>
+              </label>
+              <Select
+                options={typeOptions}
+                value={type}
+                onChange={(e) => setType(e.target.value as ServiceSparePartType)}
+              />
+            </div>
+          )}
 
-          <div className="md:col-span-2">
+          <div className={servicesCatalogOnly ? 'md:col-span-2' : 'md:col-span-2'}>
             <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-              Service / Spare Part <span className="text-red-500">*</span>
+              {servicesCatalogOnly ? 'Service' : 'Service / Spare Part'} <span className="text-red-500">*</span>
             </label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. BATTERY" required />
           </div>
@@ -130,24 +152,26 @@ export function ServiceSparePartFormModal({ open, onClose, item, onSuccess, onSu
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-              Amount <span className="text-red-500">*</span>
-            </label>
-            <Input
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              inputMode="numeric"
-              placeholder="0"
-              required
-            />
-          </div>
+          {!servicesCatalogOnly && (
+            <div>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                Amount <span className="text-red-500">*</span>
+              </label>
+              <Input
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                inputMode="numeric"
+                placeholder="0"
+                required
+              />
+            </div>
+          )}
 
-          <div className="md:col-span-2">
+          <div className={servicesCatalogOnly ? undefined : 'md:col-span-2'}>
             <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
               State
             </label>
-            <Select options={stateOptions} value={state} onChange={(e) => setState(e.target.value as any)} />
+            <Select options={stateOptions} value={state} onChange={(e) => setState(e.target.value as ServiceSparePartState)} />
           </div>
 
           <div className="md:col-span-2">
@@ -177,4 +201,3 @@ export function ServiceSparePartFormModal({ open, onClose, item, onSuccess, onSu
     </Modal>
   );
 }
-

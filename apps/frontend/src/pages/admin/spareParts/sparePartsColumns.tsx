@@ -1,0 +1,170 @@
+import { useEffect, useState } from 'react';
+import { ImageOff } from 'lucide-react';
+import type { TableColumn } from '../../../components/datatable';
+import { Loader } from '../../../components/ui';
+import { useAuth } from '../../../contexts/AuthContext';
+import { getSpareServerProductImage, type SpareServerRow } from '../../../api/spareServer';
+
+export function formatPrice(n: number | null) {
+  if (n == null || Number.isNaN(n)) return '—';
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n);
+}
+
+export function formatDate(iso: string | null) {
+  if (!iso) return '—';
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return '—';
+    return d.toLocaleString();
+  } catch {
+    return '—';
+  }
+}
+
+const thumbBox =
+  'flex items-center justify-center w-14 h-14 shrink-0 rounded border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/80';
+
+const modalImageBox =
+  'flex items-center justify-center w-full min-h-[160px] rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/80 p-4';
+
+export function SparePartThumbnail({
+  productosid,
+  variant = 'table',
+}: {
+  productosid: number;
+  variant?: 'table' | 'modal';
+}) {
+  const { token } = useAuth();
+  const [phase, setPhase] = useState<'loading' | 'ok' | 'empty' | 'error'>('loading');
+  const [src, setSrc] = useState<string | null>(null);
+  const validId = Number.isFinite(productosid) && productosid > 0;
+
+  useEffect(() => {
+    let cancelled = false;
+    setPhase('loading');
+    setSrc(null);
+    (async () => {
+      if (!token || !validId) {
+        if (!cancelled) setPhase('empty');
+        return;
+      }
+      try {
+        const url = await getSpareServerProductImage(token, productosid);
+        if (cancelled) return;
+        if (url) {
+          setSrc(url);
+          setPhase('ok');
+        } else {
+          setPhase('empty');
+        }
+      } catch {
+        if (!cancelled) setPhase('error');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, productosid, validId]);
+
+  const boxClass = variant === 'modal' ? modalImageBox : thumbBox;
+  const imgClass =
+    variant === 'modal'
+      ? 'max-w-full max-h-[220px] w-auto h-auto object-contain'
+      : 'max-w-[52px] max-h-[52px] w-auto h-auto object-contain';
+
+  if (phase === 'loading') {
+    return (
+      <div className={boxClass} title="Loading image">
+        <Loader size="sm" />
+      </div>
+    );
+  }
+  if (phase === 'ok' && src) {
+    return (
+      <div className={boxClass}>
+        <img
+          src={src}
+          alt=""
+          className={imgClass}
+          onError={() => {
+            setSrc(null);
+            setPhase('error');
+          }}
+        />
+      </div>
+    );
+  }
+  return (
+    <div
+      className={`${boxClass} text-slate-400`}
+      title={phase === 'error' ? 'Image failed to load' : 'No image in Perseo'}
+    >
+      <ImageOff className={variant === 'modal' ? 'w-10 h-10 opacity-60' : 'w-5 h-5 opacity-60'} aria-hidden />
+    </div>
+  );
+}
+
+export const sparePartsColumns: TableColumn<SpareServerRow>[] = [
+  {
+    id: 'image',
+    name: 'Image',
+    selector: () => '',
+    sortable: false,
+    width: '88px',
+    cell: (row) => <SparePartThumbnail productosid={row.productosid} />,
+  },
+  {
+    id: 'productocodigo',
+    name: 'Code',
+    selector: (row) => row.productocodigo,
+    sortable: true,
+    width: '120px',
+    cell: (row) => <span className="font-mono text-slate-700 dark:text-slate-300">{row.productocodigo || '—'}</span>,
+  },
+  {
+    id: 'productosid',
+    name: 'Product ID',
+    selector: (row) => row.productosid,
+    sortable: true,
+    width: '110px',
+    cell: (row) => <span className="text-slate-700 dark:text-slate-300">{row.productosid}</span>,
+  },
+  {
+    id: 'description',
+    name: 'Description',
+    selector: (row) => row.description,
+    sortable: true,
+    minWidth: '280px',
+    cell: (row) => (
+      <span className="text-slate-700 dark:text-slate-300 line-clamp-2" title={row.description}>
+        {row.description || '—'}
+      </span>
+    ),
+  },
+  {
+    id: 'precio',
+    name: 'Price',
+    selector: (row) => row.precio ?? -Infinity,
+    sortable: true,
+    width: '110px',
+    cell: (row) => <span className="text-slate-700 dark:text-slate-300">{formatPrice(row.precio)}</span>,
+  },
+  {
+    id: 'stock',
+    name: 'Stock',
+    selector: (row) => row.stock ?? -Infinity,
+    sortable: true,
+    width: '100px',
+    cell: (row) => (
+      <span className="text-slate-700 dark:text-slate-300">{row.stock != null ? String(row.stock) : '—'}</span>
+    ),
+  },
+  {
+    id: 'updatedAt',
+    name: 'Synced',
+    selector: (row) => row.updatedAt ?? '',
+    sortable: true,
+    width: '180px',
+    cell: (row) => <span className="text-slate-600 dark:text-slate-400 text-sm">{formatDate(row.updatedAt)}</span>,
+  },
+];
