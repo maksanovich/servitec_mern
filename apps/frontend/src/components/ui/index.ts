@@ -22,3 +22,5 @@ export { Pagination } from './Pagination';
 export { Modal } from './Modal';
 export { Loader, PageLoader } from './Loader';
 export { ConfirmDialog } from './ConfirmDialog';
+export { RichTextEditor } from './RichTextEditor';
+export { RichTextHtml } from './RichTextHtml';

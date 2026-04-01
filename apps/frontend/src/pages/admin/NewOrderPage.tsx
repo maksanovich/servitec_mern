@@ -28,7 +28,9 @@ import {
   DatePicker,
   Loader,
   Modal,
+  RichTextEditor,
 } from '../../components/ui';
+import { htmlToPlainText } from '../../utils/htmlPlainText';
 import { DataTableWithToolbar } from '../../components/datatable';
 import type { TableColumn } from 'react-data-table-component';
 import type { SelectOption } from '../../components/ui';
@@ -638,6 +640,12 @@ export function NewOrderPage() {
       if (!payload.model) throw new Error('Model is required');
       if (!payload.series) throw new Error('Series is required');
       if (!payload.type) throw new Error('Product is required');
+      if (!htmlToPlainText(equipmentCondition)) {
+        throw new Error('Equipment Malfunction and Condition is required');
+      }
+      if (!htmlToPlainText(technicalReport)) {
+        throw new Error('Technical Report is required');
+      }
 
       if (isEditMode && id) {
         await updateOrder(token, id, payload as any);
@@ -996,12 +1004,14 @@ export function NewOrderPage() {
             </div>
 
             <div>
-              <label className={labelClass()}>Equipment Malfunction and Condition <span className="text-red-500 dark:text-red-400">*</span></label>
-              <textarea
+              <label className={labelClass()} htmlFor="order-equipment-condition">
+                Equipment Malfunction and Condition <span className="text-red-500 dark:text-red-400">*</span>
+              </label>
+              <RichTextEditor
+                id="order-equipment-condition"
+                aria-label="Equipment malfunction and condition"
                 value={equipmentCondition}
-                onChange={(e) => setEquipmentCondition(e.target.value)}
-                rows={3}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 text-slate-900 dark:text-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500"
+                onChange={setEquipmentCondition}
                 placeholder="Describe equipment malfunction and condition..."
               />
             </div>
@@ -1130,12 +1140,14 @@ export function NewOrderPage() {
             </div>
 
             <div>
-              <label className={labelClass()}>Technical Report (Mandatory) <span className="text-red-500 dark:text-red-400">*</span></label>
-              <textarea
+              <label className={labelClass()} htmlFor="order-technical-report">
+                Technical Report (Mandatory) <span className="text-red-500 dark:text-red-400">*</span>
+              </label>
+              <RichTextEditor
+                id="order-technical-report"
+                aria-label="Technical report"
                 value={technicalReport}
-                onChange={(e) => setTechnicalReport(e.target.value)}
-                rows={3}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700/50 text-slate-900 dark:text-slate-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500"
+                onChange={setTechnicalReport}
                 placeholder="Technical report..."
               />
             </div>

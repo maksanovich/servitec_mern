@@ -1,3 +1,5 @@
+import { RichTextHtml } from '../../../components/ui';
+import { htmlToPlainText } from '../../../utils/htmlPlainText';
 import type { Order } from './types';
 import { stateLabel } from './constants';
 
@@ -33,15 +35,25 @@ export function OrderExpandedRow({ data }: { data: Order }) {
         </div>
         <div className="sm:col-span-4">
           <span className="text-slate-500 dark:text-slate-400">Equipment Condition</span>
-          <p className="font-medium text-slate-900 dark:text-slate-100 whitespace-pre-wrap">
-            {data.equipmentCondition?.trim() ? data.equipmentCondition : '-'}
-          </p>
+          {htmlToPlainText(data.equipmentCondition ?? '') ? (
+            <RichTextHtml
+              html={data.equipmentCondition}
+              className="font-medium text-slate-900 dark:text-slate-100 mt-1"
+            />
+          ) : (
+            <p className="font-medium text-slate-900 dark:text-slate-100">-</p>
+          )}
         </div>
         <div className="sm:col-span-4">
           <span className="text-slate-500 dark:text-slate-400">Technical Report</span>
-          <p className="font-medium text-slate-900 dark:text-slate-100 whitespace-pre-wrap">
-            {data.technicalReport?.trim() ? data.technicalReport : '-'}
-          </p>
+          {htmlToPlainText(data.technicalReport ?? '') ? (
+            <RichTextHtml
+              html={data.technicalReport}
+              className="font-medium text-slate-900 dark:text-slate-100 mt-1"
+            />
+          ) : (
+            <p className="font-medium text-slate-900 dark:text-slate-100">-</p>
+          )}
         </div>
         <div>
           <span className="text-slate-500 dark:text-slate-400">Total</span>

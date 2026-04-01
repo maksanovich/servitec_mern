@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getOrdersShowcase } from '../api/orders';
 import type { OrderShowcaseItem } from '../api/orders';
 import noImageUrl from '../assets/images/noimage.png';
+import { htmlToPlainText } from '../utils/htmlPlainText';
 
 function formatDate(date?: string) {
   if (!date) return '—';
@@ -76,8 +77,8 @@ export function BlogPage() {
           {orders.map((order) => {
             const beforeSrc = order.photoBeforeRepair?.trim() ? order.photoBeforeRepair : noImageUrl;
             const afterSrc = order.photoAfterRepair?.trim() ? order.photoAfterRepair : noImageUrl;
-            const condition = order.equipmentCondition?.trim();
-            const report = order.technicalReport?.trim();
+            const condition = htmlToPlainText(order.equipmentCondition ?? '');
+            const report = htmlToPlainText(order.technicalReport ?? '');
             const snippet = condition ? (report ? `${condition} ${report}` : condition) : report;
 
             return (

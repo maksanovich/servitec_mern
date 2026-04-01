@@ -17,6 +17,8 @@ const MENU_WIDTH = 160;
 const APPROVAL_STAGE_KEY = 'approval';
 const REPAIR_STAGE_KEY = 'repair';
 const WARRANTY_WAIT_APPROVAL_KEY = 'warranty-waiting-provider-approval';
+const WARRANTY_APPROVED_KEY = 'warranty-approved';
+const WARRANTY_REJECTED_KEY = 'warranty-rejected';
 const WARRANTY_SOLUTION_KEY = 'warranty-solution-in-progress';
 
 function onEditBudget(order: Order) {
@@ -451,19 +453,38 @@ function StageActionDropdown({
   const prevStage = stageIndex > 0 ? stages[stageIndex - 1] : null;
   const nextStage = stageIndex >= 0 && stageIndex < stages.length - 1 ? stages[stageIndex + 1] : null;
   const repairStageDirect = stages.find((s) => s.key === REPAIR_STAGE_KEY);
+  const warrantyApprovedStageDirect = stages.find((s) => s.key === WARRANTY_APPROVED_KEY);
+  const warrantyRejectedStageDirect = stages.find((s) => s.key === WARRANTY_REJECTED_KEY);
   const warrantySolutionStageDirect = stages.find((s) => s.key === WARRANTY_SOLUTION_KEY);
+  const atWarrantyAwaitingApproval =
+    order.workflow === 'warranty' && (order.progressStageKey ?? '') === WARRANTY_WAIT_APPROVAL_KEY;
+  const showWarrantyApprovalOutcomes =
+    onMoveToStage && atWarrantyAwaitingApproval && warrantyApprovedStageDirect && warrantyRejectedStageDirect;
   const showDirectRepair =
     onMoveToStage &&
     repairStageDirect &&
     order.workflow !== 'warranty' &&
     (order.progressStageKey ?? '') === APPROVAL_STAGE_KEY &&
     nextStage?.key !== REPAIR_STAGE_KEY;
+  /** From "Approved", jump to solution and skip "Rejected" in the linear warranty list. */
   const showDirectWarrantySolution =
     onMoveToStage &&
     warrantySolutionStageDirect &&
     order.workflow === 'warranty' &&
-    (order.progressStageKey ?? '') === WARRANTY_WAIT_APPROVAL_KEY &&
+    (order.progressStageKey ?? '') === WARRANTY_APPROVED_KEY &&
     nextStage?.key !== WARRANTY_SOLUTION_KEY;
+
+  const workflow = order.workflow ?? 'standard';
+  const approvalStageInPipeline = stages.find(
+    (s) => s.workflow === workflow && s.key === APPROVAL_STAGE_KEY
+  );
+  const isAfterApprovalStage =
+    approvalStageInPipeline != null &&
+    currentStage != null &&
+    currentStage.workflow === workflow &&
+    currentStage.sortOrder > approvalStageInPipeline.sortOrder;
+  const showEditBudgetAction =
+    Boolean(currentStage?.budgetEditable && onEditBudgetClick && !isAfterApprovalStage);
 
   function onDelete(ord: Order) {
     if (isDeleteLoading) return;
@@ -490,7 +511,7 @@ function StageActionDropdown({
         </button>
       )}
 
-      {nextStage && onMoveToStage && (
+      {nextStage && onMoveToStage && !showWarrantyApprovalOutcomes && (
         <button
           type="button"
           className="flex w-full items-center gap-2 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-200 hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20"
@@ -501,6 +522,33 @@ function StageActionDropdown({
         >
           {nextStage.label}
         </button>
+      )}
+
+      {showWarrantyApprovalOutcomes && warrantyApprovedStageDirect && warrantyRejectedStageDirect && (
+        <>
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-200 hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20"
+            title="Mark warranty as approved"
+            onClick={() => {
+              onMoveToStage!(order, warrantyApprovedStageDirect.key);
+              setOpen(false);
+            }}
+          >
+            {warrantyApprovedStageDirect.label}
+          </button>
+          <button
+            type="button"
+            className="flex w-full items-center gap-2 px-3 py-2 text-sm text-rose-700 dark:text-rose-200 hover:bg-rose-500/10 dark:hover:bg-rose-500/20"
+            title="Mark warranty as rejected"
+            onClick={() => {
+              onMoveToStage!(order, warrantyRejectedStageDirect.key);
+              setOpen(false);
+            }}
+          >
+            {warrantyRejectedStageDirect.label}
+          </button>
+        </>
       )}
 
       {showDirectRepair && repairStageDirect && (
@@ -535,12 +583,12 @@ function StageActionDropdown({
         </button>
       )}
 
-      {currentStage?.budgetEditable && onEditBudgetClick && (
+      {showEditBudgetAction && (
         <button
           type="button"
           className="flex w-full items-center gap-2 px-3 py-2 text-sm text-amber-700 dark:text-amber-200 hover:bg-amber-500/10 dark:hover:bg-amber-500/20"
           onClick={() => {
-            onEditBudgetClick(order);
+            onEditBudgetClick!(order);
             setOpen(false);
           }}
         >

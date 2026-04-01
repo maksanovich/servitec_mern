@@ -2,6 +2,7 @@
 // @ts-nocheck
 
 import sharp from 'sharp';
+import { htmlToPlainText } from '../utils/htmlPlainText.js';
 import {
   AlignmentType,
   BorderStyle,
@@ -166,8 +167,8 @@ export async function buildTechnicalReportDocxBuffer(input: TechnicalReportDocxI
   const p1 = `Equipo ${nonEmpty(brand, '—')} ${nonEmpty(model, '')}${seriesPart} ingresa para ${nonEmpty(type, 'servicio técnico')}.`
     .replace(/\s+/g, ' ')
     .trim();
-  const p2 = `Cliente indica que ${nonEmpty(equipmentCondition, 'se autoriza el servicio según cotización.')}`;
-  const p3 = nonEmpty(technicalReport, '—');
+  const p2 = `Cliente indica que ${nonEmpty(htmlToPlainText(equipmentCondition), 'se autoriza el servicio según cotización.')}`;
+  const p3 = nonEmpty(htmlToPlainText(technicalReport), '—');
   const p4 = 'Se recomienda mantenimiento preventivo 1 vez al año.';
 
   let beforeFit: { data: Buffer; width: number; height: number } | null = null;
