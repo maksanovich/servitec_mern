@@ -1,20 +1,21 @@
 import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
 import { Home, FileText, FileSpreadsheet, Plus } from 'lucide-react';
-import { PageHeader, Card, Button, ButtonGroup, Loader, ConfirmDialog } from '../../components/ui';
+import { PageHeader, Card, Button, ButtonGroup, Loader, ConfirmDialog } from '../../../components/ui';
 import {
   DataTableWithToolbar,
   type DataTableFilterState,
   exportTableToPDF,
   exportTableToExcel,
-} from '../../components/datatable';
-import { useAuth } from '../../contexts/AuthContext';
-import * as servicesApi from '../../api/servicesSpareParts';
-import { getServicesColumns, servicesColumns, ServiceSparePartFormModal } from './services';
-import type { ServiceSparePartItem } from '../../api/servicesSpareParts';
+} from '../../../components/datatable';
+import { useAuth } from '../../../contexts/AuthContext';
+import * as servicesApi from '../../../api/servicesSpareParts';
+import { getServicesColumns } from './servicesColumns';
+import { ServiceSparePartFormModal } from './ServiceSparePartFormModal';
+import type { ServiceSparePartItem } from '../../../api/servicesSpareParts';
 
-const exportOptions = { title: 'Services & Spare Parts', filename: 'services-spare-parts' };
+const exportOptions = { title: 'Services', filename: 'services' };
 
-export function ServicesSparePartsPage() {
+export function ServicesPage() {
   const { token } = useAuth();
   const [items, setItems] = useState<ServiceSparePartItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,6 +25,8 @@ export function ServicesSparePartsPage() {
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const filteredDataRef = useRef<ServiceSparePartItem[]>([]);
+
+  const serviceRows = useMemo(() => items.filter((i) => i.type === 'service'), [items]);
 
   const onFilteredDataChange = useCallback((_filters: DataTableFilterState, filteredData: ServiceSparePartItem[]) => {
     filteredDataRef.current = filteredData;
@@ -46,8 +49,17 @@ export function ServicesSparePartsPage() {
     fetchItems();
   }, [fetchItems]);
 
-  const exportPDF = () => exportTableToPDF(servicesColumns, filteredDataRef.current, exportOptions);
-  const exportExcel = () => exportTableToExcel(servicesColumns, filteredDataRef.current, exportOptions);
+  const exportColumns = useMemo(
+    () =>
+      getServicesColumns(
+        { onEdit: () => {}, onDelete: () => {} },
+        { includeType: false, includeActions: false, includeAmount: false, nameColumnLabel: 'Service' }
+      ),
+    []
+  );
+
+  const exportPDF = () => exportTableToPDF(exportColumns, filteredDataRef.current, exportOptions);
+  const exportExcel = () => exportTableToExcel(exportColumns, filteredDataRef.current, exportOptions);
 
   const openNewModal = useCallback(() => {
     setEditingItem(null);
@@ -103,14 +115,23 @@ export function ServicesSparePartsPage() {
     [openEditModal, handleDeleteClick]
   );
 
-  const columns = useMemo(() => getServicesColumns(columnActions), [columnActions]);
+  const columns = useMemo(
+    () =>
+      getServicesColumns(columnActions, {
+        includeType: false,
+        includeActions: true,
+        includeAmount: false,
+        nameColumnLabel: 'Service',
+      }),
+    [columnActions]
+  );
 
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
-          title="Services / Spare Parts - DIGITALSERVER TECHNICAL SERVICE"
-          breadcrumb={[{ label: 'Catalog & Finance', icon: Home }, { label: 'Services & Spare Parts' }]}
+          title="Services - DIGITALSERVER TECHNICAL SERVICE"
+          breadcrumb={[{ label: 'Catalog & Finance', icon: Home }, { label: 'Services' }]}
         />
         <Button
           variant="emerald"
@@ -119,13 +140,13 @@ export function ServicesSparePartsPage() {
           onClick={openNewModal}
           className="sm:ml-auto"
         >
-          New Service / Spare Part
+          New Service
         </Button>
       </div>
 
       <Card className="overflow-hidden">
         <DataTableWithToolbar<ServiceSparePartItem>
-          data={items}
+          data={serviceRows}
           columns={columns}
           searchFields={['name', 'details']}
           searchPlaceholder="Look for:"
@@ -175,13 +196,14 @@ export function ServicesSparePartsPage() {
         item={editingItem}
         onSuccess={fetchItems}
         onSubmit={handleFormSubmit}
+        servicesCatalogOnly
       />
 
       <ConfirmDialog
         open={!!deleteConfirm}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
-        title="Delete service / spare part"
+        title="Delete service"
         message={
           deleteConfirm
             ? `Are you sure you want to delete "${deleteConfirm.name}"? This action cannot be undone.`

@@ -36,7 +36,8 @@ import { ModelsPage } from './pages/admin/ModelsPage';
 import { AccessoriesPage } from './pages/admin/AccessoriesPage';
 import { ProductsPage } from './pages/admin/ProductsPage';
 
-import { ServicesSparePartsPage } from './pages/admin/ServicesSparePartsPage';
+import { ServicesPage } from './pages/admin/services';
+import { SparePartsPage } from './pages/admin/spareParts';
 import { IncomePage } from './pages/admin/IncomePage';
 import { PreDiagnosisRulesPage } from './pages/admin/PreDiagnosisRulesPage';
 import { NotFoundPage } from './pages/NotFoundPage';
@@ -203,7 +204,15 @@ function App() {
               path="services"
               element={
                 <RequirePage page="/admin/services">
-                  <ServicesSparePartsPage />
+                  <ServicesPage />
+                </RequirePage>
+              }
+            />
+            <Route
+              path="spare"
+              element={
+                <RequirePage page="/admin/services">
+                  <SparePartsPage />
                 </RequirePage>
               }
             />

@@ -29,7 +29,7 @@ export const ADMIN_PAGE_OPTIONS: readonly { path: string; label: string }[] = [
   { path: '/admin/models', label: 'Models' },
   { path: '/admin/accessories', label: 'Accessories' },
   { path: '/admin/products', label: 'Products' },
-  { path: '/admin/services', label: 'Services & Spare Parts' },
+  { path: '/admin/services', label: 'Services' },
   { path: '/admin/income', label: 'Income' },
   { path: '/admin/company', label: 'Company' },
   { path: '/admin/docs', label: 'Documentation' },
