@@ -28,6 +28,42 @@ export async function getClients(params: GetClientParams = {}) {
     return [];
 }
 
+export type PerseoProductRow = Record<string, unknown> & {
+    productosid?: number;
+    productocodigo?: string;
+};
+
+/**
+ * Perseo `productos_consulta` — full catalog when productocodigo is empty.
+ * Uses PERSEO_DATA_C3_APP + productos_consulta (same base as clientes_consulta).
+ */
+export async function getProducts(productocodigo = ''): Promise<PerseoProductRow[]> {
+    const body = {
+        api_key: process.env.PERSEO_API ?? '',
+        productocodigo,
+        mostrarubicaciones: true,
+    };
+    const res = await fetch(`${process.env.PERSEO_DATA_C3_APP}productos_consulta`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    });
+    if (res.status !== 200) {
+        const text = await res.text().catch(() => '');
+        console.warn('[Perseo] productos_consulta failed', res.status, text.slice(0, 300));
+        return [];
+    }
+    const data: unknown = await res.json();
+    if (Array.isArray(data)) {
+        return data as PerseoProductRow[];
+    }
+    if (data && typeof data === 'object' && 'productos' in data) {
+        const list = (data as { productos?: unknown }).productos;
+        if (Array.isArray(list)) return list as PerseoProductRow[];
+    }
+    return [];
+}
+
 /** Payload for Perseo clientes_editar: full client object with usuariomodificacion and fechamodificacion */
 export type PerseoClientEditPayload = {
     clientesid: number;
