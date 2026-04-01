@@ -1,12 +1,28 @@
 import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { ChevronDown, DollarSign, Package, RefreshCw, Printer, Pencil, Truck, Wrench, Trash2, Clock } from 'lucide-react';
+import {
+  ChevronDown,
+  DollarSign,
+  Package,
+  RefreshCw,
+  Printer,
+  Pencil,
+  Truck,
+  Wrench,
+  Trash2,
+  Clock,
+  FileText,
+} from 'lucide-react';
+import { toast } from 'sonner';
 import { Badge } from '../../../components/ui';
 import type { TableColumn } from '../../../components/datatable';
 import type { Order } from './types';
 import type { OrderProgressStage } from '../../../api/orderProgressStages';
 import { priorityVariant, stateVariant, stateLabel } from './constants';
+import { downloadTechnicalReportDocx } from '../../../api/orders';
+
+const WARRANTY_READY_PICKUP_KEY = 'warranty-ready-pickup';
 
 const actionBtnClass =
   'p-1.5 rounded text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200 transition-colors';
@@ -411,6 +427,7 @@ function StageActionDropdown({
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [position, setPosition] = useState<{ top: number; left: number } | null>(null);
+  const [reportLoading, setReportLoading] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -485,6 +502,14 @@ function StageActionDropdown({
     currentStage.sortOrder > approvalStageInPipeline.sortOrder;
   const showEditBudgetAction =
     Boolean(currentStage?.budgetEditable && onEditBudgetClick && !isAfterApprovalStage);
+
+  const codeTrimmed = String(order.code ?? '').trim();
+  const showDownloadTechnicalReport =
+    codeTrimmed !== '' &&
+    (((order.workflow ?? 'standard') === 'standard' &&
+      currentStage != null &&
+      (currentStage.legacyArea === 'warehouse' || currentStage.legacyArea === 'delivery')) ||
+      (order.workflow === 'warranty' && (order.progressStageKey ?? '') === WARRANTY_READY_PICKUP_KEY));
 
   function onDelete(ord: Order) {
     if (isDeleteLoading) return;
@@ -606,6 +631,32 @@ function StageActionDropdown({
       >
         <Printer className="w-4 h-4" /> Print
       </button>
+
+      {showDownloadTechnicalReport && (
+        <button
+          type="button"
+          className="flex w-full items-center gap-2 px-3 py-2 text-sm text-sky-700 dark:text-sky-200 hover:bg-sky-500/10 dark:hover:bg-sky-500/20 disabled:opacity-50"
+          disabled={reportLoading}
+          onClick={async () => {
+            const code = codeTrimmed;
+            if (!code) {
+              toast.error('Order has no tracking code for the report.');
+              return;
+            }
+            setReportLoading(true);
+            try {
+              await downloadTechnicalReportDocx(code);
+            } catch (err) {
+              toast.error(err instanceof Error ? err.message : 'Failed to download report');
+            } finally {
+              setReportLoading(false);
+            }
+          }}
+        >
+          <FileText className="w-4 h-4 shrink-0" />
+          {reportLoading ? 'Preparing…' : 'Download report'}
+        </button>
+      )}
 
       <button
         type="button"
