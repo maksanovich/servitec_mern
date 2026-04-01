@@ -25,7 +25,7 @@ import {
   buildTechnicalReportDocxBuffer,
   isOrderEligibleForTechnicalReport,
 } from '../services/technicalReportDocx.js';
-import { htmlToPlainText } from '../utils/htmlPlainText.js';
+import { drawHtmlToPdfKit } from '../utils/htmlToPdfKit.js';
 
 /** Matches backend `getAssignableTechnicians` / frontend technician detection. */
 function isTechnicianRole(slug: string, roleName?: string): boolean {
@@ -1299,166 +1299,289 @@ export async function printOrderPdf(req: AuthRequest, res: Response): Promise<Re
         }`
       : 'SERVICE TECHNICAL DIGITALSERVER | Tel.: 0991684191 | info@digitalserver.com.ec | CDLA BRISAS DEL RIO MZ N1 V10';
 
-    function drawCopy(title: string, top: number) {
-      let y = top;
+    const M = 40;
+    const pageW = doc.page.width;
+    const pageH = doc.page.height;
+    const contentW = pageW - M * 2;
+    const bottomSafe = pageH - M;
 
-      if (logoBuffer) {
-        try {
-          doc.image(logoBuffer, 40, y, { fit: [120, 60] });
-        } catch {
-          // ignore logo errors and continue rendering
-        }
-      } else {
-        // Fallback "logo" when there is no image configured so that
-        // the header visually matches the provided sample.
-        doc
-          .save()
-          .fontSize(18)
-          .font('Helvetica-Bold')
-          .fillColor('#e11d48')
-          .text('Digital', 40, y);
-        const textWidth = doc.widthOfString('Digital');
-        doc.fillColor('#6b7280').text('server', 40 + textWidth + 2, y);
-        doc.restore();
+    function ensureSpace(currentY: number, needed: number): number {
+      if (currentY + needed > bottomSafe) {
+        doc.addPage();
+        return M;
       }
+      return currentY;
+    }
 
-      doc.fontSize(12).font('Helvetica-Bold').fillColor('black').text(title, { align: 'center' });
-      y = doc.y + 2;
-
-      doc.fontSize(9).font('Helvetica').text(`Print date: ${fmtDate(now)}`, { align: 'left' });
-      doc.text(`ORDER No. ${detail.no}`, { align: 'right' });
-      y = doc.y + 2;
-
-      doc.moveTo(36, y).fontSize(8).font('Helvetica-Bold').text(COMPANY_LINE, 36, y, { align: 'center' });
-      y = doc.y + 4;
-
-      doc.fontSize(8).font('Helvetica-Bold').fillColor('black');
-      doc.text('CUSTOMER DETAILS', 36, y);
-      doc.text('EQUIPMENT DETAILS', 300, y);
-      y = doc.y + 2;
-
-      doc.fontSize(8).font('Helvetica');
-      const leftX = 36;
-      const rightX = 300;
-
-      // Left column
-      doc.text(`Customer: ${detail.customer} (${detail.customerId})`, leftX, y);
-      doc.text(`Phone: ${client?.telefono1 ?? ''}`, leftX, doc.y + 1);
-      doc.text(`Email: ${client?.email ?? ''}`, leftX, doc.y + 1);
-
-      // Right column
-      const eqY = y;
-      doc.text(`Product: ${detail.type}`, rightX, eqY);
-      doc.text(`Brand/Model: ${detail.brand}(${detail.model})`, rightX, doc.y + 1);
-      doc.text(`Serial/IMEI: ${detail.series}`, rightX, doc.y + 1);
-      doc.text(
-        `Check-in: ${fmtDateTime(createdAt)}   Promised date: ${detail.fianceeDate?.trim() || '------'}`,
-        rightX,
-        doc.y + 1
-      );
-
-      y = Math.max(doc.y, eqY) + 4;
-
-      doc.font('Helvetica-Bold');
-      doc.text(`Total: $ ${total.toFixed(2)} / Advance paid: $ ${adv.toFixed(2)} / Balance: $ ${saldo.toFixed(2)}`, leftX, y);
-      y = doc.y + 3;
-
-      // Budget lines table
-      const budgetLines = Array.isArray(detail.budgetLines) ? detail.budgetLines : [];
-      const hasBudgetLines = budgetLines.length > 0;
-
-      const tableTop = y;
-      const colX = {
-        qty: leftX,
-        desc: leftX + 40,
-        unit: leftX + 40 + 260,
-        lineTotal: leftX + 40 + 260 + 70,
-      };
-
-      doc.font('Helvetica-Bold');
-      doc.text('Qty', colX.qty, tableTop);
-      doc.text('Description', colX.desc, tableTop);
-      doc.text('Unit price', colX.unit, tableTop);
-      doc.text('Line total', colX.lineTotal, tableTop);
-
-      const headerBottom = doc.y + 2;
-      doc.moveTo(leftX, headerBottom).lineTo(leftX + 450, headerBottom).stroke();
-
-      let rowY = headerBottom + 2;
-      doc.font('Helvetica');
-
-      if (hasBudgetLines) {
-        for (const line of budgetLines as any[]) {
-          const qty = Number.isFinite(Number(line.amount)) ? Number(line.amount) : 0;
-          const price = Number.isFinite(Number(line.price)) ? Number(line.price) : 0;
-          const lineTotal = Number.isFinite(Number(line.total)) ? Number(line.total) : qty * price;
-
-          doc.text(qty ? String(qty) : '-', colX.qty, rowY, { width: 30 });
-          doc.text(String(line.name ?? '-'), colX.desc, rowY, { width: 250 });
-          doc.text(price ? `$ ${price.toFixed(2)}` : '-', colX.unit, rowY, { width: 60 });
-          doc.text(lineTotal ? `$ ${lineTotal.toFixed(2)}` : '-', colX.lineTotal, rowY, { width: 60 });
-
-          rowY = Math.max(doc.y, rowY) + 2;
-        }
-      } else {
-        // Match the sample by always showing at least one table row.
-        doc.text('1', colX.qty, rowY, { width: 30 });
-        doc.text('SERVICE.', colX.desc, rowY, { width: 250 });
-        const fallbackLineTotal = total > 0 ? total : adv > 0 ? adv : 0;
-        const fallbackUnit = fallbackLineTotal;
-        doc.text(fallbackUnit ? `$ ${fallbackUnit.toFixed(2)}` : '-', colX.unit, rowY, { width: 60 });
-        doc.text(fallbackLineTotal ? `$ ${fallbackLineTotal.toFixed(2)}` : '-', colX.lineTotal, rowY, {
-          width: 60,
-        });
-
-        rowY = Math.max(doc.y, rowY) + 2;
-      }
-
-      y = rowY + 6;
-
-      doc.font('Helvetica');
-      doc.text(`Reported issue: ${htmlToPlainText(detail.equipmentCondition ?? '') || '-'}`, leftX, y);
-      doc.text(`Equipment description: ${htmlToPlainText(detail.technicalReport ?? '') || '-'}`, leftX, doc.y + 1);
-      doc.text(`Accessories: ${accessoriesText ? `${accessoriesText}.` : '-'}`, leftX, doc.y + 1);
-      doc.text(`Technician: ${detail.technical || '-'}`, leftX, doc.y + 3);
-
-      y = doc.y + 4;
-      doc.font('Helvetica-Bold').text(PRINT_ORDER_MESSAGES.trackingHeading, leftX, y);
-      doc.font('Helvetica').text(
-        PRINT_ORDER_MESSAGES.trackingInstruction(detail.code),
-        leftX,
-        doc.y + 1
-      );
-
-      // Barcode
-      doc.save().fillColor('black');
-      const barcodeY = doc.y + 4;
-      drawCode39Barcode(doc, detail.code, leftX, barcodeY, 20);
+    function drawSectionBar(label: string, x: number, y: number, w: number): number {
+      doc.save();
+      doc.rect(x, y, w, 16).fill('#f3f4f6');
+      doc.fillColor('#111827').fontSize(9).font('Helvetica-Bold');
+      doc.text(label, x + 8, y + 4, { width: w - 16 });
       doc.restore();
+      return y + 18;
+    }
 
-      y = barcodeY + 26;
-
-      doc.font('Helvetica-Bold').text(PRINT_ORDER_MESSAGES.termsTitle, leftX, y);
-      doc.font('Helvetica').text(PRINT_ORDER_MESSAGES.termsText, leftX, doc.y + 1, { width: 520 });
-
-      doc.text(
-        PRINT_ORDER_MESSAGES.customerInfoNote,
-        leftX,
-        doc.y + 4
-      );
-      doc.text(
-        PRINT_ORDER_MESSAGES.confidentialityNote,
-        leftX,
-        doc.y + 2,
-        { width: 520 }
-      );
-
+    function drawLabeledBlock(
+      label: string,
+      value: string,
+      x: number,
+      y: number,
+      width: number,
+      lineGap: number
+    ): number {
+      const labelLine = `${label}:`;
+      doc.fontSize(8).font('Helvetica-Bold').fillColor('#374151');
+      const labelH = doc.heightOfString(labelLine, { width });
+      doc.text(labelLine, x, y, { width });
+      doc.font('Helvetica').fillColor('#111827');
+      doc.text(value || '—', x, y + labelH + lineGap, { width });
       return doc.y;
     }
 
-    const firstBottom = drawCopy('WORK ORDER - CUSTOMER COPY', 40);
-    // Small gap then second copy below
-    drawCopy('WORK ORDER - WORKSHOP COPY', firstBottom + 20);
+    function drawCopy(copyLabel: string, startY: number): number {
+      let y = startY;
+
+      // --- Header strip ---
+      doc.save();
+      doc.rect(M, y, contentW, 56).fill('#f9fafb').stroke('#e5e7eb');
+      doc.restore();
+
+      const headerTop = y + 6;
+      if (logoBuffer) {
+        try {
+          doc.image(logoBuffer, M + 8, headerTop, { fit: [112, 44] });
+        } catch {
+          // ignore
+        }
+      } else {
+        doc.save().fontSize(16).font('Helvetica-Bold').fillColor('#e11d48').text('Digital', M + 8, headerTop + 8);
+        const tw = doc.widthOfString('Digital');
+        doc.fillColor('#6b7280').text('server', M + 8 + tw + 2, headerTop + 8);
+        doc.restore();
+      }
+
+      const titleSidePad = 128;
+      doc.fontSize(13).font('Helvetica-Bold').fillColor('#111827');
+      doc.text(copyLabel, M + titleSidePad, headerTop + 10, {
+        width: contentW - titleSidePad * 2,
+        align: 'center',
+      });
+
+      const orderBadge = `ORDER ${detail.no}`;
+      doc.fontSize(11).font('Helvetica-Bold');
+      const badgeW = Math.min(doc.widthOfString(orderBadge) + 20, contentW * 0.4);
+      const badgeX = pageW - M - badgeW - 8;
+      doc.save();
+      doc.roundedRect(badgeX, headerTop + 6, badgeW, 26, 4).fill('#ffffff').stroke('#d1d5db');
+      doc.fillColor('#111827').text(orderBadge, badgeX, headerTop + 12, { width: badgeW, align: 'center' });
+      doc.restore();
+
+      y += 62;
+
+      doc.fontSize(8).font('Helvetica').fillColor('#4b5563');
+      doc.text(`Print date: ${fmtDate(now)}`, M, y, { width: contentW * 0.5 });
+      doc.text(`Check-in: ${fmtDateTime(createdAt)}`, M, y, { width: contentW, align: 'right' });
+      y = doc.y + 6;
+
+      doc.fontSize(7.5).font('Helvetica').fillColor('#6b7280');
+      doc.text(COMPANY_LINE, M, y, { width: contentW, align: 'center' });
+      y = doc.y + 10;
+
+      // --- Customer / Equipment two columns ---
+      const colGap = 14;
+      const colW = (contentW - colGap) / 2;
+      const boxY = y;
+
+      y = drawSectionBar('CUSTOMER', M, y, colW);
+      const custStart = y;
+      doc.fontSize(8).font('Helvetica');
+      let custY = custStart;
+      custY = drawLabeledBlock('Name', `${detail.customer} (${detail.customerId})`, M + 4, custY, colW - 8, 1) + 4;
+      custY = drawLabeledBlock('Phone', String(client?.telefono1 ?? ''), M + 4, custY, colW - 8, 1) + 4;
+      custY = drawLabeledBlock('Email', String(client?.email ?? ''), M + 4, custY, colW - 8, 1);
+
+      const rightX = M + colW + colGap;
+      let eqY = boxY;
+      eqY = drawSectionBar('EQUIPMENT', rightX, eqY, colW);
+      eqY += 2;
+      eqY = drawLabeledBlock('Product', String(detail.type), rightX + 4, eqY, colW - 8, 1) + 4;
+      eqY = drawLabeledBlock('Brand / Model', `${detail.brand} (${detail.model})`, rightX + 4, eqY, colW - 8, 1) + 4;
+      eqY = drawLabeledBlock('Serial / IMEI', String(detail.series), rightX + 4, eqY, colW - 8, 1) + 4;
+      eqY = drawLabeledBlock(
+        'Promised date',
+        detail.fianceeDate?.trim() || '—',
+        rightX + 4,
+        eqY,
+        colW - 8,
+        1
+      );
+
+      y = Math.max(custY, eqY) + 10;
+
+      // Totals strip
+      doc.save();
+      doc.rect(M, y, contentW, 22).fill('#eff6ff').stroke('#bfdbfe');
+      doc.fillColor('#1e3a8a').fontSize(9).font('Helvetica-Bold');
+      doc.text(
+        `Total: $${total.toFixed(2)}   •   Advance: $${adv.toFixed(2)}   •   Balance: $${saldo.toFixed(2)}`,
+        M + 8,
+        y + 6,
+        { width: contentW - 16, align: 'center' }
+      );
+      doc.restore();
+      y += 28;
+
+      // --- Budget table ---
+      const budgetLines = Array.isArray(detail.budgetLines) ? detail.budgetLines : [];
+      const hasBudgetLines = budgetLines.length > 0;
+
+      const qtyW = 36;
+      const unitW = 72;
+      const lineTotW = 78;
+      const descW = contentW - qtyW - unitW - lineTotW - 24;
+      const tableLeft = M;
+      const xQty = tableLeft;
+      const xDesc = xQty + qtyW + 6;
+      const xUnit = xDesc + descW + 6;
+      const xLineTot = xUnit + unitW + 6;
+
+      y = drawSectionBar('BUDGET LINES', M, y, contentW);
+      y += 4;
+
+      const headerH = 18;
+      y = ensureSpace(y, headerH + 40);
+      doc.save();
+      doc.rect(tableLeft, y, contentW, headerH).fill('#1f2937');
+      doc.fillColor('#ffffff').fontSize(8).font('Helvetica-Bold');
+      doc.text('Qty', xQty + 4, y + 5, { width: qtyW });
+      doc.text('Description', xDesc, y + 5, { width: descW });
+      doc.text('Unit', xUnit, y + 5, { width: unitW, align: 'right' });
+      doc.text('Line total', xLineTot, y + 5, { width: lineTotW, align: 'right' });
+      doc.restore();
+      y += headerH;
+
+      const rowPad = 5;
+      doc.fontSize(8).font('Helvetica').fillColor('#111827');
+
+      const drawRow = (cells: { qty: string; desc: string; unit: string; line: string }, alt: boolean) => {
+        doc.fontSize(8).font('Helvetica');
+        const hDesc = doc.heightOfString(cells.desc, { width: descW });
+        const rowH = Math.max(22, hDesc + rowPad * 2);
+        y = ensureSpace(y, rowH + 2);
+        const rowTop = y;
+        doc.save();
+        doc.rect(tableLeft, rowTop, contentW, rowH).fill(alt ? '#f9fafb' : '#ffffff').stroke('#e5e7eb');
+        doc.restore();
+        doc.fontSize(8).font('Helvetica').fillColor('#111827');
+        doc.text(cells.qty, xQty + 4, rowTop + rowPad, { width: qtyW });
+        doc.text(cells.desc, xDesc, rowTop + rowPad, { width: descW });
+        doc.text(cells.unit, xUnit, rowTop + rowPad, { width: unitW, align: 'right' });
+        doc.text(cells.line, xLineTot, rowTop + rowPad, { width: lineTotW, align: 'right' });
+        y = rowTop + rowH;
+      };
+
+      if (hasBudgetLines) {
+        let i = 0;
+        for (const line of budgetLines as any[]) {
+          const qty = Number.isFinite(Number(line.amount)) ? Number(line.amount) : 0;
+          const price = Number.isFinite(Number(line.price)) ? Number(line.price) : 0;
+          const lineTotalVal = Number.isFinite(Number(line.total)) ? Number(line.total) : qty * price;
+          y = ensureSpace(y, 28);
+          drawRow(
+            {
+              qty: qty ? String(qty) : '—',
+              desc: String(line.name ?? '—'),
+              unit: price ? `$${price.toFixed(2)}` : '—',
+              line: lineTotalVal ? `$${lineTotalVal.toFixed(2)}` : '—',
+            },
+            i % 2 === 1
+          );
+          i += 1;
+        }
+      } else {
+        y = ensureSpace(y, 28);
+        const fallbackLineTotal = total > 0 ? total : adv > 0 ? adv : 0;
+        drawRow(
+          {
+            qty: '1',
+            desc: 'SERVICE',
+            unit: fallbackLineTotal ? `$${fallbackLineTotal.toFixed(2)}` : '—',
+            line: fallbackLineTotal ? `$${fallbackLineTotal.toFixed(2)}` : '—',
+          },
+          false
+        );
+      }
+
+      doc.save();
+      doc.strokeColor('#e5e7eb').moveTo(tableLeft, y).lineTo(tableLeft + contentW, y).stroke();
+      doc.restore();
+      y += 12;
+
+      // --- Notes ---
+      y = ensureSpace(y, 120);
+      y = drawSectionBar('REPORTED ISSUE', M, y, contentW);
+      y = drawHtmlToPdfKit(doc, detail.equipmentCondition ?? '', M + 4, y, contentW - 8, {
+        fontSize: 8,
+        lineGap: 2,
+        fillColor: '#111827',
+      });
+      y += 8;
+
+      y = ensureSpace(y, 80);
+      y = drawSectionBar('EQUIPMENT DESCRIPTION / TECHNICAL', M, y, contentW);
+      y = drawHtmlToPdfKit(doc, detail.technicalReport ?? '', M + 4, y, contentW - 8, {
+        fontSize: 8,
+        lineGap: 2,
+        fillColor: '#111827',
+      });
+      y += 8;
+
+      doc.fontSize(8).font('Helvetica');
+      doc.text(`Accessories: ${accessoriesText ? `${accessoriesText}.` : '—'}`, M, y, { width: contentW, lineGap: 2 });
+      y = doc.y + 6;
+      doc.font('Helvetica-Bold').text(`Technician: ${detail.technical || '—'}`, M, y, { width: contentW });
+      y = doc.y + 12;
+
+      // Tracking + barcode
+      y = ensureSpace(y, 100);
+      y = drawSectionBar('TRACKING', M, y, contentW);
+      doc.fontSize(8).font('Helvetica-Bold').fillColor('#111827');
+      doc.text(PRINT_ORDER_MESSAGES.trackingHeading, M + 4, y, { width: contentW - 8 });
+      y = doc.y + 2;
+      doc.font('Helvetica').fontSize(8);
+      doc.text(PRINT_ORDER_MESSAGES.trackingInstruction(detail.code), M + 4, y, { width: contentW - 8, lineGap: 2 });
+      y = doc.y + 8;
+
+      const barcodeMaxW = Math.min(280, contentW);
+      const barcodeX = M + (contentW - barcodeMaxW) / 2;
+      doc.save().fillColor('black');
+      drawCode39Barcode(doc, detail.code, barcodeX, y, 22);
+      doc.fontSize(8).font('Helvetica').fillColor('#374151');
+      doc.text(detail.code, M, y + 28, { width: contentW, align: 'center' });
+      doc.restore();
+      y += 52;
+
+      // Terms
+      y = ensureSpace(y, 100);
+      doc.fontSize(9).font('Helvetica-Bold').fillColor('#111827');
+      doc.text(PRINT_ORDER_MESSAGES.termsTitle, M, y, { width: contentW });
+      y = doc.y + 4;
+      doc.fontSize(7.5).font('Helvetica').fillColor('#374151');
+      doc.text(PRINT_ORDER_MESSAGES.termsText, M, y, { width: contentW, lineGap: 2 });
+      y = doc.y + 8;
+      doc.fontSize(7).font('Helvetica-Oblique');
+      doc.text(PRINT_ORDER_MESSAGES.customerInfoNote, M, y, { width: contentW, lineGap: 1 });
+      y = doc.y + 4;
+      doc.font('Helvetica-Oblique');
+      doc.text(PRINT_ORDER_MESSAGES.confidentialityNote, M, y, { width: contentW, lineGap: 2 });
+
+      return doc.y + 8;
+    }
+
+    drawCopy('WORK ORDER — CUSTOMER COPY', M);
+    doc.addPage();
+    drawCopy('WORK ORDER — WORKSHOP COPY', M);
 
     doc.end();
   } catch (err) {
