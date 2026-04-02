@@ -36,8 +36,14 @@ import {
   Inbox,
   X,
   Boxes,
+  History,
 } from 'lucide-react';
-import { userCanAccessPage, userHasSparePartsAccess } from '../constants/adminPages';
+import {
+  ADMIN_SLUG,
+  SUPER_ADMIN_SLUG,
+  userCanAccessPage,
+  userHasSparePartsAccess,
+} from '../constants/adminPages';
 import { useNotifications } from '../contexts/NotificationContext';
 
 interface NavItem {
@@ -46,11 +52,28 @@ interface NavItem {
   icon: LucideIcon;
   /** If set, permission uses this path (must match RequirePage / API for that screen). */
   accessPath?: string;
+  /** If set, only these role slugs see the item (e.g. built-in admin, not technicians). */
+  visibleOnlyFor?: readonly string[];
 }
 
 interface NavGroup {
   label: string | null;
   items: NavItem[];
+}
+
+function isNavItemActive(path: string, pathname: string): boolean {
+  if (pathname === path) return true;
+  if (path === '/admin') return false;
+  if (!pathname.startsWith(path + '/')) return false;
+  if (path === '/admin/order') {
+    if (
+      pathname.startsWith('/admin/order/movements') ||
+      pathname.startsWith('/admin/order/stages')
+    ) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function formatRelativeTime(ts: number): string {
@@ -102,6 +125,13 @@ const navGroups: NavGroup[] = [
     label: 'Operations',
     items: [
       { path: '/admin/order', label: 'Orders', icon: Wrench },
+      {
+        path: '/admin/order/movements',
+        label: 'Order movements',
+        icon: History,
+        accessPath: '/admin/order',
+        visibleOnlyFor: [SUPER_ADMIN_SLUG, ADMIN_SLUG],
+      },
       { path: '/admin/pre-diagnosis', label: 'Pre-Diagnosis', icon: Stethoscope },
     ],
   },
@@ -147,11 +177,16 @@ export function AdminLayout() {
     return navGroups
       .map((group) => ({
         ...group,
-        items: group.items.filter((item) =>
-          item.path === '/admin/spare'
-            ? userHasSparePartsAccess(user)
-            : userCanAccessPage(user, item.accessPath ?? item.path)
-        ),
+        items: group.items.filter((item) => {
+          if (item.visibleOnlyFor?.length) {
+            const slug = user.role?.slug;
+            if (!slug || !item.visibleOnlyFor.includes(slug)) return false;
+          }
+          if (item.path === '/admin/spare') {
+            return userHasSparePartsAccess(user);
+          }
+          return userCanAccessPage(user, item.accessPath ?? item.path);
+        }),
       }))
       .filter((g) => g.items.length > 0);
   }, [user]);
@@ -259,9 +294,7 @@ export function AdminLayout() {
               )}
               <ul className="space-y-0.5">
                 {group.items.map(({ path, label, icon: Icon }) => {
-                  const isActive =
-                    location.pathname === path ||
-                    (path !== '/admin' && location.pathname.startsWith(path + '/'));
+                  const isActive = isNavItemActive(path, location.pathname);
                   return (
                     <li key={path}>
                       <Link
@@ -564,9 +597,7 @@ export function AdminLayout() {
               </h3>
               <div className="grid grid-cols-2 gap-2">
                 {quickAccessApps.map(({ path, label, icon: Icon }) => {
-                  const isActive =
-                    location.pathname === path ||
-                    (path !== '/admin' && location.pathname.startsWith(path + '/'));
+                  const isActive = isNavItemActive(path, location.pathname);
                   return (
                     <Link
                       key={`quick-app-${path}`}

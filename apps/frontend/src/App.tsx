@@ -4,6 +4,7 @@ import { AdminLayout } from './components/AdminLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { RequireAnyPage, RequirePage } from './components/RequirePage';
 import { RequireSuperAdmin } from './components/RequireSuperAdmin';
+import { RequireSuperAdminOrAdmin } from './components/RequireSuperAdminOrAdmin';
 import { AuthProvider } from './contexts/AuthContext';
 import { CompanyProvider } from './contexts/CompanyContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -21,6 +22,7 @@ import { DashboardPage } from './pages/admin/DashboardPage';
 import { OrdersPage } from './pages/admin/OrdersPage';
 import { NewOrderPage } from './pages/admin/NewOrderPage';
 import { OrderStagesPage } from './pages/admin/OrderStagesPage';
+import { OrderMovementsPage } from './pages/admin/OrderMovementsPage';
 import { OrderPrintPage } from './pages/admin/OrderPrintPage';
 
 import { AdminPlaceholder } from './pages/admin/AdminPlaceholder';
@@ -117,6 +119,16 @@ function App() {
                   <RequireSuperAdmin>
                     <OrderStagesPage />
                   </RequireSuperAdmin>
+                </RequirePage>
+              }
+            />
+            <Route
+              path="order/movements"
+              element={
+                <RequirePage page="/admin/order">
+                  <RequireSuperAdminOrAdmin>
+                    <OrderMovementsPage />
+                  </RequireSuperAdminOrAdmin>
                 </RequirePage>
               }
             />
