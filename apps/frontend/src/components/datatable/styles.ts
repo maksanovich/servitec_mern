@@ -13,8 +13,8 @@ export const lightStyles = {
     style: {
       width: '100%',
       maxWidth: '100%',
-      overflow: 'hidden',
-      overflowX: 'hidden' as const,
+      overflow: 'auto',
+      overflowX: 'auto' as const,
     },
   },
   headRow: {
@@ -74,8 +74,8 @@ export const darkStyles = {
     style: {
       width: '100%',
       maxWidth: '100%',
-      overflow: 'hidden',
-      overflowX: 'hidden' as const,
+      overflow: 'auto',
+      overflowX: 'auto' as const,
     },
   },
   headRow: {

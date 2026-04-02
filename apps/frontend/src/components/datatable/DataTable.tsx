@@ -40,7 +40,7 @@ export function DataTable<T>(props: DataTableProps<T>) {
   const sanitizedColumns = useMemo(() => sanitizeColumns(columns), [columns]);
 
   return (
-    <div className="w-full max-w-full overflow-x-hidden">
+    <div className="w-full max-w-full min-w-0 overflow-x-auto">
       <RDT<T>
         {...rest}
         columns={sanitizedColumns}

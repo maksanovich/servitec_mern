@@ -35,6 +35,7 @@ import { DataTableWithToolbar } from '../../components/datatable';
 import type { TableColumn } from 'react-data-table-component';
 import type { SelectOption } from '../../components/ui';
 import type { ServiceSparePartItem } from '../../api/servicesSpareParts';
+import { getSpareServerCatalog, type SpareServerRow } from '../../api/spareServer';
 import { useAuth } from '../../contexts/AuthContext';
 import { getClients } from '../../api/clients';
 import { createBrand, getBrands } from '../../api/brands';
@@ -114,7 +115,8 @@ export function NewOrderPage() {
   const [allModels, setAllModels] = useState<Array<{ brand: string; model: string }>>([]);
   const [accessoriesData, setAccessoriesData] = useState<Accessory[]>([]);
   const [servicesData, setServicesData] = useState<ServiceSparePartItem[]>([]);
-  const [servicesLoading, setServicesLoading] = useState(false);
+  const [spareCatalogData, setSpareCatalogData] = useState<SpareServerRow[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(false);
   const [technicianOptions, setTechnicianOptions] = useState<SelectOption[]>([]);
   const [submitError, setSubmitError] = useState<{ text: string; contactClientId?: number } | null>(null);
 
@@ -428,8 +430,7 @@ export function NewOrderPage() {
   }, [product, productOptions, isEditMode]);
 
   const availableServices = useMemo(() => {
-    const filtered = servicesData;
-    return filtered.filter((s) => s.state !== 'inactive');
+    return servicesData.filter((s) => s.state !== 'inactive' && s.type === 'service');
   }, [servicesData]);
 
   const servicesById = useMemo(() => {
@@ -437,6 +438,12 @@ export function NewOrderPage() {
     for (const s of servicesData) m.set(s.id, s);
     return m;
   }, [servicesData]);
+
+  const spareById = useMemo(() => {
+    const m = new Map<string, SpareServerRow>();
+    for (const p of spareCatalogData) m.set(p.id, p);
+    return m;
+  }, [spareCatalogData]);
 
   const getInitialBudgetQty = useCallback((serviceId: string) => {
     return initialBudgetQtyRef.current.get(serviceId) ?? 0;
@@ -502,22 +509,65 @@ export function NewOrderPage() {
     [getReplacementRemaining]
   );
 
+  const addSpareToBudget = useCallback(
+    (row: SpareServerRow, amount: number = 1) => {
+      const stock = row.stock ?? 0;
+      if (stock <= 0) return;
+      const price = Number(row.precio ?? 0);
+      const name =
+        row.description.trim() || row.productocodigo.trim() || `Spare (${row.productosid})`;
+      setBudgetLines((prev) => {
+        const existing = prev.find((l) => l.serviceId === row.id);
+        const currentQty = existing ? existing.amount : 0;
+        const remaining = getReplacementRemaining(row.id, currentQty, stock);
+        const addNow = Math.max(0, Math.min(amount, Math.floor(remaining)));
+        if (addNow <= 0) return prev;
+        amount = addNow;
+        const total = price * amount;
+        if (existing) {
+          const newAmount = existing.amount + amount;
+          return prev.map((l) =>
+            l.serviceId === row.id ? { ...l, amount: newAmount, total: l.price * newAmount } : l
+          );
+        }
+        return [
+          ...prev,
+          {
+            id: `budget-${row.id}-${Date.now()}`,
+            serviceId: row.id,
+            name,
+            price,
+            amount,
+            total,
+          },
+        ];
+      });
+    },
+    [getReplacementRemaining]
+  );
+
   const updateBudgetAmount = useCallback((lineId: string, amount: number) => {
     setBudgetLines((prev) => {
       const line = prev.find((l) => l.id === lineId);
       if (!line) return prev;
       const service = servicesById.get(line.serviceId);
+      const spare = spareById.get(line.serviceId);
       let nextAmount = amount;
       if (service?.type === 'replacement') {
         const initialQty = getInitialBudgetQty(line.serviceId);
         const max = Math.max(1, Math.floor(initialQty + Number(service.amount ?? 0)));
+        nextAmount = Math.min(max, Math.max(1, Math.floor(nextAmount || 1)));
+      } else if (spare) {
+        const stock = spare.stock ?? 0;
+        const initialQty = getInitialBudgetQty(line.serviceId);
+        const max = Math.max(1, Math.floor(initialQty + stock));
         nextAmount = Math.min(max, Math.max(1, Math.floor(nextAmount || 1)));
       } else {
         nextAmount = Math.max(1, Math.floor(nextAmount || 1));
       }
       return prev.map((l) => (l.id === lineId ? { ...l, amount: nextAmount, total: l.price * nextAmount } : l));
     });
-  }, [servicesById, getInitialBudgetQty]);
+  }, [servicesById, spareById, getInitialBudgetQty]);
 
   const removeBudgetLine = useCallback((lineId: string) => {
     setBudgetLines((prev) => prev.filter((l) => l.id !== lineId));
@@ -764,9 +814,8 @@ export function NewOrderPage() {
 
   const servicesColumns: TableColumn<ServiceSparePartItem>[] = useMemo(
     () => [
-      { id: 'name', name: 'Service/Spare Parts', selector: (r) => r.name, sortable: true },
-      { id: 'price', name: 'Price', selector: (r) => r.price, sortable: true, format: (r) => r.price.toFixed(2) },
-      { id: 'amount', name: 'Amount', selector: (r) => r.amount, sortable: true },
+      { id: 'name', name: 'Service', selector: (r) => r.name, sortable: true },
+      { id: 'price', name: 'Price', width: '100px', selector: (r) => r.price, sortable: true, format: (r) => r.price.toFixed(2) },
       {
         id: 'add',
         name: '',
@@ -797,20 +846,106 @@ export function NewOrderPage() {
     [addToBudget, budgetLines, getReplacementRemaining]
   );
 
+  const spareColumns: TableColumn<SpareServerRow>[] = useMemo(
+    () => [
+      {
+        id: 'productocodigo',
+        name: 'Code',
+        width: '96px',
+        selector: (r) => r.productocodigo,
+        sortable: true,
+        cell: (r) => (
+          <span className="font-mono text-xs text-slate-700 dark:text-slate-300">{r.productocodigo || '—'}</span>
+        ),
+      },
+      {
+        id: 'description',
+        name: 'Description',
+        minWidth: '120px',
+        selector: (r) => r.description,
+        sortable: true,
+        cell: (r) => (
+          <span className="text-slate-700 dark:text-slate-300 line-clamp-2 text-sm" title={r.description}>
+            {r.description || '—'}
+          </span>
+        ),
+      },
+      {
+        id: 'precio',
+        name: 'Price',
+        selector: (r) => r.precio ?? 0,
+        sortable: true,
+        width: '84px',
+        right: true,
+        cell: (r) => (
+          <span className="tabular-nums text-sm text-slate-700 dark:text-slate-300">
+            {r.precio != null ? r.precio.toFixed(2) : '—'}
+          </span>
+        ),
+      },
+      {
+        id: 'stock',
+        name: 'Stock',
+        selector: (r) => r.stock ?? 0,
+        sortable: true,
+        width: '72px',
+        right: true,
+        cell: (r) => (
+          <span className="tabular-nums text-sm text-slate-700 dark:text-slate-300">
+            {r.stock != null ? String(r.stock) : '—'}
+          </span>
+        ),
+      },
+      {
+        id: 'add',
+        name: '',
+        width: '60px',
+        cell: (row) => {
+          const stock = row.stock ?? 0;
+          const currentQty = budgetLines.find((l) => l.serviceId === row.id)?.amount ?? 0;
+          const remaining = getReplacementRemaining(row.id, currentQty, stock);
+          const addable = stock > 0 && remaining > 0;
+          const label = row.description.trim() || row.productocodigo || `Spare (${row.productosid})`;
+          return (
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              className="min-w-0 p-1.5"
+              disabled={!addable}
+              title={addable ? undefined : 'Not enough stock to add'}
+              onClick={() => addSpareToBudget(row)}
+              aria-label={addable ? `Add ${label}` : `Cannot add ${label} — not enough stock`}
+            >
+              <Plus className="w-5 h-5 font-bold" />
+            </Button>
+          );
+        },
+        ignoreRowClick: true,
+      },
+    ],
+    [addSpareToBudget, budgetLines, getReplacementRemaining]
+  );
+
   useEffect(() => {
-    async function loadServices() {
+    async function loadCatalog() {
       if (!token) return;
-      setServicesLoading(true);
+      setCatalogLoading(true);
       try {
-        const { items } = await getServicesSpareParts(token);
-        setServicesData(items);
+        const [servicesRes, spareRes] = await Promise.all([
+          getServicesSpareParts(token),
+          getSpareServerCatalog(token),
+        ]);
+        setServicesData(servicesRes.items);
+        setSpareCatalogData(spareRes.items);
       } catch {
         setServicesData([]);
+        setSpareCatalogData([]);
       } finally {
-        setServicesLoading(false);
+        setCatalogLoading(false);
       }
     }
-    loadServices();
+    loadCatalog();
   }, [token]);
 
   return (
@@ -1220,10 +1355,10 @@ export function NewOrderPage() {
           </CardContent>
         </Card>
 
-        {/* Services / Spare Parts and Budget Details - same row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Services, Spare parts (Perseo), and Budget Details */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card className="min-h-0 flex flex-col">
-            <CardHeader title="Services / Spare Parts" />
+            <CardHeader title="Services" />
             <CardContent className="p-0 flex-1 min-h-0">
               <DataTableWithToolbar<ServiceSparePartItem>
                 data={availableServices}
@@ -1233,14 +1368,39 @@ export function NewOrderPage() {
                 pageSizeOptions={[10, 25, 50]}
                 defaultPageSize={10}
                 noDataComponent={
-                  servicesLoading ? (
+                  catalogLoading ? (
                     <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
                       <Loader size="md" />
                       <span className="text-sm">Loading…</span>
                     </div>
                   ) : (
                     <div className="py-12 text-center text-slate-500 dark:text-slate-400">
-                      No services/spare parts found.
+                      No services found.
+                    </div>
+                  )
+                }
+              />
+            </CardContent>
+          </Card>
+          <Card className="min-h-0 flex flex-col">
+            <CardHeader title="Spare parts" />
+            <CardContent className="p-0 flex-1 min-h-0">
+              <DataTableWithToolbar<SpareServerRow>
+                data={spareCatalogData}
+                columns={spareColumns}
+                searchFields={['description', 'productocodigo']}
+                searchPlaceholder="Search:"
+                pageSizeOptions={[10, 25, 50]}
+                defaultPageSize={10}
+                noDataComponent={
+                  catalogLoading ? (
+                    <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
+                      <Loader size="md" />
+                      <span className="text-sm">Loading…</span>
+                    </div>
+                  ) : (
+                    <div className="py-12 text-center text-slate-500 dark:text-slate-400">
+                      No spare parts found.
                     </div>
                   )
                 }
@@ -1265,7 +1425,7 @@ export function NewOrderPage() {
                     {budgetLines.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="py-12 text-center text-slate-500 dark:text-slate-400">
-                          No items. Add from Services / Spare Parts.
+                          No items. Add from Services or Spare parts.
                         </td>
                       </tr>
                     ) : (
