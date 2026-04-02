@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from './auth.js';
-import { hasAnyPageAccess, hasPageAccess, SUPER_ADMIN_SLUG } from '../constants/adminPages.js';
+import { hasAnyPageAccess, hasPageAccess, SUPER_ADMIN_SLUG, ADMIN_SLUG } from '../constants/adminPages.js';
 
 export function requireSuperAdmin(
   req: AuthRequest,
@@ -10,6 +10,20 @@ export function requireSuperAdmin(
   if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
   if (req.user.role !== SUPER_ADMIN_SLUG) {
     return res.status(403).json({ error: 'Super administrator privileges required' });
+  }
+  next();
+}
+
+/** Only `super_admin` or legacy full `admin` role (not custom roles / technicians). */
+export function requireSuperAdminOrAdmin(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): void | Response {
+  if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+  const slug = req.user.role;
+  if (slug !== SUPER_ADMIN_SLUG && slug !== ADMIN_SLUG) {
+    return res.status(403).json({ error: 'Administrator privileges required' });
   }
   next();
 }

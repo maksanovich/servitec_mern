@@ -31,6 +31,7 @@ import {
   normalizeOrderPhotoListForPatch,
   normalizeStoredOrderPhotos,
 } from '../utils/orderPhotos.js';
+import { recordOrderStageChange } from '../services/orderMovementService.js';
 
 /** Matches backend `getAssignableTechnicians` / frontend technician detection. */
 function isTechnicianRole(slug: string, roleName?: string): boolean {
@@ -847,6 +848,20 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
 
     const obj = doc.toObject();
 
+    try {
+      await recordOrderStageChange({
+        orderId: doc._id.toString(),
+        orderNo: String(obj.no ?? ''),
+        orderCode: String(obj.code ?? ''),
+        beforeStageKey: '',
+        afterStageKey: String(obj.progressStageKey ?? '').trim(),
+        workflow: orderWorkflow,
+        req,
+      });
+    } catch (movErr) {
+      console.error('Order movement log (create) error:', movErr);
+    }
+
     // Notify customer on order creation (initial state).
     try {
       // const to = String((client as any)?.email ?? '').trim();
@@ -896,6 +911,7 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
     if (!doc) return res.status(404).json({ error: 'Order not found' });
     if (denyIfTechnicianNotAssignee(req, res, (doc as any).technician)) return;
 
+    const progressStageKeyBefore = String(doc.progressStageKey ?? '').trim();
     const stateBefore = doc.state as OrderState;
     const body = req.body as Record<string, unknown>;
     // Immutable: order number and customer tracking code must never change via PATCH
@@ -1033,7 +1049,25 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
       doc.pickupReminder90dSentAt = null;
     }
 
+    const progressStageKeyAfter = String(doc.progressStageKey ?? '').trim();
+
     await doc.save();
+
+    if (progressStageKeyBefore !== progressStageKeyAfter) {
+      try {
+        await recordOrderStageChange({
+          orderId: doc._id.toString(),
+          orderNo: String(doc.no ?? ''),
+          orderCode: String(doc.code ?? ''),
+          beforeStageKey: progressStageKeyBefore,
+          afterStageKey: progressStageKeyAfter,
+          workflow: normalizeOrderWorkflow(doc.toObject()),
+          req,
+        });
+      } catch (movErr) {
+        console.error('Order movement log (patch) error:', movErr);
+      }
+    }
 
     // Notify customer only when the order stage changes.
     let statusWhatsappLink = '';

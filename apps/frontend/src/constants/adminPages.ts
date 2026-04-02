@@ -2,6 +2,9 @@ import type { User } from '../api/auth';
 
 export const SUPER_ADMIN_SLUG = 'super_admin';
 
+/** Legacy full-access role (empty `pages` = all assignable pages). */
+export const ADMIN_SLUG = 'admin';
+
 /** Same canonical paths as backend `ADMIN_PAGE_PATHS`. */
 export const ADMIN_PAGE_PATHS: readonly string[] = [
   '/admin',
@@ -59,6 +62,12 @@ export function userCanAccessPage(user: User | null, requiredPage: string): bool
   if (user.role.slug === SUPER_ADMIN_SLUG) return true;
   const req = normalizeAdminPath(requiredPage);
   return (user.role.pages ?? []).some((pg) => pathMatchesPage(req, pg));
+}
+
+/** Built-in administrator roles only (excludes technicians and custom roles). */
+export function userIsSuperAdminOrAdmin(user: User | null): boolean {
+  const slug = user?.role?.slug;
+  return slug === SUPER_ADMIN_SLUG || slug === ADMIN_SLUG;
 }
 
 /** Spare Parts page: assignable as /admin/spare, or legacy access via Services only. */

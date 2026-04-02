@@ -14,6 +14,7 @@ import { uploadsRoutes } from './uploads.js';
 import { productRoutes } from './products.js';
 import { preDiagnosisRoutes } from './preDiagnosis.js';
 import { orderProgressStagesRoutes } from './orderProgressStages.js';
+import { orderMovementsRoutes } from './orderMovements.js';
 
 const apiRouter = Router();
 
@@ -26,6 +27,7 @@ apiRouter.use('/brands', brandRoutes);
 apiRouter.use('/models', modelRoutes);
 apiRouter.use('/accessories', accessoryRoutes);
 apiRouter.use('/orders', orderRoutes);
+apiRouter.use('/order-movements', orderMovementsRoutes);
 apiRouter.use('/order-progress-stages', orderProgressStagesRoutes);
 apiRouter.use('/services-spare-parts', servicesSparePartsRoutes);
 apiRouter.use('/spare-server', spareServerRoutes);
