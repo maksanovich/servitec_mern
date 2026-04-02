@@ -31,7 +31,7 @@ import {
   normalizeOrderPhotoListForPatch,
   normalizeStoredOrderPhotos,
 } from '../utils/orderPhotos.js';
-import { recordOrderStageChange } from '../services/orderMovementService.js';
+import { recordOrderStageChange, recordTechnicianAssignment } from '../services/orderMovementService.js';
 
 /** Matches backend `getAssignableTechnicians` / frontend technician detection. */
 function isTechnicianRole(slug: string, roleName?: string): boolean {
@@ -912,6 +912,7 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
     if (denyIfTechnicianNotAssignee(req, res, (doc as any).technician)) return;
 
     const progressStageKeyBefore = String(doc.progressStageKey ?? '').trim();
+    const technicianBefore = String((doc as any).technician ?? '').trim();
     const stateBefore = doc.state as OrderState;
     const body = req.body as Record<string, unknown>;
     // Immutable: order number and customer tracking code must never change via PATCH
@@ -1066,6 +1067,25 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
         });
       } catch (movErr) {
         console.error('Order movement log (patch) error:', movErr);
+      }
+    }
+
+    if (body.technician != null) {
+      const technicianAfter = String((doc as any).technician ?? '').trim();
+      if (technicianBefore !== technicianAfter) {
+        try {
+          await recordTechnicianAssignment({
+            orderId: doc._id.toString(),
+            orderNo: String(doc.no ?? ''),
+            orderCode: String(doc.code ?? ''),
+            beforeTechnicianId: technicianBefore,
+            afterTechnicianId: technicianAfter,
+            workflow: normalizeOrderWorkflow(doc.toObject()),
+            req,
+          });
+        } catch (movErr) {
+          console.error('Order movement log (technician assign, patch) error:', movErr);
+        }
       }
     }
 
