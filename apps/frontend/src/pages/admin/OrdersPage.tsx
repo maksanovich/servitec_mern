@@ -47,6 +47,12 @@ import { getServicesSpareParts, canAddCatalogItemToBudget, type ServiceSparePart
 import { getSpareServerCatalog, type SpareServerRow } from '../../api/spareServer';
 import { uploadImage } from '../../api/uploads';
 import noImageUrl from '../../assets/images/noimage.png';
+import {
+  MAX_ORDER_PHOTOS_PER_SIDE,
+  newLocalPhotoId,
+  normalizeOrderPhotoListFromApi,
+  type LocalOrderPhoto,
+} from '../../utils/orderPhotos';
 
 export type { Order };
 
@@ -122,12 +128,12 @@ export function OrdersPage() {
 
   const [warehouseMoveOrder, setWarehouseMoveOrder] = useState<Order | null>(null);
   const [warehouseTargetStageKey, setWarehouseTargetStageKey] = useState<string>('');
-  const [warehouseAfterPhoto, setWarehouseAfterPhoto] = useState<string | null>(null);
+  const [warehouseAfterItems, setWarehouseAfterItems] = useState<LocalOrderPhoto[]>([]);
   const [warehousePhotoError, setWarehousePhotoError] = useState<string | null>(null);
-  const [warehouseAfterPhotoFile, setWarehouseAfterPhotoFile] = useState<File | null>(null);
   const [warehouseSaving, setWarehouseSaving] = useState(false);
   const warehousePhotoInputRef = useRef<HTMLInputElement>(null);
-  const warehouseAfterObjectUrlRef = useRef<string | null>(null);
+  const warehouseAfterItemsRef = useRef(warehouseAfterItems);
+  warehouseAfterItemsRef.current = warehouseAfterItems;
 
   useEffect(() => {
     let mounted = true;
@@ -442,17 +448,28 @@ export function OrdersPage() {
     }
   }, [token, budgetOrder, budgetLines, refetchOrders]);
 
-  const openWarehouseModal = useCallback((order: Order, toStageKey: string) => {
-    setWarehouseTargetStageKey(toStageKey);
-    setWarehouseMoveOrder(order);
-    if (warehouseAfterObjectUrlRef.current) {
-      URL.revokeObjectURL(warehouseAfterObjectUrlRef.current);
-      warehouseAfterObjectUrlRef.current = null;
-    }
-    setWarehouseAfterPhotoFile(null);
-    setWarehouseAfterPhoto(null);
-    setWarehousePhotoError(null);
-  }, []);
+  const openWarehouseModal = useCallback(
+    async (order: Order, toStageKey: string) => {
+      setWarehouseTargetStageKey(toStageKey);
+      setWarehousePhotoError(null);
+      let items: LocalOrderPhoto[] = [];
+      if (token) {
+        try {
+          const { order: detail } = await getOrderById(token, order.id);
+          items = normalizeOrderPhotoListFromApi(detail.photoAfterRepair).map((url) => ({
+            id: newLocalPhotoId(),
+            displayUrl: url,
+            remoteUrl: url,
+          }));
+        } catch {
+          items = [];
+        }
+      }
+      setWarehouseAfterItems(items);
+      setWarehouseMoveOrder(order);
+    },
+    [token]
+  );
 
   const openDeliveryModal = useCallback(
     async (order: Order) => {
@@ -571,42 +588,62 @@ export function OrdersPage() {
 
   const closeWarehouseModal = useCallback(() => {
     if (warehouseSaving) return;
-    if (warehouseAfterObjectUrlRef.current) {
-      URL.revokeObjectURL(warehouseAfterObjectUrlRef.current);
-      warehouseAfterObjectUrlRef.current = null;
+    for (const p of warehouseAfterItemsRef.current) {
+      if (p.file && p.displayUrl.startsWith('blob:')) URL.revokeObjectURL(p.displayUrl);
     }
     setWarehouseMoveOrder(null);
     setWarehouseTargetStageKey('');
-    setWarehouseAfterPhoto(null);
-    setWarehouseAfterPhotoFile(null);
+    setWarehouseAfterItems([]);
     setWarehousePhotoError(null);
     if (warehousePhotoInputRef.current) warehousePhotoInputRef.current.value = '';
   }, [warehouseSaving]);
 
-  const handleWarehousePhotoFile = useCallback(
-    (file: File) => {
+  const validateWarehouseImage = useCallback((file: File): string | null => {
+    if (!file.type.startsWith('image/')) {
+      return 'Please select an image (JPEG, PNG, WebP or GIF).';
+    }
+    if (file.size > MAX_ORDER_PHOTO_BYTES) {
+      return `Each image must be under ${(MAX_ORDER_PHOTO_BYTES / (1024 * 1024)).toFixed(0)}MB.`;
+    }
+    return null;
+  }, [MAX_ORDER_PHOTO_BYTES]);
+
+  const addWarehouseAfterFiles = useCallback(
+    (files: FileList | File[]) => {
       setWarehousePhotoError(null);
-      if (!file.type.startsWith('image/')) {
-        setWarehousePhotoError('Please select an image (JPEG, PNG, WebP or GIF).');
-        return;
-      }
-      if (file.size > MAX_ORDER_PHOTO_BYTES) {
-        setWarehousePhotoError(`Image must be under ${(MAX_ORDER_PHOTO_BYTES / (1024 * 1024)).toFixed(0)}MB.`);
-        return;
-      }
-
-      if (warehouseAfterObjectUrlRef.current) {
-        URL.revokeObjectURL(warehouseAfterObjectUrlRef.current);
-        warehouseAfterObjectUrlRef.current = null;
-      }
-
-      const objectUrl = URL.createObjectURL(file);
-      warehouseAfterObjectUrlRef.current = objectUrl;
-      setWarehouseAfterPhotoFile(file);
-      setWarehouseAfterPhoto(objectUrl);
+      const list = Array.from(files);
+      if (list.length === 0) return;
+      setWarehouseAfterItems((prev) => {
+        const room = MAX_ORDER_PHOTOS_PER_SIDE - prev.length;
+        if (room <= 0) {
+          setWarehousePhotoError(`You can add at most ${MAX_ORDER_PHOTOS_PER_SIDE} after-repair photos.`);
+          return prev;
+        }
+        const toAdd = list.slice(0, room);
+        const next: LocalOrderPhoto[] = [...prev];
+        for (const file of toAdd) {
+          const err = validateWarehouseImage(file);
+          if (err) {
+            setWarehousePhotoError(err);
+            return prev;
+          }
+          const url = URL.createObjectURL(file);
+          next.push({ id: newLocalPhotoId(), displayUrl: url, file });
+        }
+        return next;
+      });
     },
-    [MAX_ORDER_PHOTO_BYTES]
+    [validateWarehouseImage]
   );
+
+  const removeWarehouseAfterPhoto = useCallback((id: string) => {
+    setWarehouseAfterItems((prev) => {
+      const p = prev.find((x) => x.id === id);
+      if (p?.file && p.displayUrl.startsWith('blob:')) URL.revokeObjectURL(p.displayUrl);
+      return prev.filter((x) => x.id !== id);
+    });
+    setWarehousePhotoError(null);
+  }, []);
 
   const handleWarehouseMove = useCallback(async () => {
     if (!token || !warehouseMoveOrder) return;
@@ -618,20 +655,18 @@ export function OrdersPage() {
     setWarehouseSaving(true);
     setWarehousePhotoError(null);
     try {
-      let photoValue = warehouseAfterPhoto?.trim() ?? '';
-
-      if (warehouseAfterPhotoFile) {
-        const { url } = await uploadImage(token, warehouseAfterPhotoFile, 'order-after');
-        photoValue = url;
-        setWarehouseAfterPhoto(url);
-        setWarehouseAfterPhotoFile(null);
-        if (warehouseAfterObjectUrlRef.current) {
-          URL.revokeObjectURL(warehouseAfterObjectUrlRef.current);
-          warehouseAfterObjectUrlRef.current = null;
+      const photoUrls: string[] = [];
+      for (const p of warehouseAfterItems) {
+        if (p.file) {
+          const { url } = await uploadImage(token, p.file, 'order-after');
+          photoUrls.push(url);
+          if (p.displayUrl.startsWith('blob:')) URL.revokeObjectURL(p.displayUrl);
+        } else if (p.remoteUrl) {
+          photoUrls.push(p.remoteUrl);
         }
       }
 
-      if (!photoValue) {
+      if (photoUrls.length === 0) {
         setWarehousePhotoError('After-repair photo is required when moving to warehouse.');
         return;
       }
@@ -639,13 +674,13 @@ export function OrdersPage() {
         progressStageKey: warehouseTargetStageKey,
         area: legacyArea,
         state: legacyState,
-        photoAfterRepair: photoValue,
+        photoAfterRepair: photoUrls,
       });
       if (shouldOpenWhatsappTab) openWhatsappUpdate(resp.whatsappLink, pendingWhatsappTab);
       await refetchOrders();
       setWarehouseMoveOrder(null);
       setWarehouseTargetStageKey('');
-      setWarehouseAfterPhoto(null);
+      setWarehouseAfterItems([]);
       setWarehousePhotoError(null);
       if (warehousePhotoInputRef.current) warehousePhotoInputRef.current.value = '';
     } catch (e) {
@@ -654,7 +689,7 @@ export function OrdersPage() {
     } finally {
       setWarehouseSaving(false);
     }
-  }, [token, warehouseMoveOrder, warehouseTargetStageKey, warehouseAfterPhoto, warehouseAfterPhotoFile, stages, refetchOrders, openWhatsappUpdate]);
+  }, [token, warehouseMoveOrder, warehouseTargetStageKey, warehouseAfterItems, stages, refetchOrders, openWhatsappUpdate]);
 
   const sortedStagesForTabs = useMemo(
     () => [...stages].sort((a, b) => a.sortOrder - b.sortOrder),
@@ -1003,39 +1038,41 @@ export function OrdersPage() {
         <div className="space-y-4">
           <div>
             <p className="text-sm text-slate-600">
-              Upload the after-repair/fixed photo before moving this order to the warehouse.
+              Upload one or more after-repair / fixed photos before moving this order to the warehouse.
             </p>
           </div>
 
-          <div className="flex items-start gap-4">
-            <div className="relative shrink-0">
-              <img
-                src={warehouseAfterPhoto && warehouseAfterPhoto.trim() ? warehouseAfterPhoto : noImageUrl}
-                alt=""
-                width={120}
-                height={120}
-                className="size-[120px] rounded-lg object-cover border-2 border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700"
-              />
-              {warehouseAfterPhoto && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (warehouseAfterObjectUrlRef.current) {
-                      URL.revokeObjectURL(warehouseAfterObjectUrlRef.current);
-                      warehouseAfterObjectUrlRef.current = null;
-                    }
-                    setWarehouseAfterPhoto(null);
-                    setWarehouseAfterPhotoFile(null);
-                    setWarehousePhotoError(null);
-                    if (warehousePhotoInputRef.current) warehousePhotoInputRef.current.value = '';
-                  }}
-                  className="absolute -top-1 -right-1 p-1 rounded-full bg-red-500 text-white hover:bg-red-600 shadow"
-                  title="Remove photo"
-                  aria-label="Remove after-repair photo"
-                  disabled={warehouseSaving}
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap gap-2">
+              {warehouseAfterItems.map((p) => (
+                <div key={p.id} className="relative shrink-0">
+                  <img
+                    src={p.displayUrl}
+                    alt=""
+                    width={120}
+                    height={120}
+                    className="size-[120px] rounded-lg object-cover border-2 border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeWarehouseAfterPhoto(p.id)}
+                    className="absolute -top-1 -right-1 p-1 rounded-full bg-red-500 text-white hover:bg-red-600 shadow"
+                    title="Remove photo"
+                    aria-label="Remove after-repair photo"
+                    disabled={warehouseSaving}
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+              {warehouseAfterItems.length === 0 && (
+                <img
+                  src={noImageUrl}
+                  alt=""
+                  width={120}
+                  height={120}
+                  className="size-[120px] rounded-lg object-cover border-2 border-dashed border-slate-200 dark:border-slate-600 opacity-70"
+                />
               )}
             </div>
 
@@ -1044,11 +1081,12 @@ export function OrdersPage() {
                 ref={warehousePhotoInputRef}
                 type="file"
                 accept={ACCEPT_ORDER_IMAGES}
+                multiple
                 className="hidden"
                 disabled={warehouseSaving}
                 onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleWarehousePhotoFile(file);
+                  const files = e.target.files;
+                  if (files?.length) addWarehouseAfterFiles(files);
                   e.target.value = '';
                 }}
               />
@@ -1060,7 +1098,7 @@ export function OrdersPage() {
                 onClick={() => warehousePhotoInputRef.current?.click()}
                 disabled={warehouseSaving}
               >
-                Upload After Photo
+                Add after-repair photos
               </Button>
             </div>
           </div>

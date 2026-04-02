@@ -49,10 +49,10 @@ export interface TechnicalReportDocxInput {
   technicianName: string;
   companyName: string;
   logoBuffer: Buffer | null;
-  /** Optional intake / before-repair photo (resolved server-side). */
-  photoBeforeBuffer?: Buffer | null;
-  /** Optional after-repair photo (resolved server-side). */
-  photoAfterBuffer?: Buffer | null;
+  /** Optional intake / before-repair photos (resolved server-side). */
+  photoBeforeBuffers?: Buffer[] | null;
+  /** Optional after-repair photos (resolved server-side). */
+  photoAfterBuffers?: Buffer[] | null;
 }
 
 export function isOrderEligibleForTechnicalReport(o: { area?: string; state?: string }): boolean {
@@ -159,8 +159,8 @@ export async function buildTechnicalReportDocxBuffer(input: TechnicalReportDocxI
     technicianName,
     companyName,
     logoBuffer,
-    photoBeforeBuffer = null,
-    photoAfterBuffer = null,
+    photoBeforeBuffers = null,
+    photoAfterBuffers = null,
   } = input;
 
   const seriesPart = String(series ?? '').trim() ? ` serie ${String(series).trim()}` : '';
@@ -171,21 +171,59 @@ export async function buildTechnicalReportDocxBuffer(input: TechnicalReportDocxI
   const p3 = nonEmpty(htmlToPlainText(technicalReport), '—');
   const p4 = 'Se recomienda mantenimiento preventivo 1 vez al año.';
 
-  let beforeFit: { data: Buffer; width: number; height: number } | null = null;
-  let afterFit: { data: Buffer; width: number; height: number } | null = null;
+  const beforeBuffersRaw = (photoBeforeBuffers ?? []).filter((b) => b && b.length > 0);
+  const afterBuffersRaw = (photoAfterBuffers ?? []).filter((b) => b && b.length > 0);
+  const beforeFits: { data: Buffer; width: number; height: number }[] = [];
+  const afterFits: { data: Buffer; width: number; height: number }[] = [];
   try {
-    if (photoBeforeBuffer && photoBeforeBuffer.length > 0) {
-      beforeFit = await fitImageBufferForDocx(photoBeforeBuffer, PHOTO_DOC_MAX_W, PHOTO_DOC_MAX_H);
+    for (const buf of beforeBuffersRaw) {
+      const fit = await fitImageBufferForDocx(buf, PHOTO_DOC_MAX_W, PHOTO_DOC_MAX_H);
+      if (fit) beforeFits.push(fit);
     }
-    if (photoAfterBuffer && photoAfterBuffer.length > 0) {
-      afterFit = await fitImageBufferForDocx(photoAfterBuffer, PHOTO_DOC_MAX_W, PHOTO_DOC_MAX_H);
+    for (const buf of afterBuffersRaw) {
+      const fit = await fitImageBufferForDocx(buf, PHOTO_DOC_MAX_W, PHOTO_DOC_MAX_H);
+      if (fit) afterFits.push(fit);
     }
   } catch {
-    beforeFit = null;
-    afterFit = null;
+    beforeFits.length = 0;
+    afterFits.length = 0;
   }
   /** Only show the block when Sharp produced at least one valid raster (skip bad/missing files). */
-  const showPhotoBlock = Boolean(beforeFit || afterFit);
+  const showPhotoBlock = beforeFits.length > 0 || afterFits.length > 0;
+
+  const photoColumnParagraphs = (
+    fits: { data: Buffer; width: number; height: number }[]
+  ): Paragraph[] => {
+    if (fits.length === 0) {
+      return [
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 320 },
+          children: [
+            new TextRun({
+              text: 'Sin imagen',
+              italics: true,
+              font: FONT,
+              size: 22,
+              color: '888888',
+            }),
+          ],
+        }),
+      ];
+    }
+    return fits.map((fit, idx) =>
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: idx < fits.length - 1 ? 200 : 320 },
+        children: [
+          new ImageRun({
+            data: fit.data,
+            transformation: { width: fit.width, height: fit.height },
+          }),
+        ],
+      })
+    );
+  };
 
   const watermarkLogoBuffer = logoBuffer != null ? await bufferAsFadedWatermark(logoBuffer) : null;
 
@@ -503,66 +541,12 @@ export async function buildTechnicalReportDocxBuffer(input: TechnicalReportDocxI
               new TableCell({
                 verticalAlign: VerticalAlign.TOP,
                 borders: NO_CELL_BORDER,
-                children: beforeFit
-                  ? [
-                      new Paragraph({
-                        alignment: AlignmentType.CENTER,
-                        spacing: { after: 320 },
-                        children: [
-                          new ImageRun({
-                            data: beforeFit.data,
-                            transformation: { width: beforeFit.width, height: beforeFit.height },
-                          }),
-                        ],
-                      }),
-                    ]
-                  : [
-                      new Paragraph({
-                        alignment: AlignmentType.CENTER,
-                        spacing: { after: 320 },
-                        children: [
-                          new TextRun({
-                            text: 'Sin imagen',
-                            italics: true,
-                            font: FONT,
-                            size: 22,
-                            color: '888888',
-                          }),
-                        ],
-                      }),
-                    ],
+                children: photoColumnParagraphs(beforeFits),
               }),
               new TableCell({
                 verticalAlign: VerticalAlign.TOP,
                 borders: NO_CELL_BORDER,
-                children: afterFit
-                  ? [
-                      new Paragraph({
-                        alignment: AlignmentType.CENTER,
-                        spacing: { after: 320 },
-                        children: [
-                          new ImageRun({
-                            data: afterFit.data,
-                            transformation: { width: afterFit.width, height: afterFit.height },
-                          }),
-                        ],
-                      }),
-                    ]
-                  : [
-                      new Paragraph({
-                        alignment: AlignmentType.CENTER,
-                        spacing: { after: 320 },
-                        children: [
-                          new TextRun({
-                            text: 'Sin imagen',
-                            italics: true,
-                            font: FONT,
-                            size: 22,
-                            color: '888888',
-                          }),
-                        ],
-                      }),
-                    ],
+                children: photoColumnParagraphs(afterFits),
               }),
             ],
           }),
