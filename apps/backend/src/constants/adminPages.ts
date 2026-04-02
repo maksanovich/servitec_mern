@@ -17,6 +17,7 @@ export const ADMIN_PAGE_PATHS: readonly string[] = [
   '/admin/accessories',
   '/admin/products',
   '/admin/services',
+  '/admin/spare',
   '/admin/income',
   '/admin/company',
   '/admin/docs',
@@ -78,8 +79,19 @@ export function hasAnyPageAccess(
   return requiredPages.some((p) => hasPageAccess(roleSlug, effectivePages, p));
 }
 
-export function isValidPageList(pages: unknown): pages is string[] {
-  if (!Array.isArray(pages)) return false;
-  const allowed = new Set(ADMIN_PAGE_PATHS);
-  return pages.every((p) => typeof p === 'string' && allowed.has(normalizeAdminPath(p)));
+const ALLOWED_PAGE_SET = new Set(ADMIN_PAGE_PATHS);
+
+/**
+ * Accepts only string entries; drops unknown or legacy paths; dedupes.
+ * Returns null if `pages` is not an array or any element is not a string.
+ */
+export function sanitizeRolePages(pages: unknown): string[] | null {
+  if (!Array.isArray(pages)) return null;
+  const out: string[] = [];
+  for (const p of pages) {
+    if (typeof p !== 'string') return null;
+    const n = normalizeAdminPath(p);
+    if (ALLOWED_PAGE_SET.has(n)) out.push(n);
+  }
+  return [...new Set(out)];
 }

@@ -13,6 +13,7 @@ export const ADMIN_PAGE_PATHS: readonly string[] = [
   '/admin/accessories',
   '/admin/products',
   '/admin/services',
+  '/admin/spare',
   '/admin/income',
   '/admin/company',
   '/admin/docs',
@@ -30,6 +31,7 @@ export const ADMIN_PAGE_OPTIONS: readonly { path: string; label: string }[] = [
   { path: '/admin/accessories', label: 'Accessories' },
   { path: '/admin/products', label: 'Products' },
   { path: '/admin/services', label: 'Services' },
+  { path: '/admin/spare', label: 'Spare Parts' },
   { path: '/admin/income', label: 'Income' },
   { path: '/admin/company', label: 'Company' },
   { path: '/admin/docs', label: 'Documentation' },
@@ -59,6 +61,13 @@ export function userCanAccessPage(user: User | null, requiredPage: string): bool
   return (user.role.pages ?? []).some((pg) => pathMatchesPage(req, pg));
 }
 
+/** Spare Parts page: assignable as /admin/spare, or legacy access via Services only. */
+export function userHasSparePartsAccess(user: User | null): boolean {
+  return (
+    userCanAccessPage(user, '/admin/spare') || userCanAccessPage(user, '/admin/services')
+  );
+}
+
 /** Profile is always allowed for logged-in staff. */
 export function isProfilePath(pathname: string): boolean {
   const p = normalizeAdminPath(pathname);
@@ -77,5 +86,8 @@ export function userCanAccessPath(user: User | null, pathname: string): boolean 
   if (isProfilePath(pathname)) return true;
   if (user.role.slug === SUPER_ADMIN_SLUG) return true;
   const p = normalizeAdminPath(pathname);
+  if (p === '/admin/spare' || p.startsWith('/admin/spare/')) {
+    return userHasSparePartsAccess(user);
+  }
   return (user.role.pages ?? []).some((pg) => pathMatchesPage(p, pg));
 }

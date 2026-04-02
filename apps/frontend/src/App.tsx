@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { AdminLayout } from './components/AdminLayout';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { RequirePage } from './components/RequirePage';
+import { RequireAnyPage, RequirePage } from './components/RequirePage';
 import { RequireSuperAdmin } from './components/RequireSuperAdmin';
 import { AuthProvider } from './contexts/AuthContext';
 import { CompanyProvider } from './contexts/CompanyContext';
@@ -211,9 +211,9 @@ function App() {
             <Route
               path="spare"
               element={
-                <RequirePage page="/admin/services">
+                <RequireAnyPage pages={['/admin/spare', '/admin/services']}>
                   <SparePartsPage />
-                </RequirePage>
+                </RequireAnyPage>
               }
             />
             <Route

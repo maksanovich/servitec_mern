@@ -2,7 +2,14 @@ import { useState, useEffect } from 'react';
 import { Save } from 'lucide-react';
 import { Modal, Input, Button, Select } from '../../../components/ui';
 import type { Role } from './types';
-import { ADMIN_PAGE_OPTIONS, SUPER_ADMIN_SLUG } from '../../../constants/adminPages';
+import {
+  ADMIN_PAGE_OPTIONS,
+  ADMIN_PAGE_PATHS,
+  SUPER_ADMIN_SLUG,
+  normalizeAdminPath,
+} from '../../../constants/adminPages';
+
+const ALLOWED_ROLE_PAGES = new Set(ADMIN_PAGE_PATHS);
 
 interface RoleFormModalProps {
   open: boolean;
@@ -48,7 +55,9 @@ export function RoleFormModal({
         setSlug(role.slug);
         setDescription(role.description ?? '');
         setState(role.state);
-        setPages(role.pages ?? []);
+        setPages(
+          (role.pages ?? []).filter((p) => ALLOWED_ROLE_PAGES.has(normalizeAdminPath(p)))
+        );
       } else {
         setName('');
         setSlug('');
