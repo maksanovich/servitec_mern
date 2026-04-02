@@ -770,11 +770,14 @@ export function OrdersPage() {
       {
         id: 'description',
         name: 'Description',
-        minWidth: '120px',
+        minWidth: '280px',
         selector: (r) => r.description,
         sortable: true,
         cell: (r) => (
-          <span className="text-slate-700 dark:text-slate-300 line-clamp-2 text-sm" title={r.description}>
+          <span
+            className="block min-w-0 max-w-md truncate text-slate-700 dark:text-slate-300 text-sm"
+            title={r.description?.trim() ? r.description : undefined}
+          >
             {r.description || '—'}
           </span>
         ),

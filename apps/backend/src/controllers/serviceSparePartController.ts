@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { ServiceSparePart } from '../models/ServiceSparePart.js';
 
 function toResponse(item: any) {
+  const updated = item.updatedAt ?? item.createdAt;
   return {
     id: item._id,
     type: item.type,
@@ -10,6 +11,7 @@ function toResponse(item: any) {
     price: item.price ?? 0,
     details: item.details ?? '',
     state: item.state === 'inactive' ? 'inactive' : 'active',
+    syncedAt: updated ? new Date(updated).toISOString() : null,
   };
 }
 

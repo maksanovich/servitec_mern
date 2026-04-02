@@ -70,7 +70,7 @@ export function ServiceSparePartFormModal({
     const amountNum = servicesCatalogOnly ? 0 : Number(amount);
 
     if (!trimmedName) {
-      setError('Service/spare part name is required.');
+      setError(servicesCatalogOnly ? 'Code is required.' : 'Service/spare part name is required.');
       return;
     }
     if (Number.isNaN(priceNum) || priceNum < 0) {
@@ -134,7 +134,7 @@ export function ServiceSparePartFormModal({
 
           <div className={servicesCatalogOnly ? 'md:col-span-2' : 'md:col-span-2'}>
             <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-              {servicesCatalogOnly ? 'Service' : 'Service / Spare Part'} <span className="text-red-500">*</span>
+              {servicesCatalogOnly ? 'Code' : 'Service / Spare Part'} <span className="text-red-500">*</span>
             </label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. BATTERY" required />
           </div>

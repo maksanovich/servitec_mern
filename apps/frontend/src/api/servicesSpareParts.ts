@@ -11,6 +11,8 @@ export interface ServiceSparePartItem {
   price: number;
   details: string;
   state: ServiceSparePartState;
+  /** ISO timestamp — last DB update (e.g. Perseo sync). */
+  syncedAt?: string | null;
 }
 
 /** Replacement parts with zero catalog stock cannot be added to an order budget. */

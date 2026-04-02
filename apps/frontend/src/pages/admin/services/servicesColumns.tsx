@@ -109,15 +109,12 @@ const typeLabel: Record<ServiceSparePartItem['type'], string> = {
   replacement: 'Replacement',
 };
 
-const stateVariant: Record<ServiceSparePartItem['state'], 'success' | 'error'> = {
-  active: 'success',
-  inactive: 'error',
-};
-
-const stateLabel: Record<ServiceSparePartItem['state'], string> = {
-  active: 'Active',
-  inactive: 'Inactive',
-};
+function formatSyncedAt(iso: string | null | undefined): string {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '—';
+  return new Intl.DateTimeFormat(undefined, { dateStyle: 'short', timeStyle: 'short' }).format(d);
+}
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(price);
@@ -132,14 +129,24 @@ export interface GetServicesColumnsOptions {
   includeAmount?: boolean;
   /** Header for the name column (default: Service / Spare Parts). */
   nameColumnLabel?: string;
+  /** Min width for the name column (default: 300px). */
+  nameColumnMinWidth?: string;
+  /** Min width for the details column (default: 220px). */
+  detailsColumnMinWidth?: string;
 }
 
 export function getServicesColumns(
   actions: ServiceSparePartColumnActions,
   options?: GetServicesColumnsOptions
 ): TableColumn<ServiceSparePartItem>[] {
-  const { includeType = true, includeActions = true, includeAmount = true, nameColumnLabel = 'Service / Spare Parts' } =
-    options ?? {};
+  const {
+    includeType = true,
+    includeActions = true,
+    includeAmount = true,
+    nameColumnLabel = 'Service / Spare Parts',
+    nameColumnMinWidth = '180px',
+    detailsColumnMinWidth = '220px',
+  } = options ?? {};
 
   const cols: TableColumn<ServiceSparePartItem>[] = [];
 
@@ -162,7 +169,7 @@ export function getServicesColumns(
       name: nameColumnLabel,
       selector: (row) => row.name,
       sortable: true,
-      minWidth: '300px',
+      width: nameColumnMinWidth,
       cell: (row) => (
         <span className="text-slate-700 dark:text-slate-300">{row.name}</span>
       ),
@@ -196,7 +203,7 @@ export function getServicesColumns(
       name: 'Details',
       selector: (row) => row.details,
       sortable: true,
-      minWidth: '220px',
+      minWidth: detailsColumnMinWidth,
       cell: (row) => (
         <span className="text-slate-700 dark:text-slate-300 line-clamp-2" title={row.details}>
           {row.details}
@@ -204,13 +211,18 @@ export function getServicesColumns(
       ),
     },
     {
-      id: 'state',
-      name: 'State',
-      selector: (row) => row.state,
+      id: 'syncedAt',
+      name: 'Synced time',
+      selector: (row) => row.syncedAt ?? '',
       sortable: true,
-      width: '100px',
+      width: '160px',
       cell: (row) => (
-        <Badge variant={stateVariant[row.state]}>{stateLabel[row.state]}</Badge>
+        <span
+          className="text-slate-700 dark:text-slate-300 text-sm tabular-nums"
+          title={row.syncedAt ?? undefined}
+        >
+          {formatSyncedAt(row.syncedAt)}
+        </span>
       ),
     }
   );
