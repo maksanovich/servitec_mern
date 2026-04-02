@@ -45,7 +45,7 @@ const serviceSparePartSchema = new mongoose.Schema<IServiceSparePart>(
       default: 'active',
     },
   },
-  { timestamps: true }
+  { timestamps: true, collection: 'servicepart' }
 );
 
 serviceSparePartSchema.index({ type: 1, name: 1 }, { unique: true });

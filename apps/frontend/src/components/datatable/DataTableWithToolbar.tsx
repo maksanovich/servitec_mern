@@ -51,20 +51,19 @@ function getColumnId(col: TableColumn<unknown>): string | null {
 function filterBySearch<T>(data: T[], query: string, columns: TableColumn<T>[], searchFieldIds: (string | keyof T)[] | undefined): T[] {
   if (!query.trim() || !searchFieldIds?.length) return data;
   const q = query.toLowerCase();
-  const cols = columns.filter((c) => {
-    const id = getColumnId(c as TableColumn<unknown>);
-    return id != null && searchFieldIds.includes(id as keyof T);
-  });
   return data.filter((row) => {
-    const text = cols
-      .map((c) => {
-        const sel = c.selector;
-        if (typeof sel !== 'function') return '';
-        const val = (sel as (r: T) => unknown)(row);
-        return String(val ?? '').toLowerCase();
-      })
-      .join(' ');
-    return text.includes(q);
+    const rowObj = row as Record<string, unknown>;
+    const parts: string[] = [];
+    for (const sf of searchFieldIds) {
+      const k = String(sf);
+      const col = columns.find((c) => getColumnId(c as TableColumn<unknown>) === k);
+      if (col && typeof col.selector === 'function') {
+        parts.push(String((col.selector as (r: T) => unknown)(row) ?? '').toLowerCase());
+      } else if (k in rowObj) {
+        parts.push(String(rowObj[k] ?? '').toLowerCase());
+      }
+    }
+    return parts.join(' ').includes(q);
   });
 }
 

@@ -1,6 +1,13 @@
 const perseoService = await import('../../services/perseoService.js');
 const { Client } = await import('../../models/Client.js');
 const { SpareServer } = await import('../../models/SpareServer.js');
+const { ServiceSparePart } = await import('../../models/ServiceSparePart.js');
+const {
+  descriptionFromPayload,
+  descriptionIndicatesServicio,
+  precioFromPayload,
+  stockFromPayload,
+} = await import('../../services/perseoProductFields.js');
 
 function toISODate(value: string): string {
   if (!value) return '';
@@ -68,6 +75,7 @@ export async function runHourlySync(): Promise<void> {
     console.log('[Cron] Perseo products fetched:', Array.isArray(products) ? products.length : 0);
     if (products.length) {
       let spareSaved = 0;
+      let servicePartSynced = 0;
       for (const p of products) {
         const productosid = typeof p.productosid === 'number' ? p.productosid : Number(p.productosid);
         if (productosid == null || Number.isNaN(productosid)) {
@@ -75,18 +83,63 @@ export async function runHourlySync(): Promise<void> {
           continue;
         }
         const productocodigo = typeof p.productocodigo === 'string' ? p.productocodigo : String(p.productocodigo ?? '');
-        await SpareServer.findOneAndUpdate(
-          { productosid },
-          {
-            productosid,
-            productocodigo,
-            payload: p as Record<string, unknown>,
-          },
-          { upsert: true, new: true }
-        );
-        spareSaved++;
+        const payload = p as Record<string, unknown>;
+        const description = descriptionFromPayload(payload);
+        const isServicio = Boolean(description && descriptionIndicatesServicio(description));
+
+        if (!isServicio) {
+          await SpareServer.findOneAndUpdate(
+            { productosid },
+            {
+              productosid,
+              productocodigo,
+              payload,
+            },
+            { upsert: true, new: true }
+          );
+          spareSaved++;
+        } else {
+          await SpareServer.deleteOne({ productosid });
+        }
+
+        if (isServicio) {
+          const name = productocodigo.trim() || `Perseo ${productosid}`;
+          const price = precioFromPayload(payload) ?? 0;
+          const amount = stockFromPayload(payload) ?? 0;
+          await ServiceSparePart.findOneAndUpdate(
+            { type: 'service', name },
+            {
+              type: 'service',
+              name,
+              price,
+              amount,
+              details: description,
+              state: 'active',
+            },
+            { upsert: true, new: true }
+          );
+          servicePartSynced++;
+        }
       }
+
+      const spareDocs = await SpareServer.find({}).lean();
+      let removedServicioSpares = 0;
+      for (const doc of spareDocs) {
+        const payload = (doc.payload ?? {}) as Record<string, unknown>;
+        const desc = descriptionFromPayload(payload);
+        if (desc && descriptionIndicatesServicio(desc)) {
+          await SpareServer.deleteOne({ _id: doc._id });
+          removedServicioSpares++;
+        }
+      }
+      if (removedServicioSpares) {
+        console.log('[Cron] SpareServer removed rows with SERVICIO in description:', removedServicioSpares);
+      }
+
       console.log('[Cron] SpareServer (Perseo products) synced:', spareSaved);
+      if (servicePartSynced) {
+        console.log('[Cron] ServiceSparePart (SERVICIO in description) synced:', servicePartSynced);
+      }
     } else {
       console.log('[Cron] SpareServer: none to sync');
     }
