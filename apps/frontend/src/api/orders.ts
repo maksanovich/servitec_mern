@@ -65,8 +65,9 @@ export interface CreateOrderPayload {
   advancement?: number | string;
   accessories?: string[];
   budgetLines?: Array<{ serviceId: string; name: string; price: number; amount: number; total: number }>;
-  photoBeforeRepair?: string;
-  photoAfterRepair?: string;
+  /** One URL (legacy) or several image URLs */
+  photoBeforeRepair?: string | string[];
+  photoAfterRepair?: string | string[];
 }
 
 export class CreateOrderError extends Error {
@@ -149,8 +150,8 @@ export interface OrderDetail {
   budgetLines: OrderBudgetLine[];
   total: number;
 
-  photoBeforeRepair: string;
-  photoAfterRepair: string;
+  photoBeforeRepair: string[];
+  photoAfterRepair: string[];
 }
 
 /** Public tracking response (by code, no auth) */
@@ -167,8 +168,8 @@ export interface OrderTrackPublic {
   series: string;
   equipment: string;
   createdAt?: string;
-  photoBeforeRepair: string;
-  photoAfterRepair: string;
+  photoBeforeRepair: string[];
+  photoAfterRepair: string[];
   equipmentCondition?: string;
   technicalReport?: string;
   warranty?: boolean;
@@ -182,8 +183,8 @@ export interface OrderShowcaseItem {
   brand: string;
   model: string;
   series: string;
-  photoBeforeRepair: string;
-  photoAfterRepair: string;
+  photoBeforeRepair: string[];
+  photoAfterRepair: string[];
   equipmentCondition: string;
   technicalReport: string;
   createdAt?: string;
@@ -208,8 +209,8 @@ export type UpdateOrderPayload = Partial<{
   advancement: number | string;
   accessories: string[];
   budgetLines: Array<{ serviceId: string; name: string; price: number; amount: number; total: number }>;
-  photoBeforeRepair?: string | null;
-  photoAfterRepair?: string | null;
+  photoBeforeRepair?: string | string[] | null;
+  photoAfterRepair?: string | string[] | null;
 }>;
 
 export async function getOrderById(

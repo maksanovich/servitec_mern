@@ -6,6 +6,8 @@ import { getPreDiagnosisRulesPublic, type PreDiagnosisRule } from '../api/preDia
 import type { Product } from '../api/products';
 import type { OrderShowcaseItem } from '../api/orders';
 import noImageUrl from '../assets/images/noimage.png';
+import { normalizeOrderPhotoListFromApi } from '../utils/orderPhotos';
+import { OrderPhotoSlider } from '../components/OrderPhotoSlider';
 
 const SLIDER_ITEMS = [
   {
@@ -196,18 +198,20 @@ function OrderShowcaseSection() {
             <div className="grid grid-cols-2 gap-0 border-b border-slate-100">
               <div className="p-2 bg-slate-50">
                 <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Before</p>
-                <img
-                  src={order.photoBeforeRepair?.trim() ? order.photoBeforeRepair : noImageUrl}
+                <OrderPhotoSlider
+                  images={normalizeOrderPhotoListFromApi(order.photoBeforeRepair)}
+                  emptySrc={noImageUrl}
                   alt="Before repair"
-                  className="w-full aspect-square object-contain rounded"
+                  imageClassName="w-full aspect-square object-contain rounded border-0 bg-white max-h-none"
                 />
               </div>
               <div className="p-2 bg-slate-50">
                 <p className="text-xs font-semibold text-slate-500 uppercase mb-1">After</p>
-                <img
-                  src={order.photoAfterRepair?.trim() ? order.photoAfterRepair : noImageUrl}
+                <OrderPhotoSlider
+                  images={normalizeOrderPhotoListFromApi(order.photoAfterRepair)}
+                  emptySrc={noImageUrl}
                   alt="After repair"
-                  className="w-full aspect-square object-contain rounded"
+                  imageClassName="w-full aspect-square object-contain rounded border-0 bg-white max-h-none"
                 />
               </div>
             </div>

@@ -50,10 +50,10 @@ export interface IOrder extends Omit<Document, 'model'> {
   budgetLines: IOrderBudgetLine[];
   total: number;
 
-  /** Data URL (e.g. image/jpeg;base64,...) — intake photo */
-  photoBeforeRepair: string;
-  /** Data URL — photo after repair */
-  photoAfterRepair: string;
+  /** Uploaded image URLs — intake / before repair (one or more). */
+  photoBeforeRepair: string[];
+  /** Uploaded image URLs — after repair (one or more). */
+  photoAfterRepair: string[];
 
   /** Set when the order first enters `state: delivery` (equipment at delivery area). */
   deliveryArrivedAt?: Date | null;
@@ -110,8 +110,8 @@ const orderSchema = new mongoose.Schema<IOrder>(
     budgetLines: { type: [orderBudgetLineSchema], default: [] },
     total: { type: Number, default: 0 },
 
-    photoBeforeRepair: { type: String, default: '' },
-    photoAfterRepair: { type: String, default: '' },
+    photoBeforeRepair: { type: [String], default: [] },
+    photoAfterRepair: { type: [String], default: [] },
 
     deliveryArrivedAt: { type: Date },
     pickupReminder30dSentAt: { type: Date },
@@ -119,6 +119,24 @@ const orderSchema = new mongoose.Schema<IOrder>(
   },
   { timestamps: true }
 );
+
+function coercePhotoFieldToArray(v: unknown): string[] {
+  if (v == null) return [];
+  if (Array.isArray(v)) return v.map((u) => String(u ?? '').trim()).filter(Boolean);
+  const s = String(v).trim();
+  return s ? [s] : [];
+}
+
+orderSchema.pre('save', function (next) {
+  const d = this as unknown as { photoBeforeRepair?: unknown; photoAfterRepair?: unknown };
+  if (typeof d.photoBeforeRepair === 'string' || (d.photoBeforeRepair != null && !Array.isArray(d.photoBeforeRepair))) {
+    d.photoBeforeRepair = coercePhotoFieldToArray(d.photoBeforeRepair);
+  }
+  if (typeof d.photoAfterRepair === 'string' || (d.photoAfterRepair != null && !Array.isArray(d.photoAfterRepair))) {
+    d.photoAfterRepair = coercePhotoFieldToArray(d.photoAfterRepair);
+  }
+  next();
+});
 
 orderSchema.index({ no: 1 }, { unique: true });
 orderSchema.index({ state: 1, deliveryArrivedAt: 1 });

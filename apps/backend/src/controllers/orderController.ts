@@ -26,6 +26,11 @@ import {
   isOrderEligibleForTechnicalReport,
 } from '../services/technicalReportDocx.js';
 import { drawHtmlToPdfKit } from '../utils/htmlToPdfKit.js';
+import {
+  normalizeOrderPhotoListForCreate,
+  normalizeOrderPhotoListForPatch,
+  normalizeStoredOrderPhotos,
+} from '../utils/orderPhotos.js';
 
 /** Matches backend `getAssignableTechnicians` / frontend technician detection. */
 function isTechnicianRole(slug: string, roleName?: string): boolean {
@@ -69,26 +74,6 @@ function resolveStoredImageBuffer(raw: unknown): Buffer | null {
   } catch {
     return null;
   }
-}
-
-function normalizeOrderPhotoForCreate(raw: unknown): { ok: true; value: string } | { ok: false; error: string } {
-  if (raw === undefined || raw === null) return { ok: true, value: '' };
-  if (typeof raw !== 'string') return { ok: false, error: 'Photo must be a string' };
-  const v = raw.trim();
-  if (v === '') return { ok: true, value: '' };
-  return { ok: true, value: v };
-}
-
-/** PATCH: undefined = leave unchanged; null or '' = clear */
-function normalizeOrderPhotoForPatch(
-  raw: unknown
-): { ok: true; value: string; omit: boolean } | { ok: false; error: string } {
-  if (raw === undefined) return { ok: true, value: '', omit: true };
-  if (raw === null) return { ok: true, value: '', omit: false };
-  if (typeof raw !== 'string') return { ok: false, error: 'Photo must be a string' };
-  const v = raw.trim();
-  if (v === '') return { ok: true, value: '', omit: false };
-  return { ok: true, value: v, omit: false };
 }
 
 function randomCode(len = 6): string {
@@ -311,8 +296,8 @@ function toDetailResponse(
     budgetLines,
     total: Number.isFinite(Number(o.total)) ? Number(o.total) : 0,
 
-    photoBeforeRepair: String(o.photoBeforeRepair ?? ''),
-    photoAfterRepair: String(o.photoAfterRepair ?? ''),
+    photoBeforeRepair: normalizeStoredOrderPhotos(o.photoBeforeRepair),
+    photoAfterRepair: normalizeStoredOrderPhotos(o.photoAfterRepair),
   };
 }
 
@@ -330,8 +315,8 @@ function toPublicTrackResponse(o: any, ctx: StageInferenceContext = emptyStageIn
     series: o.series,
     equipment: `${o.brand}(${o.model})`,
     createdAt: o.createdAt ? new Date(o.createdAt).toISOString() : undefined,
-    photoBeforeRepair: String(o.photoBeforeRepair ?? ''),
-    photoAfterRepair: String(o.photoAfterRepair ?? ''),
+    photoBeforeRepair: normalizeStoredOrderPhotos(o.photoBeforeRepair),
+    photoAfterRepair: normalizeStoredOrderPhotos(o.photoAfterRepair),
     equipmentCondition: String(o.equipmentCondition ?? ''),
     technicalReport: String(o.technicalReport ?? ''),
     warranty: Boolean(o.warranty),
@@ -620,8 +605,16 @@ export async function getOrderTechnicalReportByCode(req: Request, res: Response)
       total: Number.isFinite(Number(l?.total)) ? Number(l.total) : 0,
     }));
 
-    const photoBeforeBuffer = resolveStoredImageBuffer((order as any).photoBeforeRepair);
-    const photoAfterBuffer = resolveStoredImageBuffer((order as any).photoAfterRepair);
+    const photoBeforeBuffers: Buffer[] = [];
+    for (const u of normalizeStoredOrderPhotos((order as any).photoBeforeRepair)) {
+      const b = resolveStoredImageBuffer(u);
+      if (b && b.length > 0) photoBeforeBuffers.push(b);
+    }
+    const photoAfterBuffers: Buffer[] = [];
+    for (const u of normalizeStoredOrderPhotos((order as any).photoAfterRepair)) {
+      const b = resolveStoredImageBuffer(u);
+      if (b && b.length > 0) photoAfterBuffers.push(b);
+    }
 
     const buffer = await buildTechnicalReportDocxBuffer({
       trackingCode: raw,
@@ -635,8 +628,8 @@ export async function getOrderTechnicalReportByCode(req: Request, res: Response)
       technicianName: technical || '—',
       companyName: company?.companyName?.trim() || 'Servitec',
       logoBuffer,
-      photoBeforeBuffer,
-      photoAfterBuffer,
+      photoBeforeBuffers,
+      photoAfterBuffers,
     });
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
@@ -663,8 +656,8 @@ export async function getOrdersShowcase(req: Request, res: Response): Promise<Re
       brand: o.brand,
       model: o.model,
       series: o.series,
-      photoBeforeRepair: String(o.photoBeforeRepair ?? ''),
-      photoAfterRepair: String(o.photoAfterRepair ?? ''),
+      photoBeforeRepair: normalizeStoredOrderPhotos(o.photoBeforeRepair),
+      photoAfterRepair: normalizeStoredOrderPhotos(o.photoAfterRepair),
       equipmentCondition: String(o.equipmentCondition ?? ''),
       technicalReport: String(o.technicalReport ?? ''),
       createdAt: o.createdAt ? new Date(o.createdAt).toISOString() : undefined,
@@ -698,8 +691,8 @@ export async function getOrderShowcaseByCode(req: Request, res: Response): Promi
       brand: string;
       model: string;
       series: string;
-      photoBeforeRepair?: string;
-      photoAfterRepair?: string;
+      photoBeforeRepair?: unknown;
+      photoAfterRepair?: unknown;
       equipmentCondition?: string;
       technicalReport?: string;
       createdAt?: Date;
@@ -711,8 +704,8 @@ export async function getOrderShowcaseByCode(req: Request, res: Response): Promi
         brand: o.brand,
         model: o.model,
         series: o.series,
-        photoBeforeRepair: String(o.photoBeforeRepair ?? ''),
-        photoAfterRepair: String(o.photoAfterRepair ?? ''),
+        photoBeforeRepair: normalizeStoredOrderPhotos(o.photoBeforeRepair),
+        photoAfterRepair: normalizeStoredOrderPhotos(o.photoAfterRepair),
         equipmentCondition: String(o.equipmentCondition ?? ''),
         technicalReport: String(o.technicalReport ?? ''),
         createdAt: o.createdAt ? new Date(o.createdAt).toISOString() : undefined,
@@ -806,11 +799,11 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
     const advancement = Number(body.advancement ?? 0);
     const totalFromLines = budgetLines.reduce((sum, l) => sum + (Number.isFinite(l.total) ? l.total : 0), 0);
 
-    const photoBefore = normalizeOrderPhotoForCreate(body.photoBeforeRepair);
+    const photoBefore = normalizeOrderPhotoListForCreate(body.photoBeforeRepair);
     if (!photoBefore.ok) return res.status(400).json({ error: photoBefore.error });
-    const photoAfter = normalizeOrderPhotoForCreate(body.photoAfterRepair);
+    const photoAfter = normalizeOrderPhotoListForCreate(body.photoAfterRepair);
     if (!photoAfter.ok) return res.status(400).json({ error: photoAfter.error });
-    if (isWarehouseTransition(area, state) && !photoAfter.value.trim()) {
+    if (isWarehouseTransition(area, state) && photoAfter.value.length === 0) {
       return res.status(400).json({ error: 'After-repair photo is required when moving to warehouse' });
     }
 
@@ -1016,19 +1009,19 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
     }
 
     if (body.photoBeforeRepair !== undefined) {
-      const r = normalizeOrderPhotoForPatch(body.photoBeforeRepair);
+      const r = normalizeOrderPhotoListForPatch(body.photoBeforeRepair);
       if (!r.ok) return res.status(400).json({ error: r.error });
       if (!r.omit) (doc as any).photoBeforeRepair = r.value;
     }
     if (body.photoAfterRepair !== undefined) {
-      const r = normalizeOrderPhotoForPatch(body.photoAfterRepair);
+      const r = normalizeOrderPhotoListForPatch(body.photoAfterRepair);
       if (!r.ok) return res.status(400).json({ error: r.error });
       if (!r.omit) (doc as any).photoAfterRepair = r.value;
     }
 
     if (isWarehouseTransition(body.area ?? doc.area, body.state ?? doc.state)) {
-      const nextPhotoAfter = String((doc as any).photoAfterRepair ?? '').trim();
-      if (!nextPhotoAfter) {
+      const nextAfter = normalizeStoredOrderPhotos((doc as any).photoAfterRepair);
+      if (nextAfter.length === 0) {
         return res.status(400).json({ error: 'After-repair photo is required when moving to warehouse' });
       }
     }

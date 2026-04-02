@@ -2,6 +2,8 @@ import type { OrderShowcaseItem } from '../api/orders';
 import noImageUrl from '../assets/images/noimage.png';
 import { RichTextHtml } from './ui';
 import { htmlToPlainText } from '../utils/htmlPlainText';
+import { normalizeOrderPhotoListFromApi } from '../utils/orderPhotos';
+import { OrderPhotoSlider } from './OrderPhotoSlider';
 
 export function BlogShowcaseArticle({ order }: { order: OrderShowcaseItem }) {
   return (
@@ -28,18 +30,20 @@ export function BlogShowcaseArticle({ order }: { order: OrderShowcaseItem }) {
       <div className="grid grid-cols-2 gap-4 px-6 pb-6">
         <div>
           <p className="text-xs font-semibold text-slate-500 uppercase mb-2">Before</p>
-          <img
-            src={order.photoBeforeRepair?.trim() ? order.photoBeforeRepair : noImageUrl}
+          <OrderPhotoSlider
+            images={normalizeOrderPhotoListFromApi(order.photoBeforeRepair)}
+            emptySrc={noImageUrl}
             alt="Before repair"
-            className="w-full aspect-square object-contain rounded-lg border border-slate-200 bg-slate-50"
+            imageClassName="w-full aspect-square object-contain rounded-lg border border-slate-200 bg-slate-50 max-h-none"
           />
         </div>
         <div>
           <p className="text-xs font-semibold text-slate-500 uppercase mb-2">After</p>
-          <img
-            src={order.photoAfterRepair?.trim() ? order.photoAfterRepair : noImageUrl}
+          <OrderPhotoSlider
+            images={normalizeOrderPhotoListFromApi(order.photoAfterRepair)}
+            emptySrc={noImageUrl}
             alt="After repair"
-            className="w-full aspect-square object-contain rounded-lg border border-slate-200 bg-slate-50"
+            imageClassName="w-full aspect-square object-contain rounded-lg border border-slate-200 bg-slate-50 max-h-none"
           />
         </div>
       </div>

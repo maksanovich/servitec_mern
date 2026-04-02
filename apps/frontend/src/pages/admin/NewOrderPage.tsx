@@ -31,6 +31,12 @@ import {
   RichTextEditor,
 } from '../../components/ui';
 import { htmlToPlainText } from '../../utils/htmlPlainText';
+import {
+  MAX_ORDER_PHOTOS_PER_SIDE,
+  newLocalPhotoId,
+  normalizeOrderPhotoListFromApi,
+  type LocalOrderPhoto,
+} from '../../utils/orderPhotos';
 import { DataTableWithToolbar } from '../../components/datatable';
 import type { TableColumn } from 'react-data-table-component';
 import type { SelectOption } from '../../components/ui';
@@ -150,17 +156,28 @@ export function NewOrderPage() {
   const [quickAddType, setQuickAddType] = useState<'brand' | 'model' | 'product' | null>(null);
   const [quickAddValue, setQuickAddValue] = useState('');
 
-  const [photoBeforeRepair, setPhotoBeforeRepair] = useState<string | null>(null);
-  const [photoAfterRepair, setPhotoAfterRepair] = useState<string | null>(null);
-  const [photoBeforeRepairFile, setPhotoBeforeRepairFile] = useState<File | null>(null);
-  const [photoAfterRepairFile, setPhotoAfterRepairFile] = useState<File | null>(null);
+  const [beforePhotos, setBeforePhotos] = useState<LocalOrderPhoto[]>([]);
+  const [afterPhotos, setAfterPhotos] = useState<LocalOrderPhoto[]>([]);
   const [photoBeforeError, setPhotoBeforeError] = useState<string | null>(null);
   const [photoAfterError, setPhotoAfterError] = useState<string | null>(null);
   const photoBeforeInputRef = useRef<HTMLInputElement>(null);
   const photoAfterInputRef = useRef<HTMLInputElement>(null);
-  const photoBeforeObjectUrlRef = useRef<string | null>(null);
-  const photoAfterObjectUrlRef = useRef<string | null>(null);
+  const beforePhotosRef = useRef(beforePhotos);
+  const afterPhotosRef = useRef(afterPhotos);
+  beforePhotosRef.current = beforePhotos;
+  afterPhotosRef.current = afterPhotos;
   const showAfterRepairPhotoSection = isEditMode && (area === 'warehouse' || stateArea === 'warehouse');
+
+  useEffect(() => {
+    return () => {
+      for (const p of beforePhotosRef.current) {
+        if (p.file && p.displayUrl.startsWith('blob:')) URL.revokeObjectURL(p.displayUrl);
+      }
+      for (const p of afterPhotosRef.current) {
+        if (p.file && p.displayUrl.startsWith('blob:')) URL.revokeObjectURL(p.displayUrl);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -276,8 +293,20 @@ export function NewOrderPage() {
           setBudgetLines(initialBudgetLines);
           initialBudgetQtyRef.current = new Map(initialBudgetLines.map((l) => [l.serviceId, l.amount]));
 
-          setPhotoBeforeRepair(o.photoBeforeRepair?.trim() ? o.photoBeforeRepair : null);
-          setPhotoAfterRepair(o.photoAfterRepair?.trim() ? o.photoAfterRepair : null);
+          setBeforePhotos(
+            normalizeOrderPhotoListFromApi(o.photoBeforeRepair as string | string[] | undefined).map((url) => ({
+              id: newLocalPhotoId(),
+              displayUrl: url,
+              remoteUrl: url,
+            }))
+          );
+          setAfterPhotos(
+            normalizeOrderPhotoListFromApi(o.photoAfterRepair as string | string[] | undefined).map((url) => ({
+              id: newLocalPhotoId(),
+              displayUrl: url,
+              remoteUrl: url,
+            }))
+          );
         }
       } catch (e) {
         console.error(e);
@@ -577,48 +606,88 @@ export function NewOrderPage() {
     setAccessories((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const selectOrderPhotoBefore = useCallback((file: File) => {
-    setPhotoBeforeError(null);
+  const validateImageFile = useCallback((file: File): string | null => {
     if (!file.type.startsWith('image/')) {
-      setPhotoBeforeError('Please select an image (JPEG, PNG, WebP or GIF).');
-      return;
+      return 'Please select an image (JPEG, PNG, WebP or GIF).';
     }
     if (file.size > MAX_ORDER_PHOTO_BYTES) {
-      setPhotoBeforeError(`Image must be under ${(MAX_ORDER_PHOTO_BYTES / (1024 * 1024)).toFixed(0)}MB.`);
-      return;
+      return `Each image must be under ${(MAX_ORDER_PHOTO_BYTES / (1024 * 1024)).toFixed(0)}MB.`;
     }
-
-    if (photoBeforeObjectUrlRef.current) {
-      URL.revokeObjectURL(photoBeforeObjectUrlRef.current);
-      photoBeforeObjectUrlRef.current = null;
-    }
-
-    const objectUrl = URL.createObjectURL(file);
-    photoBeforeObjectUrlRef.current = objectUrl;
-    setPhotoBeforeRepairFile(file);
-    setPhotoBeforeRepair(objectUrl);
+    return null;
   }, []);
 
-  const selectOrderPhotoAfter = useCallback((file: File) => {
+  const addBeforePhotoFiles = useCallback(
+    (files: FileList | File[]) => {
+      setPhotoBeforeError(null);
+      const list = Array.from(files);
+      if (list.length === 0) return;
+      setBeforePhotos((prev) => {
+        const room = MAX_ORDER_PHOTOS_PER_SIDE - prev.length;
+        if (room <= 0) {
+          setPhotoBeforeError(`You can add at most ${MAX_ORDER_PHOTOS_PER_SIDE} before-repair photos.`);
+          return prev;
+        }
+        const toAdd = list.slice(0, room);
+        const next: LocalOrderPhoto[] = [...prev];
+        for (const file of toAdd) {
+          const err = validateImageFile(file);
+          if (err) {
+            setPhotoBeforeError(err);
+            return prev;
+          }
+          const url = URL.createObjectURL(file);
+          next.push({ id: newLocalPhotoId(), displayUrl: url, file });
+        }
+        return next;
+      });
+    },
+    [validateImageFile]
+  );
+
+  const addAfterPhotoFiles = useCallback(
+    (files: FileList | File[]) => {
+      setPhotoAfterError(null);
+      const list = Array.from(files);
+      if (list.length === 0) return;
+      setAfterPhotos((prev) => {
+        const room = MAX_ORDER_PHOTOS_PER_SIDE - prev.length;
+        if (room <= 0) {
+          setPhotoAfterError(`You can add at most ${MAX_ORDER_PHOTOS_PER_SIDE} after-repair photos.`);
+          return prev;
+        }
+        const toAdd = list.slice(0, room);
+        const next: LocalOrderPhoto[] = [...prev];
+        for (const file of toAdd) {
+          const err = validateImageFile(file);
+          if (err) {
+            setPhotoAfterError(err);
+            return prev;
+          }
+          const url = URL.createObjectURL(file);
+          next.push({ id: newLocalPhotoId(), displayUrl: url, file });
+        }
+        return next;
+      });
+    },
+    [validateImageFile]
+  );
+
+  const removeBeforePhoto = useCallback((id: string) => {
+    setBeforePhotos((prev) => {
+      const p = prev.find((x) => x.id === id);
+      if (p?.file && p.displayUrl.startsWith('blob:')) URL.revokeObjectURL(p.displayUrl);
+      return prev.filter((x) => x.id !== id);
+    });
+    setPhotoBeforeError(null);
+  }, []);
+
+  const removeAfterPhoto = useCallback((id: string) => {
+    setAfterPhotos((prev) => {
+      const p = prev.find((x) => x.id === id);
+      if (p?.file && p.displayUrl.startsWith('blob:')) URL.revokeObjectURL(p.displayUrl);
+      return prev.filter((x) => x.id !== id);
+    });
     setPhotoAfterError(null);
-    if (!file.type.startsWith('image/')) {
-      setPhotoAfterError('Please select an image (JPEG, PNG, WebP or GIF).');
-      return;
-    }
-    if (file.size > MAX_ORDER_PHOTO_BYTES) {
-      setPhotoAfterError(`Image must be under ${(MAX_ORDER_PHOTO_BYTES / (1024 * 1024)).toFixed(0)}MB.`);
-      return;
-    }
-
-    if (photoAfterObjectUrlRef.current) {
-      URL.revokeObjectURL(photoAfterObjectUrlRef.current);
-      photoAfterObjectUrlRef.current = null;
-    }
-
-    const objectUrl = URL.createObjectURL(file);
-    photoAfterObjectUrlRef.current = objectUrl;
-    setPhotoAfterRepairFile(file);
-    setPhotoAfterRepair(objectUrl);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -630,30 +699,41 @@ export function NewOrderPage() {
         return;
       }
 
-      // Upload selected files only on Save/Submit (not on selection).
-      let photoBeforeValue = photoBeforeRepair ?? '';
-      let photoAfterValue = photoAfterRepair ?? '';
+      const photoBeforeUrls: string[] = [];
+      for (const p of beforePhotos) {
+        if (p.file) {
+          const { url } = await uploadImage(token, p.file, 'order-before');
+          photoBeforeUrls.push(url);
+          if (p.displayUrl.startsWith('blob:')) URL.revokeObjectURL(p.displayUrl);
+        } else if (p.remoteUrl) {
+          photoBeforeUrls.push(p.remoteUrl);
+        }
+      }
+      setBeforePhotos(
+        photoBeforeUrls.map((url) => ({
+          id: newLocalPhotoId(),
+          displayUrl: url,
+          remoteUrl: url,
+        }))
+      );
 
-      if (photoBeforeRepairFile) {
-        const { url } = await uploadImage(token, photoBeforeRepairFile, 'order-before');
-        photoBeforeValue = url;
-        setPhotoBeforeRepair(url);
-        setPhotoBeforeRepairFile(null);
-        if (photoBeforeObjectUrlRef.current) {
-          URL.revokeObjectURL(photoBeforeObjectUrlRef.current);
-          photoBeforeObjectUrlRef.current = null;
+      const photoAfterUrls: string[] = [];
+      for (const p of afterPhotos) {
+        if (p.file) {
+          const { url } = await uploadImage(token, p.file, 'order-after');
+          photoAfterUrls.push(url);
+          if (p.displayUrl.startsWith('blob:')) URL.revokeObjectURL(p.displayUrl);
+        } else if (p.remoteUrl) {
+          photoAfterUrls.push(p.remoteUrl);
         }
       }
-      if (photoAfterRepairFile) {
-        const { url } = await uploadImage(token, photoAfterRepairFile, 'order-after');
-        photoAfterValue = url;
-        setPhotoAfterRepair(url);
-        setPhotoAfterRepairFile(null);
-        if (photoAfterObjectUrlRef.current) {
-          URL.revokeObjectURL(photoAfterObjectUrlRef.current);
-          photoAfterObjectUrlRef.current = null;
-        }
-      }
+      setAfterPhotos(
+        photoAfterUrls.map((url) => ({
+          id: newLocalPhotoId(),
+          displayUrl: url,
+          remoteUrl: url,
+        }))
+      );
 
       const payload = {
         clientId: parseInt(customer, 10),
@@ -681,8 +761,8 @@ export function NewOrderPage() {
           amount: l.amount,
           total: l.total,
         })),
-        photoBeforeRepair: photoBeforeValue,
-        photoAfterRepair: photoAfterValue,
+        photoBeforeRepair: photoBeforeUrls,
+        photoAfterRepair: photoAfterUrls,
       };
 
       if (!payload.clientId || Number.isNaN(payload.clientId)) throw new Error('Customer is required');
@@ -1153,36 +1233,40 @@ export function NewOrderPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
-                <label className={labelClass()}>Photo — before repair (intake)</label>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Shown to the customer on the public track page.</p>
-                <div className="flex items-start gap-4">
-                  <div className="relative shrink-0">
-                    <img
-                      src={photoBeforeRepair && photoBeforeRepair.trim() ? photoBeforeRepair : noImageUrl}
-                      alt=""
-                      width={120}
-                      height={120}
-                      className="size-[120px] rounded-lg object-cover border-2 border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700"
-                    />
-                    {photoBeforeRepair && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (photoBeforeObjectUrlRef.current) {
-                            URL.revokeObjectURL(photoBeforeObjectUrlRef.current);
-                            photoBeforeObjectUrlRef.current = null;
-                          }
-                          setPhotoBeforeRepair(null);
-                          setPhotoBeforeRepairFile(null);
-                          setPhotoBeforeError(null);
-                          if (photoBeforeInputRef.current) photoBeforeInputRef.current.value = '';
-                        }}
-                        className="absolute -top-1 -right-1 p-1 rounded-full bg-red-500 text-white hover:bg-red-600 shadow"
-                        title="Remove photo"
-                        aria-label="Remove before-repair photo"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
+                <label className={labelClass()}>Photos — before repair (intake)</label>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+                  Shown to the customer on the public track page. You can add several images.
+                </p>
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-wrap gap-2">
+                    {beforePhotos.map((p) => (
+                      <div key={p.id} className="relative shrink-0">
+                        <img
+                          src={p.displayUrl}
+                          alt=""
+                          width={120}
+                          height={120}
+                          className="size-[120px] rounded-lg object-cover border-2 border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeBeforePhoto(p.id)}
+                          className="absolute -top-1 -right-1 p-1 rounded-full bg-red-500 text-white hover:bg-red-600 shadow"
+                          title="Remove photo"
+                          aria-label="Remove before-repair photo"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                    {beforePhotos.length === 0 && (
+                      <img
+                        src={noImageUrl}
+                        alt=""
+                        width={120}
+                        height={120}
+                        className="size-[120px] rounded-lg object-cover border-2 border-dashed border-slate-200 dark:border-slate-600 opacity-70"
+                      />
                     )}
                   </div>
                   <div className="flex flex-col gap-2">
@@ -1190,10 +1274,11 @@ export function NewOrderPage() {
                       ref={photoBeforeInputRef}
                       type="file"
                       accept={ACCEPT_ORDER_IMAGES}
+                      multiple
                       className="hidden"
                       onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) selectOrderPhotoBefore(file);
+                        const files = e.target.files;
+                        if (files?.length) addBeforePhotoFiles(files);
                         e.target.value = '';
                       }}
                     />
@@ -1204,7 +1289,7 @@ export function NewOrderPage() {
                       leftIcon={Upload}
                       onClick={() => photoBeforeInputRef.current?.click()}
                     >
-                      Upload
+                      Add photos
                     </Button>
                     {photoBeforeError && (
                       <p className="text-xs text-red-600 dark:text-red-400">{photoBeforeError}</p>
@@ -1214,36 +1299,40 @@ export function NewOrderPage() {
               </div>
               {showAfterRepairPhotoSection && (
                 <div>
-                  <label className={labelClass()}>Photo — after repair</label>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Upload when the order is moved to warehouse (fixed/after photo).</p>
-                  <div className="flex items-start gap-4">
-                    <div className="relative shrink-0">
-                      <img
-                        src={photoAfterRepair && photoAfterRepair.trim() ? photoAfterRepair : noImageUrl}
-                        alt=""
-                        width={120}
-                        height={120}
-                        className="size-[120px] rounded-lg object-cover border-2 border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700"
-                      />
-                      {photoAfterRepair && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (photoAfterObjectUrlRef.current) {
-                              URL.revokeObjectURL(photoAfterObjectUrlRef.current);
-                              photoAfterObjectUrlRef.current = null;
-                            }
-                            setPhotoAfterRepair(null);
-                          setPhotoAfterRepairFile(null);
-                            setPhotoAfterError(null);
-                            if (photoAfterInputRef.current) photoAfterInputRef.current.value = '';
-                          }}
-                          className="absolute -top-1 -right-1 p-1 rounded-full bg-red-500 text-white hover:bg-red-600 shadow"
-                          title="Remove photo"
-                          aria-label="Remove after-repair photo"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
+                  <label className={labelClass()}>Photos — after repair</label>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
+                    Upload when the order is moved to warehouse (fixed/after). You can add several images.
+                  </p>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex flex-wrap gap-2">
+                      {afterPhotos.map((p) => (
+                        <div key={p.id} className="relative shrink-0">
+                          <img
+                            src={p.displayUrl}
+                            alt=""
+                            width={120}
+                            height={120}
+                            className="size-[120px] rounded-lg object-cover border-2 border-slate-200 dark:border-slate-600 bg-slate-100 dark:bg-slate-700"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeAfterPhoto(p.id)}
+                            className="absolute -top-1 -right-1 p-1 rounded-full bg-red-500 text-white hover:bg-red-600 shadow"
+                            title="Remove photo"
+                            aria-label="Remove after-repair photo"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                      {afterPhotos.length === 0 && (
+                        <img
+                          src={noImageUrl}
+                          alt=""
+                          width={120}
+                          height={120}
+                          className="size-[120px] rounded-lg object-cover border-2 border-dashed border-slate-200 dark:border-slate-600 opacity-70"
+                        />
                       )}
                     </div>
                     <div className="flex flex-col gap-2">
@@ -1251,10 +1340,11 @@ export function NewOrderPage() {
                         ref={photoAfterInputRef}
                         type="file"
                         accept={ACCEPT_ORDER_IMAGES}
+                        multiple
                         className="hidden"
                         onChange={(e) => {
-                          const file = e.target.files?.[0];
-                        if (file) selectOrderPhotoAfter(file);
+                          const files = e.target.files;
+                          if (files?.length) addAfterPhotoFiles(files);
                           e.target.value = '';
                         }}
                       />
@@ -1265,7 +1355,7 @@ export function NewOrderPage() {
                         leftIcon={Upload}
                         onClick={() => photoAfterInputRef.current?.click()}
                       >
-                        Upload
+                        Add photos
                       </Button>
                       {photoAfterError && <p className="text-xs text-red-600 dark:text-red-400">{photoAfterError}</p>}
                     </div>

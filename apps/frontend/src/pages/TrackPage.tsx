@@ -12,6 +12,8 @@ import { getOrderProgressStagesPublic } from '../api/orderProgressStages';
 import type { OrderWorkflow } from '../api/orders';
 import { RichTextHtml } from '../components/ui';
 import { htmlToPlainText } from '../utils/htmlPlainText';
+import { hasOrderPhotos, normalizeOrderPhotoListFromApi } from '../utils/orderPhotos';
+import { OrderPhotoSlider } from '../components/OrderPhotoSlider';
 
 type TimelineStage = Pick<OrderProgressStage, 'key' | 'label' | 'description' | 'sortOrder'>;
 
@@ -282,7 +284,7 @@ export function TrackPage() {
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">Photo evidence</p>
                 <p className="font-medium text-slate-900">
-                  {order.photoAfterRepair?.trim() ? 'Before & after available' : 'Before photo available'}
+                  {hasOrderPhotos(order.photoAfterRepair) ? 'Before & after available' : 'Before photo available'}
                 </p>
               </div>
             </div>
@@ -326,18 +328,18 @@ export function TrackPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <p className="text-xs text-slate-500 mb-2">Before repair</p>
-                <img
-                  src={order.photoBeforeRepair?.trim() ? order.photoBeforeRepair : noImageUrl}
+                <OrderPhotoSlider
+                  images={normalizeOrderPhotoListFromApi(order.photoBeforeRepair)}
+                  emptySrc={noImageUrl}
                   alt="Equipment before repair"
-                  className="w-full max-h-64 rounded-lg object-contain border border-slate-200 bg-slate-50"
                 />
               </div>
               <div>
                 <p className="text-xs text-slate-500 mb-2">After repair</p>
-                <img
-                  src={order.photoAfterRepair?.trim() ? order.photoAfterRepair : noImageUrl}
+                <OrderPhotoSlider
+                  images={normalizeOrderPhotoListFromApi(order.photoAfterRepair)}
+                  emptySrc={noImageUrl}
                   alt="Equipment after repair"
-                  className="w-full max-h-64 rounded-lg object-contain border border-slate-200 bg-slate-50"
                 />
               </div>
             </div>

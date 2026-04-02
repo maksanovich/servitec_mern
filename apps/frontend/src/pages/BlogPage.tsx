@@ -4,6 +4,8 @@ import { getOrdersShowcase } from '../api/orders';
 import type { OrderShowcaseItem } from '../api/orders';
 import noImageUrl from '../assets/images/noimage.png';
 import { htmlToPlainText } from '../utils/htmlPlainText';
+import { normalizeOrderPhotoListFromApi } from '../utils/orderPhotos';
+import { OrderPhotoSlider } from '../components/OrderPhotoSlider';
 
 function formatDate(date?: string) {
   if (!date) return '—';
@@ -75,8 +77,6 @@ export function BlogPage() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {orders.map((order) => {
-            const beforeSrc = order.photoBeforeRepair?.trim() ? order.photoBeforeRepair : noImageUrl;
-            const afterSrc = order.photoAfterRepair?.trim() ? order.photoAfterRepair : noImageUrl;
             const condition = htmlToPlainText(order.equipmentCondition ?? '');
             const report = htmlToPlainText(order.technicalReport ?? '');
             const snippet = condition ? (report ? `${condition} ${report}` : condition) : report;
@@ -111,20 +111,22 @@ export function BlogPage() {
                       <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-slate-500 mb-2">
                         Before
                       </p>
-                      <img
-                        src={beforeSrc}
+                      <OrderPhotoSlider
+                        images={normalizeOrderPhotoListFromApi(order.photoBeforeRepair)}
+                        emptySrc={noImageUrl}
                         alt=""
-                        className="w-full aspect-square object-contain rounded-lg bg-white"
+                        imageClassName="w-full aspect-square object-contain rounded-lg bg-white border-0 max-h-none"
                       />
                     </div>
                     <div className="rounded-xl border border-slate-100 bg-slate-50 p-2">
                       <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-slate-500 mb-2">
                         After
                       </p>
-                      <img
-                        src={afterSrc}
+                      <OrderPhotoSlider
+                        images={normalizeOrderPhotoListFromApi(order.photoAfterRepair)}
+                        emptySrc={noImageUrl}
                         alt=""
-                        className="w-full aspect-square object-contain rounded-lg bg-white"
+                        imageClassName="w-full aspect-square object-contain rounded-lg bg-white border-0 max-h-none"
                       />
                     </div>
                   </div>
