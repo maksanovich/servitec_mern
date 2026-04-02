@@ -37,7 +37,7 @@ import {
   X,
   Boxes,
 } from 'lucide-react';
-import { userCanAccessPage } from '../constants/adminPages';
+import { userCanAccessPage, userHasSparePartsAccess } from '../constants/adminPages';
 import { useNotifications } from '../contexts/NotificationContext';
 
 interface NavItem {
@@ -119,7 +119,7 @@ const navGroups: NavGroup[] = [
     label: 'Catalog & Finance',
     items: [
       { path: '/admin/services', label: 'Services', icon: Package },
-      { path: '/admin/spare', label: 'Spare Parts', icon: Boxes, accessPath: '/admin/services' },
+      { path: '/admin/spare', label: 'Spare Parts', icon: Boxes },
       { path: '/admin/income', label: 'Income', icon: DollarSign },
     ],
   },
@@ -147,7 +147,11 @@ export function AdminLayout() {
     return navGroups
       .map((group) => ({
         ...group,
-        items: group.items.filter((item) => userCanAccessPage(user, item.accessPath ?? item.path)),
+        items: group.items.filter((item) =>
+          item.path === '/admin/spare'
+            ? userHasSparePartsAccess(user)
+            : userCanAccessPage(user, item.accessPath ?? item.path)
+        ),
       }))
       .filter((g) => g.items.length > 0);
   }, [user]);

@@ -34,7 +34,13 @@ export async function getRoleById(
 
 export async function createRole(
   token: string | null,
-  body: { name: string; slug: string; description?: string; state?: 'active' | 'inactive' }
+  body: {
+    name: string;
+    slug: string;
+    description?: string;
+    state?: 'active' | 'inactive';
+    pages?: string[];
+  }
 ): Promise<{ role: Role }> {
   if (!token) throw new Error('Not authenticated');
   const res = await apiFetch('/roles', {
