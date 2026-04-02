@@ -22,7 +22,7 @@ export function formatDate(iso: string | null) {
 }
 
 const thumbBox =
-  'flex items-center justify-center w-14 h-14 shrink-0 rounded border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/80';
+  'flex items-center justify-center w-12 h-12 shrink-0 rounded border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/80';
 
 const modalImageBox =
   'flex items-center justify-center w-full min-h-[160px] rounded-lg border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800/80 p-4';
@@ -70,7 +70,7 @@ export function SparePartThumbnail({
   const imgClass =
     variant === 'modal'
       ? 'max-w-full max-h-[220px] w-auto h-auto object-contain'
-      : 'max-w-[52px] max-h-[52px] w-auto h-auto object-contain';
+      : 'max-w-[44px] max-h-[44px] w-auto h-auto object-contain';
 
   if (phase === 'loading') {
     return (
@@ -110,8 +110,13 @@ export const sparePartsColumns: TableColumn<SpareServerRow>[] = [
     name: 'Image',
     selector: () => '',
     sortable: false,
-    width: '88px',
-    cell: (row) => <SparePartThumbnail productosid={row.productosid} />,
+    width: '76px',
+    center: true,
+    cell: (row) => (
+      <div className="flex justify-center py-0.5">
+        <SparePartThumbnail productosid={row.productosid} />
+      </div>
+    ),
   },
   {
     id: 'productocodigo',
@@ -119,24 +124,29 @@ export const sparePartsColumns: TableColumn<SpareServerRow>[] = [
     selector: (row) => row.productocodigo,
     sortable: true,
     width: '120px',
-    cell: (row) => <span className="font-mono text-slate-700 dark:text-slate-300">{row.productocodigo || '—'}</span>,
+    cell: (row) => (
+      <span className="font-mono text-sm text-slate-700 dark:text-slate-300">{row.productocodigo || '—'}</span>
+    ),
   },
   {
     id: 'productosid',
     name: 'Product ID',
     selector: (row) => row.productosid,
     sortable: true,
-    width: '110px',
-    cell: (row) => <span className="text-slate-700 dark:text-slate-300">{row.productosid}</span>,
+    width: '104px',
+    right: true,
+    cell: (row) => (
+      <span className="tabular-nums text-slate-700 dark:text-slate-300">{row.productosid}</span>
+    ),
   },
   {
     id: 'description',
     name: 'Description',
     selector: (row) => row.description,
     sortable: true,
-    minWidth: '280px',
+    minWidth: '220px',
     cell: (row) => (
-      <span className="text-slate-700 dark:text-slate-300 line-clamp-2" title={row.description}>
+      <span className="text-slate-700 dark:text-slate-300 line-clamp-2 text-left" title={row.description}>
         {row.description || '—'}
       </span>
     ),
@@ -146,17 +156,21 @@ export const sparePartsColumns: TableColumn<SpareServerRow>[] = [
     name: 'Price',
     selector: (row) => row.precio ?? -Infinity,
     sortable: true,
-    width: '110px',
-    cell: (row) => <span className="text-slate-700 dark:text-slate-300">{formatPrice(row.precio)}</span>,
+    width: '112px',
+    right: true,
+    cell: (row) => (
+      <span className="tabular-nums text-slate-700 dark:text-slate-300">{formatPrice(row.precio)}</span>
+    ),
   },
   {
     id: 'stock',
     name: 'Stock',
     selector: (row) => row.stock ?? -Infinity,
     sortable: true,
-    width: '100px',
+    width: '88px',
+    right: true,
     cell: (row) => (
-      <span className="text-slate-700 dark:text-slate-300">{row.stock != null ? String(row.stock) : '—'}</span>
+      <span className="tabular-nums text-slate-700 dark:text-slate-300">{row.stock != null ? String(row.stock) : '—'}</span>
     ),
   },
   {
@@ -164,7 +178,9 @@ export const sparePartsColumns: TableColumn<SpareServerRow>[] = [
     name: 'Synced',
     selector: (row) => row.updatedAt ?? '',
     sortable: true,
-    width: '180px',
-    cell: (row) => <span className="text-slate-600 dark:text-slate-400 text-sm">{formatDate(row.updatedAt)}</span>,
+    width: '168px',
+    cell: (row) => (
+      <span className="text-slate-600 dark:text-slate-400 text-sm whitespace-nowrap">{formatDate(row.updatedAt)}</span>
+    ),
   },
 ];
