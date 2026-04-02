@@ -15,6 +15,9 @@ import type { ServiceSparePartItem } from '../../../api/servicesSpareParts';
 
 const exportOptions = { title: 'Services', filename: 'services' };
 
+/** Set to true to show "New Service" and row Edit/Delete actions again. */
+const ENABLE_SERVICE_ADMIN_ACTIONS = false;
+
 export function ServicesPage() {
   const { token } = useAuth();
   const [items, setItems] = useState<ServiceSparePartItem[]>([]);
@@ -53,7 +56,14 @@ export function ServicesPage() {
     () =>
       getServicesColumns(
         { onEdit: () => {}, onDelete: () => {} },
-        { includeType: false, includeActions: false, includeAmount: false, nameColumnLabel: 'Service' }
+        {
+          includeType: false,
+          includeActions: false,
+          includeAmount: false,
+          nameColumnLabel: 'Code',
+          nameColumnMinWidth: '140px',
+          detailsColumnMinWidth: '360px',
+        }
       ),
     []
   );
@@ -117,11 +127,13 @@ export function ServicesPage() {
 
   const columns = useMemo(
     () =>
-      getServicesColumns(columnActions, {
+      getServicesColumns(ENABLE_SERVICE_ADMIN_ACTIONS ? columnActions : { onEdit: () => {}, onDelete: () => {} }, {
         includeType: false,
-        includeActions: true,
+        includeActions: ENABLE_SERVICE_ADMIN_ACTIONS,
         includeAmount: false,
-        nameColumnLabel: 'Service',
+        nameColumnLabel: 'Code',
+        nameColumnMinWidth: '140px',
+        detailsColumnMinWidth: '360px',
       }),
     [columnActions]
   );
@@ -133,15 +145,17 @@ export function ServicesPage() {
           title="Services - DIGITALSERVER TECHNICAL SERVICE"
           breadcrumb={[{ label: 'Catalog & Finance', icon: Home }, { label: 'Services' }]}
         />
-        <Button
-          variant="emerald"
-          size="md"
-          leftIcon={Plus}
-          onClick={openNewModal}
-          className="sm:ml-auto"
-        >
-          New Service
-        </Button>
+        {ENABLE_SERVICE_ADMIN_ACTIONS && (
+          <Button
+            variant="emerald"
+            size="md"
+            leftIcon={Plus}
+            onClick={openNewModal}
+            className="sm:ml-auto"
+          >
+            New Service
+          </Button>
+        )}
       </div>
 
       <Card className="overflow-hidden">

@@ -5,8 +5,10 @@ const darkHeadBg = 'rgb(30 41 59)';
 export const lightStyles = {
   table: {
     style: {
-      width: '100%',
-      tableLayout: 'fixed' as const,
+      /** Let columns keep their min widths; parent scrolls horizontally when needed (fixed+100% squeezed all columns). */
+      minWidth: '100%',
+      width: 'max-content',
+      tableLayout: 'auto' as const,
     },
   },
   tableWrapper: {
@@ -65,8 +67,9 @@ export const lightStyles = {
 export const darkStyles = {
   table: {
     style: {
-      width: '100%',
-      tableLayout: 'fixed' as const,
+      minWidth: '100%',
+      width: 'max-content',
+      tableLayout: 'auto' as const,
       backgroundColor: darkHeadBg,
     },
   },
