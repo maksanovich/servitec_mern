@@ -15,6 +15,10 @@ import { htmlToPlainText } from '../utils/htmlPlainText';
 import { hasOrderPhotos, normalizeOrderPhotoListFromApi } from '../utils/orderPhotos';
 import { OrderPhotoSlider } from '../components/OrderPhotoSlider';
 
+function formatUsd(n: number): string {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n);
+}
+
 type TimelineStage = Pick<OrderProgressStage, 'key' | 'label' | 'description' | 'sortOrder'>;
 
 const FALLBACK_STAGES: TimelineStage[] = [
@@ -238,6 +242,94 @@ export function TrackPage() {
               </div>
             )}
           </div>
+
+          {(order.budgetLines && order.budgetLines.length > 0) || order.salesContact ? (
+            <div className="border-t border-slate-200 pt-6 space-y-5">
+              {order.budgetLines && order.budgetLines.length > 0 && (
+                <div>
+                  <p className="text-sm font-semibold text-slate-800 mb-3">Products & services used</p>
+                  <p className="text-xs text-slate-500 mb-3">
+                    Items recorded for this technical service and their prices.
+                  </p>
+                  <div className="overflow-x-auto rounded-lg border border-slate-200">
+                    <table className="w-full text-sm text-left">
+                      <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200">
+                          <th className="px-3 py-2 font-semibold text-slate-700">Product / service</th>
+                          <th className="px-3 py-2 font-semibold text-slate-700 text-right whitespace-nowrap">Unit price</th>
+                          <th className="px-3 py-2 font-semibold text-slate-700 text-right whitespace-nowrap">Qty</th>
+                          <th className="px-3 py-2 font-semibold text-slate-700 text-right whitespace-nowrap">Subtotal</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {order.budgetLines.map((line, i) => (
+                          <tr key={`${line.serviceId}-${i}`} className="border-b border-slate-100 last:border-0">
+                            <td className="px-3 py-2 font-medium text-slate-900">{line.name}</td>
+                            <td className="px-3 py-2 text-slate-800 text-right tabular-nums">{formatUsd(line.price)}</td>
+                            <td className="px-3 py-2 text-slate-800 text-right tabular-nums">{line.amount}</td>
+                            <td className="px-3 py-2 text-slate-900 text-right font-medium tabular-nums">
+                              {formatUsd(line.total)}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      {order.total != null && Number.isFinite(order.total) && (
+                        <tfoot>
+                          <tr className="bg-slate-50">
+                            <td colSpan={3} className="px-3 py-2 text-right font-semibold text-slate-700">
+                              Total
+                            </td>
+                            <td className="px-3 py-2 text-right font-bold text-slate-900 tabular-nums">
+                              {formatUsd(order.total)}
+                            </td>
+                          </tr>
+                        </tfoot>
+                      )}
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {order.salesContact &&
+                (order.salesContact.phone?.trim() ||
+                  order.salesContact.email?.trim() ||
+                  order.salesContact.companyName?.trim()) && (
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800 mb-2">Sales contact</p>
+                    <p className="text-xs text-slate-500 mb-3">
+                      For questions about this bill or spare parts, reach our sales team.
+                    </p>
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm space-y-2">
+                      {order.salesContact.companyName?.trim() && (
+                        <p className="font-semibold text-slate-900">{order.salesContact.companyName.trim()}</p>
+                      )}
+                      {order.salesContact.phone?.trim() && (
+                        <p className="text-slate-800">
+                          <span className="text-slate-500 mr-2">Phone</span>
+                          <a
+                            href={`tel:${order.salesContact.phone.replace(/\s/g, '')}`}
+                            className="font-medium text-indigo-700 hover:underline"
+                          >
+                            {order.salesContact.phone.trim()}
+                          </a>
+                        </p>
+                      )}
+                      {order.salesContact.email?.trim() && (
+                        <p className="text-slate-800">
+                          <span className="text-slate-500 mr-2">Email</span>
+                          <a
+                            href={`mailto:${order.salesContact.email.trim()}`}
+                            className="font-medium text-indigo-700 hover:underline break-all"
+                          >
+                            {order.salesContact.email.trim()}
+                          </a>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+            </div>
+          ) : null}
 
           {isOrderEligibleForTechnicalReport(order) && (
             <div className="border-t border-slate-200 pt-6">
