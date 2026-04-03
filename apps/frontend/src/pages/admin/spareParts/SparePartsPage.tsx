@@ -9,6 +9,7 @@ import {
 } from '../../../components/datatable';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getSpareServerCatalog, type SpareServerRow } from '../../../api/spareServer';
+import { spareAllTariffPrices } from '../../../utils/spareTariffPrice';
 import { formatDate, formatPrice, sparePartsColumns, SparePartThumbnail } from './sparePartsColumns';
 
 function DetailRow({ label, children }: { label: string; children: ReactNode }) {
@@ -136,7 +137,21 @@ export function SparePartsPage() {
               <DetailRow label="Code">{selectedRow.productocodigo || '—'}</DetailRow>
               <DetailRow label="Product ID">{selectedRow.productosid}</DetailRow>
               <DetailRow label="Description">{selectedRow.description || '—'}</DetailRow>
-              <DetailRow label="Price">{formatPrice(selectedRow.precio)}</DetailRow>
+              <DetailRow label="Tariff prices">
+                {(() => {
+                  const list = spareAllTariffPrices(selectedRow);
+                  if (list.length === 0) return '—';
+                  return (
+                    <div className="flex flex-row flex-wrap gap-x-3 gap-y-1 tabular-nums">
+                      {list.map((e, i) => (
+                        <span key={`${e.tarifasid ?? 'x'}-${i}`}>
+                          {e.tarifasid != null ? `Tariff ${e.tarifasid}` : 'Tariff'}: {formatPrice(e.base)}
+                        </span>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </DetailRow>
               <DetailRow label="Stock">{selectedRow.stock != null ? String(selectedRow.stock) : '—'}</DetailRow>
               <DetailRow label="Synced">{formatDate(selectedRow.updatedAt)}</DetailRow>
             </div>

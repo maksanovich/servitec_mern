@@ -44,6 +44,8 @@ export interface SpareServerRow {
   productocodigo: string;
   description: string;
   precio: number | null;
+  /** Perseo `productos_consulta.tarifas` — used with client `tarifasid` for list pricing. */
+  tarifas?: unknown[];
   stock: number | null;
   updatedAt: string | null;
 }

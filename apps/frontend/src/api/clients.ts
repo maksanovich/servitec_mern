@@ -23,6 +23,8 @@ export interface Client {
   telefono3: string;
   vendedoresid: number;
   cobradoresid: number;
+  /** Perseo price list id — selects `tarifas[]` row on spare parts. */
+  tarifasid: number;
   creditocupo: number;
   creditodias: number;
   fechamodificacion: string;

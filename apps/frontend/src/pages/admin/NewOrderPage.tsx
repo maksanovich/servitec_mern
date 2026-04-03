@@ -42,6 +42,7 @@ import type { TableColumn } from 'react-data-table-component';
 import type { SelectOption } from '../../components/ui';
 import type { ServiceSparePartItem } from '../../api/servicesSpareParts';
 import { getSpareServerCatalog, type SpareServerRow } from '../../api/spareServer';
+import { recalculateSpareBudgetLines, spareUnitPriceInclVat } from '../../utils/spareTariffPrice';
 import { useAuth } from '../../contexts/AuthContext';
 import { getClients } from '../../api/clients';
 import { createBrand, getBrands } from '../../api/brands';
@@ -115,6 +116,7 @@ export function NewOrderPage() {
   const isEditMode = !!id;
 
   const [customerOptions, setCustomerOptions] = useState<SelectOption[]>([]);
+  const [clientTarifasById, setClientTarifasById] = useState<Record<number, number>>({});
   const [customerQuery, setCustomerQuery] = useState('');
   const [customerLoading, setCustomerLoading] = useState(false);
   const [brandOptions, setBrandOptions] = useState<SelectOption[]>([]);
@@ -196,6 +198,12 @@ export function NewOrderPage() {
         if (!mounted) return;
 
         const clientsResp = clientsRes.status === 'fulfilled' ? clientsRes.value : { clients: [] };
+        const nextTarifas: Record<number, number> = {};
+        for (const c of clientsResp.clients) {
+          const tid = typeof c.tarifasid === 'number' && !Number.isNaN(c.tarifasid) ? c.tarifasid : 0;
+          nextTarifas[c.clientesid] = tid;
+        }
+        setClientTarifasById(nextTarifas);
         setCustomerOptions(
           clientsResp.clients
             .filter((c) => c.estado !== false)
@@ -474,6 +482,17 @@ export function NewOrderPage() {
     return m;
   }, [spareCatalogData]);
 
+  const clientTarifasid = useMemo(() => {
+    const id = Number(customer);
+    if (!id || Number.isNaN(id)) return 0;
+    const t = clientTarifasById[id];
+    return typeof t === 'number' && !Number.isNaN(t) ? t : 0;
+  }, [customer, clientTarifasById]);
+
+  useEffect(() => {
+    setBudgetLines((prev) => recalculateSpareBudgetLines(prev, spareById, clientTarifasid));
+  }, [clientTarifasid, spareById, budgetLines.length]);
+
   const getInitialBudgetQty = useCallback((serviceId: string) => {
     return initialBudgetQtyRef.current.get(serviceId) ?? 0;
   }, []);
@@ -572,7 +591,7 @@ export function NewOrderPage() {
         ];
       });
     },
-    [getReplacementRemaining]
+    [getReplacementRemaining, clientTarifasid]
   );
 
   const updateBudgetAmount = useCallback((lineId: string, amount: number) => {
@@ -956,14 +975,14 @@ export function NewOrderPage() {
       },
       {
         id: 'precio',
-        name: 'Price',
-        selector: (r) => r.precio ?? 0,
+        name: 'Price (incl. VAT)',
+        selector: (r) => spareUnitPriceInclVat(r, clientTarifasid),
         sortable: true,
-        width: '84px',
+        width: '120px',
         right: true,
         cell: (r) => (
           <span className="tabular-nums text-sm text-slate-700 dark:text-slate-300">
-            {r.precio != null ? r.precio.toFixed(2) : '—'}
+            {spareUnitPriceInclVat(r, clientTarifasid).toFixed(2)}
           </span>
         ),
       },
@@ -1008,7 +1027,7 @@ export function NewOrderPage() {
         ignoreRowClick: true,
       },
     ],
-    [addSpareToBudget, budgetLines, getReplacementRemaining]
+    [addSpareToBudget, budgetLines, getReplacementRemaining, clientTarifasid]
   );
 
   useEffect(() => {
