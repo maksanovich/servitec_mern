@@ -722,9 +722,9 @@ export function OrdersPage() {
 
   const servicesColumns: TableColumn<ServiceSparePartItem>[] = useMemo(
     () => [
-      { id: 'name', name: 'Service', width: '260px', selector: (r) => r.name, sortable: true },
+      { id: 'name', name: 'Code', width: '140px', selector: (r) => r.name, sortable: true },
+      { id: 'details', name: 'Detail', maxWidth: "420px", selector: (r) => r.details, sortable: true },
       { id: 'price', name: 'Price', width: '100px', selector: (r) => r.price, sortable: true, format: (r) => r.price.toFixed(2) },
-      { id: 'amount', name: 'Amount', width: '100px', selector: (r) => r.amount, sortable: true },
       {
         id: 'add',
         name: '',
@@ -760,11 +760,11 @@ export function OrdersPage() {
       {
         id: 'productocodigo',
         name: 'Code',
-        width: '96px',
+        width: '140px',
         selector: (r) => r.productocodigo,
         sortable: true,
         cell: (r) => (
-          <span className="font-mono text-xs text-slate-700 dark:text-slate-300">{r.productocodigo || '—'}</span>
+          <span className="text-slate-700 dark:text-slate-300">{r.productocodigo || '—'}</span>
         ),
       },
       {
@@ -800,7 +800,7 @@ export function OrdersPage() {
         name: 'Stock',
         selector: (r) => r.stock ?? 0,
         sortable: true,
-        width: '72px',
+        width: '84px',
         right: true,
         cell: (r) => (
           <span className="tabular-nums text-sm text-slate-700 dark:text-slate-300">
@@ -1128,6 +1128,16 @@ export function OrdersPage() {
         onClose={closeBudgetModal}
         title={budgetOrder ? `Edit budget — ${budgetOrder.no}` : 'Edit budget'}
         size="2xl"
+        headerActions={
+          <>
+            <Button type="button" variant="red" size="md" onClick={closeBudgetModal} disabled={budgetSaving}>
+              Cancel
+            </Button>
+            <Button type="button" variant="primary" size="md" onClick={handleBudgetSave} isLoading={budgetSaving}>
+              Keep
+            </Button>
+          </>
+        }
       >
         {budgetError && (
           <div className="mb-4 rounded-lg border border-red-200 dark:border-red-900/40 bg-red-50/50 dark:bg-red-950/20 px-4 py-3 text-sm text-red-700 dark:text-red-300">
@@ -1164,10 +1174,10 @@ export function OrdersPage() {
           </Card>
 
           <Card className="min-h-0 flex flex-col">
-            <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 shrink-0">
+            <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
               <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Spare parts</h3>
             </div>
-            <div className="p-0 flex-1 min-h-0 max-h-[min(55vh,28rem)] overflow-y-auto">
+            <div className="p-0 flex-1 min-h-0">
               <DataTableWithToolbar<SpareServerRow>
                 data={spareCatalogData}
                 columns={spareColumns}
@@ -1263,15 +1273,6 @@ export function OrdersPage() {
               </div>
             </div>
           </Card>
-        </div>
-
-        <div className="mt-6 flex justify-end gap-3">
-          <Button type="button" variant="red" size="md" onClick={closeBudgetModal} disabled={budgetSaving}>
-            Cancel
-          </Button>
-          <Button type="button" variant="primary" size="md" onClick={handleBudgetSave} isLoading={budgetSaving}>
-            Keep
-          </Button>
         </div>
       </Modal>
 

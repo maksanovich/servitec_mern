@@ -7,6 +7,8 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  /** Rendered in the header to the left of the close button (e.g. primary actions). */
+  headerActions?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 }
 
@@ -18,7 +20,7 @@ const sizeClasses = {
   '2xl': 'max-w-screen-2xl max-h-[95vh] flex flex-col',
 };
 
-export function Modal({ open, onClose, title, children, size = 'md' }: ModalProps) {
+export function Modal({ open, onClose, title, children, headerActions, size = 'md' }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -53,19 +55,22 @@ export function Modal({ open, onClose, title, children, size = 'md' }: ModalProp
         className={`w-full ${sizeClasses[size]} rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-xl ${size === 'xl' ? 'flex flex-col' : ''}`}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex shrink-0 items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-700">
-          <h2 id="modal-title" className="text-lg font-semibold text-slate-900 dark:text-white">
+        <div className="flex shrink-0 items-center gap-3 px-5 py-4 border-b border-slate-200 dark:border-slate-700">
+          <h2 id="modal-title" className="min-w-0 flex-1 text-lg font-semibold text-slate-900 dark:text-white">
             {title}
           </h2>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onClose}
-            className="p-1.5 -mr-1.5"
-            aria-label="Close"
-          >
-            <X className="w-5 h-5" />
-          </Button>
+          <div className="flex shrink-0 items-center gap-2">
+            {headerActions}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onClose}
+              className="p-1.5 -mr-1.5"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
         <div className={size === 'xl' ? 'flex-1 min-h-0 overflow-y-auto p-5' : 'p-5'}>
           {children}
