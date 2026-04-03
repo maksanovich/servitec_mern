@@ -45,6 +45,8 @@ import { deleteOrder, getOrders, updateOrder, getOrderById, type OrderBudgetLine
 import { getOrderProgressStagesPublic, type OrderProgressStage } from '../../api/orderProgressStages';
 import { getServicesSpareParts, canAddCatalogItemToBudget, type ServiceSparePartItem } from '../../api/servicesSpareParts';
 import { getSpareServerCatalog, type SpareServerRow } from '../../api/spareServer';
+import { getClientById } from '../../api/clients';
+import { recalculateSpareBudgetLines, spareUnitPriceInclVat } from '../../utils/spareTariffPrice';
 import { uploadImage } from '../../api/uploads';
 import noImageUrl from '../../assets/images/noimage.png';
 import {
@@ -109,6 +111,7 @@ export function OrdersPage() {
   const [moveError, setMoveError] = useState<string | null>(null);
 
   const [budgetOrder, setBudgetOrder] = useState<Order | null>(null);
+  const [budgetClientTarifasid, setBudgetClientTarifasid] = useState(0);
   const [budgetLines, setBudgetLines] = useState<BudgetLineItem[]>([]);
   // Tracks the budget quantities at the moment the modal was opened.
   // Used to enforce replacement stock limits while editing.
@@ -310,7 +313,7 @@ export function OrdersPage() {
     (row: SpareServerRow, amount: number = 1) => {
       const stock = row.stock ?? 0;
       if (stock <= 0) return;
-      const price = Number(row.precio ?? 0);
+      const price = spareUnitPriceInclVat(row, budgetClientTarifasid);
       const name =
         row.description.trim() || row.productocodigo.trim() || `Spare (${row.productosid})`;
       setBudgetLines((prev) => {
@@ -340,7 +343,7 @@ export function OrdersPage() {
         ];
       });
     },
-    [getReplacementRemaining]
+    [getReplacementRemaining, budgetClientTarifasid]
   );
 
   const updateBudgetAmount = useCallback((lineId: string, amount: number) => {
@@ -373,6 +376,7 @@ export function OrdersPage() {
   const closeBudgetModal = useCallback(() => {
     if (budgetSaving) return;
     setBudgetOrder(null);
+    setBudgetClientTarifasid(0);
     setBudgetLines([]);
     setBudgetError(null);
     initialBudgetQtyRef.current = new Map();
@@ -391,7 +395,20 @@ export function OrdersPage() {
           spareCatalogData.length ? Promise.resolve<{ items: SpareServerRow[] }>({ items: spareCatalogData }) : getSpareServerCatalog(token),
         ]);
 
-        const lines: BudgetLineItem[] = (orderResp.order.budgetLines ?? []).map((l: OrderBudgetLine, idx: number) => ({
+        let clientTarifa = 0;
+        try {
+          const clientDetail = await getClientById(token, orderResp.order.clientId);
+          clientTarifa =
+            typeof clientDetail.tarifasid === 'number' && !Number.isNaN(clientDetail.tarifasid)
+              ? clientDetail.tarifasid
+              : 0;
+        } catch {
+          clientTarifa = 0;
+        }
+        setBudgetClientTarifasid(clientTarifa);
+
+        const spareMap = new Map(spareResp.items.map((p) => [p.id, p]));
+        const linesRaw: BudgetLineItem[] = (orderResp.order.budgetLines ?? []).map((l: OrderBudgetLine, idx: number) => ({
           id: `budget-${l.serviceId}-${idx}`,
           serviceId: l.serviceId,
           name: l.name,
@@ -399,6 +416,7 @@ export function OrdersPage() {
           amount: l.amount,
           total: l.total,
         }));
+        const lines = recalculateSpareBudgetLines(linesRaw, spareMap, clientTarifa);
         setBudgetLines(lines);
         initialBudgetQtyRef.current = new Map(lines.map((l) => [l.serviceId, l.amount]));
         if (!servicesData.length) setServicesData(servicesResp.items);
@@ -406,6 +424,7 @@ export function OrdersPage() {
       } catch (e) {
         setBudgetError(e instanceof Error ? e.message : 'Failed to load budget details');
         setBudgetLines([]);
+        setBudgetClientTarifasid(0);
       } finally {
         setCatalogLoading(false);
       }
@@ -440,6 +459,7 @@ export function OrdersPage() {
         // Keep prior list if refresh fails.
       }
       setBudgetOrder(null);
+      setBudgetClientTarifasid(0);
       setBudgetLines([]);
     } catch (e) {
       setBudgetError(e instanceof Error ? e.message : 'Failed to save budget');
@@ -836,7 +856,7 @@ export function OrdersPage() {
         ignoreRowClick: true,
       },
     ],
-    [addSpareToBudget, budgetLines, getReplacementRemaining]
+    [addSpareToBudget, budgetLines, getReplacementRemaining, budgetClientTarifasid]
   );
 
   return (

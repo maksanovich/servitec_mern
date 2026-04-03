@@ -36,6 +36,8 @@ function mapSpareDocToItem(d: {
 
   const productosid = typeof d.productosid === 'number' ? d.productosid : Number(d.productosid);
 
+  const tarifas = Array.isArray(payload.tarifas) ? payload.tarifas : [];
+
   return {
 
     id: String(d._id),
@@ -47,6 +49,8 @@ function mapSpareDocToItem(d: {
     description: descriptionFromPayload(payload),
 
     precio: precioFromPayload(payload),
+
+    tarifas,
 
     stock: stockFromPayload(payload),
 

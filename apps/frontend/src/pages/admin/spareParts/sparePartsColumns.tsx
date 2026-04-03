@@ -4,6 +4,11 @@ import type { TableColumn } from '../../../components/datatable';
 import { Loader } from '../../../components/ui';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getSpareServerProductImage, type SpareServerRow } from '../../../api/spareServer';
+import {
+  formatSpareTariffPriceListPlain,
+  spareAllTariffPrices,
+  spareTariffPriceListSortKey,
+} from '../../../utils/spareTariffPrice';
 
 export function formatPrice(n: number | null) {
   if (n == null || Number.isNaN(n)) return '—';
@@ -152,15 +157,31 @@ export const sparePartsColumns: TableColumn<SpareServerRow>[] = [
     ),
   },
   {
-    id: 'precio',
-    name: 'Price',
-    selector: (row) => row.precio ?? -Infinity,
+    id: 'tarifasPrecios',
+    name: 'Tariff prices',
+    selector: (row) => formatSpareTariffPriceListPlain(row),
     sortable: true,
-    width: '112px',
+    sortFunction: (a, b) => spareTariffPriceListSortKey(a) - spareTariffPriceListSortKey(b),
+    minWidth: '200px',
     right: true,
-    cell: (row) => (
-      <span className="tabular-nums text-slate-700 dark:text-slate-300">{formatPrice(row.precio)}</span>
-    ),
+    cell: (row) => {
+      const list = spareAllTariffPrices(row);
+      if (list.length === 0) {
+        return <span className="tabular-nums text-slate-500">—</span>;
+      }
+      return (
+        <div className="flex flex-row flex-wrap justify-end gap-x-2 gap-y-0.5 py-0.5 text-xs tabular-nums text-slate-700 dark:text-slate-300">
+          {list.map((e, i) => (
+            <span
+              key={`${e.tarifasid ?? 'x'}-${i}`}
+              title={e.tarifasid != null ? `Tariff id ${e.tarifasid}` : 'Tariff'}
+            >
+              {e.tarifasid != null ? `T${e.tarifasid}` : 'Tariff'}: {formatPrice(e.base)}
+            </span>
+          ))}
+        </div>
+      );
+    },
   },
   {
     id: 'stock',
@@ -173,14 +194,14 @@ export const sparePartsColumns: TableColumn<SpareServerRow>[] = [
       <span className="tabular-nums text-slate-700 dark:text-slate-300">{row.stock != null ? String(row.stock) : '—'}</span>
     ),
   },
-  {
-    id: 'updatedAt',
-    name: 'Synced',
-    selector: (row) => row.updatedAt ?? '',
-    sortable: true,
-    width: '168px',
-    cell: (row) => (
-      <span className="text-slate-600 dark:text-slate-400 text-sm whitespace-nowrap">{formatDate(row.updatedAt)}</span>
-    ),
-  },
+  // {
+  //   id: 'updatedAt',
+  //   name: 'Synced',
+  //   selector: (row) => row.updatedAt ?? '',
+  //   sortable: true,
+  //   width: '168px',
+  //   cell: (row) => (
+  //     <span className="text-slate-600 dark:text-slate-400 text-sm whitespace-nowrap">{formatDate(row.updatedAt)}</span>
+  //   ),
+  // },
 ];
