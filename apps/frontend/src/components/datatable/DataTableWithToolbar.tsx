@@ -48,9 +48,18 @@ function getColumnId(col: TableColumn<unknown>): string | null {
   return raw != null ? String(raw) : null;
 }
 
+/** Whitespace-separated terms; row matches if every term appears somewhere in the searched fields (order-independent). */
+function searchQueryTokens(query: string): string[] {
+  return query
+    .toLowerCase()
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
 function filterBySearch<T>(data: T[], query: string, columns: TableColumn<T>[], searchFieldIds: (string | keyof T)[] | undefined): T[] {
-  if (!query.trim() || !searchFieldIds?.length) return data;
-  const q = query.toLowerCase();
+  const tokens = searchQueryTokens(query);
+  if (!tokens.length || !searchFieldIds?.length) return data;
   return data.filter((row) => {
     const rowObj = row as Record<string, unknown>;
     const parts: string[] = [];
@@ -63,7 +72,8 @@ function filterBySearch<T>(data: T[], query: string, columns: TableColumn<T>[], 
         parts.push(String(rowObj[k] ?? '').toLowerCase());
       }
     }
-    return parts.join(' ').includes(q);
+    const haystack = parts.join(' ');
+    return tokens.every((t) => haystack.includes(t));
   });
 }
 
