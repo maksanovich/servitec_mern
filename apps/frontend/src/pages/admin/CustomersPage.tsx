@@ -205,6 +205,7 @@ export function CustomersPage() {
             </div>
           </div>
           <DataTable
+            key={pageSize}
             className="w-full max-w-full"
             columns={getClientsColumns(handleEditClient, handleDeleteClick)}
             data={clients}
