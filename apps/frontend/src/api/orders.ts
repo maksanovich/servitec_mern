@@ -173,6 +173,16 @@ export interface OrderTrackPublic {
   equipmentCondition?: string;
   technicalReport?: string;
   warranty?: boolean;
+  /** Spare parts / services billed for this repair (from order budget lines). */
+  budgetLines?: OrderBudgetLine[];
+  /** Order total when budget lines are present. */
+  total?: number;
+  /** Company sales / billing contact (from Company settings). */
+  salesContact?: {
+    companyName?: string;
+    phone?: string;
+    email?: string;
+  };
   whatsappLink?: string;
 }
 

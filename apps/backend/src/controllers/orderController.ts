@@ -302,7 +302,25 @@ function toDetailResponse(
   };
 }
 
+function normalizePublicBudgetLines(raw: unknown): Array<{
+  serviceId: string;
+  name: string;
+  price: number;
+  amount: number;
+  total: number;
+}> {
+  if (!Array.isArray(raw)) return [];
+  return (raw as unknown[]).map((l: any) => ({
+    serviceId: String(l?.serviceId ?? '').trim(),
+    name: String(l?.name ?? '').trim(),
+    price: Number.isFinite(Number(l?.price)) ? Number(l.price) : 0,
+    amount: Number.isFinite(Number(l?.amount)) ? Number(l.amount) : 0,
+    total: Number.isFinite(Number(l?.total)) ? Number(l.total) : 0,
+  }));
+}
+
 function toPublicTrackResponse(o: any, ctx: StageInferenceContext = emptyStageInferenceContext()) {
+  const budgetLines = normalizePublicBudgetLines(o.budgetLines).filter((l) => l.name.length > 0);
   return {
     code: o.code,
     state: o.state,
@@ -321,6 +339,8 @@ function toPublicTrackResponse(o: any, ctx: StageInferenceContext = emptyStageIn
     equipmentCondition: String(o.equipmentCondition ?? ''),
     technicalReport: String(o.technicalReport ?? ''),
     warranty: Boolean(o.warranty),
+    budgetLines,
+    total: Number.isFinite(Number(o.total)) ? Number(o.total) : 0,
   };
 }
 
@@ -521,11 +541,24 @@ export async function getOrderTrackByCode(req: Request, res: Response): Promise<
       const technician = await User.findById(technicianId).select('phone').lean();
       phone = String((technician as any)?.phone ?? '').trim();
     }
+    const company = await Company.findOne().select('companyName phone email').lean();
+    const cn = String((company as any)?.companyName ?? '').trim();
+    const salesPhone = String((company as any)?.phone ?? '').trim();
+    const salesEmail = String((company as any)?.email ?? '').trim();
+    const salesContact =
+      cn || salesPhone || salesEmail
+        ? {
+            ...(cn ? { companyName: cn } : {}),
+            ...(salesPhone ? { phone: salesPhone } : {}),
+            ...(salesEmail ? { email: salesEmail } : {}),
+          }
+        : undefined;
     await syncLegacyOrderWorkflowFields();
     const ctx = await loadStageInferenceContext();
     return res.json({
       order: {
         ...toPublicTrackResponse(order, ctx),
+        ...(salesContact ? { salesContact } : {}),
         whatsappLink: buildTrackWhatsAppLink({
           phone,
           code: String((order as any).code ?? ''),
