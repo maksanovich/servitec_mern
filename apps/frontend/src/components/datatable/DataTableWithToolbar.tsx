@@ -148,6 +148,7 @@ export function DataTableWithToolbar<T>({
       />
       <div className="pb-5 w-full min-w-0 overflow-x-auto">
         <DataTable<T>
+          key={pageSize}
           className="w-full max-w-full"
           columns={columns}
           data={filteredData}
