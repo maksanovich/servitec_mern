@@ -895,18 +895,17 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
       console.error('Order movement log (create) error:', movErr);
     }
 
-    // Notify customer on order creation (initial state).
+    // Notify customer on order creation (initial stage).
     try {
-      // const to = String((client as any)?.email ?? '').trim();
-      const to = 'maksanovich@gmail.com';
+      const to = String((client as any)?.email ?? '').trim();
       if (to) {
         await sendOrderProgressEmail({
           to,
-          orderNo: String(obj.no ?? ''),
-          trackingCode: String(obj.code ?? ''),
-          customerName: String(obj.clientName ?? ''),
+          order: obj,
           fromState: null,
           toState: obj.state as OrderState,
+          fromStageKey: '',
+          toStageKey: String(obj.progressStageKey ?? '').trim(),
         });
       }
     } catch (mailErr) {
@@ -1122,9 +1121,11 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
       }
     }
 
-    // Notify customer only when the order stage changes.
+    // Notify customer when the repair stage or legacy state changes.
+    const progressStageChanged = progressStageKeyAfter !== progressStageKeyBefore;
+    const legacyStateChanged = stateAfter !== stateBefore;
     let statusWhatsappLink = '';
-    if (stateAfter !== stateBefore) {
+    if (progressStageChanged || legacyStateChanged) {
       try {
         const client = await Client.findOne({ clientesid: doc.clientId }).lean();
         const phone = getClientPreferredPhone(client);
@@ -1132,11 +1133,11 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
         if (to) {
           await sendOrderProgressEmail({
             to,
-            orderNo: String(doc.no ?? ''),
-            trackingCode: String(doc.code ?? ''),
-            customerName: String(doc.clientName ?? ''),
+            order: doc.toObject(),
             fromState: stateBefore,
             toState: stateAfter,
+            fromStageKey: progressStageKeyBefore,
+            toStageKey: progressStageKeyAfter,
           });
         }
         statusWhatsappLink = buildStatusWhatsAppLink({

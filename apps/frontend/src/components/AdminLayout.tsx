@@ -37,6 +37,7 @@ import {
   X,
   Boxes,
   History,
+  Mail,
 } from 'lucide-react';
 import {
   ADMIN_SLUG,
@@ -157,6 +158,7 @@ const navGroups: NavGroup[] = [
     label: 'System',
     items: [
       { path: '/admin/company', label: 'Company', icon: Building2 },
+      { path: '/admin/mail', label: 'Mail', icon: Mail },
       { path: '/admin/users', label: 'Users', icon: Users },
       { path: '/admin/roles', label: 'Roles', icon: Shield },
     ],

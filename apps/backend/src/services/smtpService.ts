@@ -1,30 +1,38 @@
 import nodemailer from 'nodemailer';
 
 import type { OrderState } from '../models/Order.js';
-import { EMAIL_MESSAGES, ORDER_STATE_LABELS } from '../constants/messages.js';
+import { EMAIL_MESSAGES } from '../constants/messages.js';
+import {
+  buildOrderProgressEmailContext,
+  resolveOrderProgressEmailContent,
+} from './orderProgressEmailTemplate.js';
 
-type OrderProgressEmailParams = {
-  to: string;
-  orderNo: string;
-  trackingCode: string;
-  customerName: string;
-  fromState: OrderState | null;
-  toState: OrderState;
+type OrderLike = {
+  no?: unknown;
+  code?: unknown;
+  clientName?: unknown;
+  brand?: unknown;
+  model?: unknown;
+  series?: unknown;
+  type?: unknown;
+  technicalReport?: unknown;
+  equipmentCondition?: unknown;
+  total?: unknown;
+  fianceeDate?: unknown;
+  technician?: unknown;
 };
 
-function formatOrderState(state: OrderState): string {
-  return ORDER_STATE_LABELS[state] ?? state;
-}
+export type OrderProgressEmailParams = {
+  to: string;
+  order: OrderLike;
+  fromState: OrderState | null;
+  toState: OrderState;
+  fromStageKey: string;
+  toStageKey: string;
+};
 
 function getSmtpTransport() {
-  const {
-    SMTP_HOST,
-    SMTP_PORT,
-    SMTP_USERNAME,
-    SMTP_PASSWORD,
-    SMTP_FROM,
-    SMTP_FROM_NAME,
-  } = process.env;
+  const { SMTP_HOST, SMTP_PORT, SMTP_USERNAME, SMTP_PASSWORD, SMTP_FROM } = process.env;
 
   if (!SMTP_HOST || !SMTP_PORT || !SMTP_USERNAME || !SMTP_PASSWORD || !SMTP_FROM) {
     throw new Error('Missing required SMTP_* env vars');
@@ -32,7 +40,6 @@ function getSmtpTransport() {
 
   return nodemailer.createTransport({
     host: SMTP_HOST,
-    // Force SendGrid mode requested by user: 587 + STARTTLS
     port: 587,
     secure: false,
     requireTLS: true,
@@ -53,19 +60,14 @@ export async function sendOrderProgressEmail(params: OrderProgressEmailParams): 
   const SMTP_FROM_NAME = process.env.SMTP_FROM_NAME;
   if (!SMTP_FROM) throw new Error('Missing SMTP_FROM env var');
 
-  const subject = EMAIL_MESSAGES.progressSubject(params.orderNo, formatOrderState(params.toState));
-
-  const fromLine = params.fromState
-    ? EMAIL_MESSAGES.progressPreviousStateLine(formatOrderState(params.fromState))
-    : EMAIL_MESSAGES.progressCreatedLine;
-
-  const text = EMAIL_MESSAGES.progressBody({
-    customerName: params.customerName,
-    orderNo: params.orderNo,
-    toStateLabel: formatOrderState(params.toState),
-    fromLine,
-    trackingCode: params.trackingCode,
-  });
+  const ctx = await buildOrderProgressEmailContext(
+    params.order,
+    params.fromState,
+    params.toState,
+    params.fromStageKey,
+    params.toStageKey
+  );
+  const { subject, text } = await resolveOrderProgressEmailContent(params.toStageKey, ctx);
 
   const transporter = getSmtpTransport();
 
@@ -121,4 +123,3 @@ export async function sendDeliveryPickupReminderEmail(params: DeliveryPickupRemi
     text,
   });
 }
-

@@ -15,6 +15,7 @@ import { productRoutes } from './products.js';
 import { preDiagnosisRoutes } from './preDiagnosis.js';
 import { orderProgressStagesRoutes } from './orderProgressStages.js';
 import { orderMovementsRoutes } from './orderMovements.js';
+import { orderStageEmailTemplatesRoutes } from './orderStageEmailTemplates.js';
 
 const apiRouter = Router();
 
@@ -29,6 +30,7 @@ apiRouter.use('/accessories', accessoryRoutes);
 apiRouter.use('/orders', orderRoutes);
 apiRouter.use('/order-movements', orderMovementsRoutes);
 apiRouter.use('/order-progress-stages', orderProgressStagesRoutes);
+apiRouter.use('/order-stage-email-templates', orderStageEmailTemplatesRoutes);
 apiRouter.use('/services-spare-parts', servicesSparePartsRoutes);
 apiRouter.use('/spare-server', spareServerRoutes);
 apiRouter.use('/uploads', uploadsRoutes);
