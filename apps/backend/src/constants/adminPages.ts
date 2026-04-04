@@ -20,6 +20,7 @@ export const ADMIN_PAGE_PATHS: readonly string[] = [
   '/admin/spare',
   '/admin/income',
   '/admin/company',
+  '/admin/mail',
   '/admin/docs',
   '/admin/users',
   '/admin/roles',

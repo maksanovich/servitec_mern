@@ -29,6 +29,7 @@ import { AdminPlaceholder } from './pages/admin/AdminPlaceholder';
 import { ProfilePage } from './pages/admin/ProfilePage';
 
 import { CompanyPage } from './pages/admin/CompanyPage';
+import { MailConfigurationPage } from './pages/admin/MailConfigurationPage';
 import { RolePage } from './pages/admin/RolePage';
 import { UserPage } from './pages/admin/UserPage';
 
@@ -249,6 +250,14 @@ function App() {
               element={
                 <RequirePage page="/admin/company">
                   <CompanyPage />
+                </RequirePage>
+              }
+            />
+            <Route
+              path="mail"
+              element={
+                <RequirePage page="/admin/mail">
+                  <MailConfigurationPage />
                 </RequirePage>
               }
             />
