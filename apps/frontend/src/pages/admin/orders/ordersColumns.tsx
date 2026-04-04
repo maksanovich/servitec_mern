@@ -22,8 +22,6 @@ import type { OrderProgressStage } from '../../../api/orderProgressStages';
 import { priorityVariant, stateVariant, stateLabel } from './constants';
 import { downloadTechnicalReportDocx } from '../../../api/orders';
 
-const WARRANTY_READY_PICKUP_KEY = 'warranty-ready-pickup';
-
 const actionBtnClass =
   'p-1.5 rounded text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200 transition-colors';
 
@@ -508,8 +506,16 @@ function StageActionDropdown({
     codeTrimmed !== '' &&
     (((order.workflow ?? 'standard') === 'standard' &&
       currentStage != null &&
-      (currentStage.legacyArea === 'warehouse' || currentStage.legacyArea === 'delivery')) ||
-      (order.workflow === 'warranty' && (order.progressStageKey ?? '') === WARRANTY_READY_PICKUP_KEY));
+      (currentStage.legacyArea === 'warehouse' ||
+        currentStage.legacyArea === 'delivery' ||
+        currentStage.legacyArea === 'quarantine' ||
+        currentStage.legacyArea === 'abandonment')) ||
+      (order.workflow === 'warranty' &&
+        currentStage != null &&
+        (currentStage.legacyArea === 'warehouse' ||
+          currentStage.legacyArea === 'delivery' ||
+          currentStage.legacyArea === 'quarantine' ||
+          currentStage.legacyArea === 'abandonment')));
 
   function onDelete(ord: Order) {
     if (isDeleteLoading) return;

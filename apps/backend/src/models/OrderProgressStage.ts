@@ -32,7 +32,7 @@ const orderProgressStageSchema = new mongoose.Schema<IOrderProgressStage>(
     legacyArea: {
       type: String,
       required: true,
-      enum: ['entrance', 'maintenance', 'warehouse', 'delivery', 'waiting-parts'],
+      enum: ['entrance', 'maintenance', 'warehouse', 'delivery', 'quarantine', 'abandonment', 'waiting-parts'],
     },
   },
   { timestamps: true }

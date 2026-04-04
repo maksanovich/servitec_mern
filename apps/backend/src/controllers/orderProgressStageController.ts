@@ -14,6 +14,8 @@ function deriveLegacyStateFromArea(area: StageLegacyArea): OrderState {
     case 'warehouse':
       return 'warehouse';
     case 'delivery':
+    case 'quarantine':
+    case 'abandonment':
       return 'delivery';
     case 'waiting-parts':
       return 'waiting';
@@ -49,7 +51,10 @@ function toStageResponse(stage: {
     legacyState,
     budgetEditable: wf === 'standard' && stage.legacyArea === 'maintenance',
     requiresAfterRepairPhoto: stage.legacyArea === 'warehouse',
-    requiresDeliveryAdvance: stage.legacyArea === 'delivery',
+    requiresDeliveryAdvance:
+      stage.legacyArea === 'delivery' ||
+      stage.legacyArea === 'quarantine' ||
+      stage.legacyArea === 'abandonment',
   };
 }
 
@@ -260,6 +265,59 @@ export async function ensureWarrantyStages(): Promise<void> {
       await OrderProgressStage.create(row);
     }
   }
+  await ensureQuarantineAbandonmentStages();
+}
+
+/** Stages for automated quarantine / abandonment after long non-pickup (see delivery quarantine cron). */
+const QUARANTINE_ABANDONMENT_STAGES: Array<{
+  key: string;
+  label: string;
+  description: string;
+  sortOrder: number;
+  workflow: OrderProgressStageWorkflow;
+  legacyArea: StageLegacyArea;
+}> = [
+  {
+    key: 'delivery-quarantine',
+    label: 'Quarantine',
+    description: 'Equipment unclaimed; moved to quarantine after two months in delivery without pickup.',
+    sortOrder: 8,
+    workflow: 'standard',
+    legacyArea: 'quarantine',
+  },
+  {
+    key: 'delivery-abandonment',
+    label: 'Abandonment',
+    description: 'Equipment moved to abandonment storage after four months without pickup.',
+    sortOrder: 9,
+    workflow: 'standard',
+    legacyArea: 'abandonment',
+  },
+  {
+    key: 'warranty-quarantine',
+    label: 'Quarantine',
+    description: 'Equipment unclaimed; moved to quarantine after two months in delivery without pickup.',
+    sortOrder: 10,
+    workflow: 'warranty',
+    legacyArea: 'quarantine',
+  },
+  {
+    key: 'warranty-abandonment',
+    label: 'Abandonment',
+    description: 'Equipment moved to abandonment storage after four months without pickup.',
+    sortOrder: 11,
+    workflow: 'warranty',
+    legacyArea: 'abandonment',
+  },
+];
+
+export async function ensureQuarantineAbandonmentStages(): Promise<void> {
+  for (const row of QUARANTINE_ABANDONMENT_STAGES) {
+    const exists = await OrderProgressStage.findOne({ key: row.key }).lean();
+    if (!exists) {
+      await OrderProgressStage.create(row);
+    }
+  }
 }
 
 function parseWorkflowQuery(raw: unknown): OrderProgressStageWorkflow | null {
@@ -283,7 +341,15 @@ export async function getOrderProgressStagesPublic(req: Request, res: Response):
 
 function validateStageLegacyArea(raw: unknown): raw is StageLegacyArea {
   const v = String(raw ?? '').trim();
-  return ['entrance', 'maintenance', 'warehouse', 'delivery', 'waiting-parts'].includes(v);
+  return [
+    'entrance',
+    'maintenance',
+    'warehouse',
+    'delivery',
+    'quarantine',
+    'abandonment',
+    'waiting-parts',
+  ].includes(v);
 }
 
 function validateStageWorkflow(raw: unknown): raw is OrderProgressStageWorkflow {
