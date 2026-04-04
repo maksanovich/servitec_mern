@@ -25,6 +25,8 @@ const LEGACY_AREA_OPTIONS: Array<{ value: OrderArea; label: string }> = [
   { value: 'waiting-parts', label: 'Waiting for spare parts' },
   { value: 'warehouse', label: 'Warehouse' },
   { value: 'delivery', label: 'Delivery' },
+  { value: 'quarantine', label: 'Quarantine' },
+  { value: 'abandonment', label: 'Abandonment' },
 ];
 
 function legacyAreaLabel(area: OrderArea): string {

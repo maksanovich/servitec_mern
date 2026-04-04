@@ -1,4 +1,4 @@
-import { DoorOpen, Wrench, Package, Truck, Clock } from 'lucide-react';
+import { DoorOpen, Wrench, Package, Truck, Clock, ShieldAlert, Archive } from 'lucide-react';
 import type { Order, OrderArea } from './types';
 
 export const priorityVariant: Record<Order['priority'], 'neutral' | 'success' | 'warning' | 'error'> = {
@@ -33,5 +33,7 @@ export const AREA_TABS: { id: OrderArea; label: string; icon: typeof Wrench }[] 
   { id: 'maintenance', label: 'Maintenance Area', icon: Wrench },
   { id: 'warehouse', label: 'Warehouse Area', icon: Package },
   { id: 'delivery', label: 'Delivery Area', icon: Truck },
+  { id: 'quarantine', label: 'Quarantine Area', icon: ShieldAlert },
+  { id: 'abandonment', label: 'Abandonment Area', icon: Archive },
   { id: 'waiting-parts', label: 'Waiting for spare parts', icon: Clock },
 ];

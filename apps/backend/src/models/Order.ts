@@ -1,7 +1,14 @@
 import mongoose, { Document, Model } from 'mongoose';
 
 export type OrderPriority = 'low' | 'normal' | 'high' | 'urgent';
-export type OrderArea = 'entrance' | 'maintenance' | 'warehouse' | 'delivery' | 'waiting-parts';
+export type OrderArea =
+  | 'entrance'
+  | 'maintenance'
+  | 'warehouse'
+  | 'delivery'
+  | 'quarantine'
+  | 'abandonment'
+  | 'waiting-parts';
 export type OrderState = 'income' | 'maintenance' | 'warehouse' | 'delivery' | 'waiting' | 'no_solution' | 'finished';
 /** Which progress-stage pipeline applies (standard repair vs warranty). */
 export type OrderWorkflow = 'standard' | 'warranty';
@@ -78,7 +85,11 @@ const orderSchema = new mongoose.Schema<IOrder>(
     no: { type: String, required: true, trim: true },
     code: { type: String, required: true, trim: true },
     priority: { type: String, enum: ['low', 'normal', 'high', 'urgent'], default: 'normal' },
-    area: { type: String, enum: ['entrance', 'maintenance', 'warehouse', 'delivery', 'waiting-parts'], required: true },
+    area: {
+      type: String,
+      enum: ['entrance', 'maintenance', 'warehouse', 'delivery', 'quarantine', 'abandonment', 'waiting-parts'],
+      required: true,
+    },
     state: {
       type: String,
       enum: ['income', 'maintenance', 'warehouse', 'delivery', 'waiting', 'no_solution', 'finished'],

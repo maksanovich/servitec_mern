@@ -54,6 +54,36 @@ export async function recordOrderStageChange(params: {
   });
 }
 
+/** Same as {@link recordOrderStageChange} for automated jobs (no authenticated user). */
+export async function recordSystemOrderStageChange(params: {
+  orderId: string;
+  orderNo: string;
+  orderCode: string;
+  beforeStageKey: string;
+  afterStageKey: string;
+  workflow: OrderWorkflow;
+}): Promise<void> {
+  const before = String(params.beforeStageKey ?? '').trim();
+  const after = String(params.afterStageKey ?? '').trim();
+  if (before === after) return;
+  const labelMap = await labelsForKeys([before, after]);
+  const beforeLabel = before ? (labelMap.get(before) ?? before) : '—';
+  const afterLabel = after ? (labelMap.get(after) ?? after) : '—';
+  await OrderMovement.create({
+    orderId: new mongoose.Types.ObjectId(params.orderId),
+    orderNo: String(params.orderNo ?? '').trim(),
+    orderCode: String(params.orderCode ?? '').trim(),
+    orderedByUserId: '',
+    orderedByName: 'System (scheduled job)',
+    orderedByEmail: '',
+    beforeStageKey: before,
+    afterStageKey: after,
+    beforeStageLabel: beforeLabel,
+    afterStageLabel: afterLabel,
+    workflow: params.workflow,
+  });
+}
+
 /**
  * Persists one row when the assigned technician (user) changes on an order.
  */

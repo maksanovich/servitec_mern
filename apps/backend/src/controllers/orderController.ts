@@ -139,6 +139,8 @@ function deriveLegacyStateFromLegacyArea(area: OrderArea): OrderState {
     case 'warehouse':
       return 'warehouse';
     case 'delivery':
+    case 'quarantine':
+    case 'abandonment':
       return 'delivery';
     case 'waiting-parts':
       return 'waiting';

@@ -3,6 +3,8 @@ export type OrderArea =
   | 'maintenance'
   | 'warehouse'
   | 'delivery'
+  | 'quarantine'
+  | 'abandonment'
   | 'waiting-parts';
 
 export type OrderWorkflow = 'standard' | 'warranty';

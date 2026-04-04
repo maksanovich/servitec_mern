@@ -1,7 +1,14 @@
 import { apiFetch, publicApiFetch } from './client';
 
 export type OrderPriority = 'low' | 'normal' | 'high' | 'urgent';
-export type OrderArea = 'entrance' | 'maintenance' | 'warehouse' | 'delivery' | 'waiting-parts';
+export type OrderArea =
+  | 'entrance'
+  | 'maintenance'
+  | 'warehouse'
+  | 'delivery'
+  | 'quarantine'
+  | 'abandonment'
+  | 'waiting-parts';
 export type OrderState = 'income' | 'maintenance' | 'warehouse' | 'delivery' | 'waiting' | 'no_solution' | 'finished';
 export type OrderWorkflow = 'standard' | 'warranty';
 
