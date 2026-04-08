@@ -17,6 +17,7 @@ import { Product } from '../models/Product.js';
 import { User } from '../models/User.js';
 import { Company } from '../models/Company.js';
 import { sendOrderProgressEmail } from '../services/smtpService.js';
+import { sendWhatsAppTemplateMessage } from '../services/twilioWhatsAppService.js';
 import { applyBudgetLinesReplacementStockDelta } from '../services/replacementStockService.js';
 import type { AuthRequest } from '../middleware/auth.js';
 import { PRINT_ORDER_MESSAGES, STATUS_UPDATE_MESSAGES } from '../constants/messages.js';
@@ -32,6 +33,7 @@ import {
   normalizeStoredOrderPhotos,
 } from '../utils/orderPhotos.js';
 import { recordOrderStageChange, recordTechnicianAssignment } from '../services/orderMovementService.js';
+import { normalizePhoneForWhatsApp } from '../utils/whatsappPhone.js';
 
 /** Matches backend `getAssignableTechnicians` / frontend technician detection. */
 function isTechnicianRole(slug: string, roleName?: string): boolean {
@@ -346,16 +348,6 @@ function toPublicTrackResponse(o: any, ctx: StageInferenceContext = emptyStageIn
   };
 }
 
-function normalizePhoneForWhatsApp(raw: unknown): string {
-  const digits = String(raw ?? '').replace(/\D/g, '');
-  if (!digits) return '';
-  // Ecuador (+593): WhatsApp expects E.164 without leading +.
-  if (digits.startsWith('593')) return digits;
-  if (digits.startsWith('0') && digits.length >= 10) return `593${digits.slice(1)}`;
-  if (digits.length === 9 && digits.startsWith('9')) return `593${digits}`;
-  return digits;
-}
-
 function buildTrackWhatsAppLink(params: { phone: string; code: string; state: string }): string {
   const phone = normalizePhoneForWhatsApp(params.phone);
   if (!phone) return '';
@@ -364,26 +356,6 @@ function buildTrackWhatsAppLink(params: { phone: string; code: string; state: st
     state: params.state,
   });
   return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
-}
-
-function buildStatusWhatsAppLink(params: {
-  phone: string;
-  customerName: string;
-  code: string;
-  orderNo: string;
-  fromState: string;
-  toState: string;
-}): string {
-  const phone = normalizePhoneForWhatsApp(params.phone);
-  if (!phone) return '';
-  const text = STATUS_UPDATE_MESSAGES.statusWhatsAppText({
-    customerName: params.customerName,
-    orderNo: params.orderNo,
-    code: params.code,
-    fromState: params.fromState,
-    toState: params.toState,
-  });
-  return `https://web.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`;
 }
 
 function normalizeAccessories(accessories: unknown): string[] {
@@ -1126,13 +1098,20 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
     // Notify customer when the repair stage or legacy state changes.
     const progressStageChanged = progressStageKeyAfter !== progressStageKeyBefore;
     const legacyStateChanged = stateAfter !== stateBefore;
-    let statusWhatsappLink = '';
+    console.log('[Twilio WhatsApp] Trigger check (patch order):', {
+      progressStageChanged,
+      legacyStateChanged,
+    });
+    let whatsappStatus:
+      | { sent: true }
+      | { sent: false; reason: 'no_phone' | 'not_configured' | 'send_failed'; error?: string }
+      | undefined;
     if (progressStageChanged || legacyStateChanged) {
-      try {
-        const client = await Client.findOne({ clientesid: doc.clientId }).lean();
-        const phone = getClientPreferredPhone(client);
-        const to = String((client as any)?.email ?? '').trim();
-        if (to) {
+      const client = await Client.findOne({ clientesid: doc.clientId }).lean();
+      const phone = getClientPreferredPhone(client);
+      const to = String((client as any)?.email ?? '').trim();
+      if (to) {
+        try {
           await sendOrderProgressEmail({
             to,
             order: doc.toObject(),
@@ -1141,17 +1120,28 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
             fromStageKey: progressStageKeyBefore,
             toStageKey: progressStageKeyAfter,
           });
+        } catch (mailErr) {
+          console.error('Order progress email (patch) error:', mailErr);
         }
-        statusWhatsappLink = buildStatusWhatsAppLink({
-          phone,
-          customerName: String(doc.clientName ?? ''),
-          code: String(doc.code ?? ''),
-          orderNo: String(doc.no ?? ''),
-          fromState: String(stateBefore ?? ''),
-          toState: String(stateAfter ?? ''),
-        });
-      } catch (mailErr) {
-        console.error('Order progress email (patch) error:', mailErr);
+      }
+      const wa = await sendWhatsAppTemplateMessage({
+        toRawPhone: phone,
+        variables: {
+          1: String(doc.clientName ?? ''),
+          2: String(doc.no ?? ''),
+          3: String(stateBefore ?? ''),
+          4: String(stateAfter ?? ''),
+          5: String(doc.code ?? ''),
+        },
+      });
+      if (wa.ok) {
+        whatsappStatus = { sent: true };
+      } else if (wa.reason === 'no_phone') {
+        whatsappStatus = { sent: false, reason: 'no_phone' };
+      } else if (wa.reason === 'not_configured') {
+        whatsappStatus = { sent: false, reason: 'not_configured' };
+      } else {
+        whatsappStatus = { sent: false, reason: 'send_failed', error: wa.error };
       }
     }
 
@@ -1176,7 +1166,7 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
         getClientPreferredPhone(await Client.findOne({ clientesid: obj.clientId }).select('telefono1 telefono2 telefono3').lean()),
         ctx
       ),
-      whatsappLink: statusWhatsappLink,
+      whatsappStatus,
     });
   } catch (err) {
     console.error('Patch order error:', err);
