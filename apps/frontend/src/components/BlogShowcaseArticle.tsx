@@ -91,13 +91,13 @@ export function BlogShowcaseArticle({ order }: { order: OrderTrackPublic }) {
           {htmlToPlainText(order.equipmentCondition ?? '') && (
             <div>
               <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Condition</p>
-              <RichTextHtml html={order.equipmentCondition} className="text-slate-700 leading-relaxed" />
+              <RichTextHtml html={order.equipmentCondition ?? ''} className="text-slate-700 leading-relaxed" />
             </div>
           )}
           {htmlToPlainText(order.technicalReport ?? '') && (
             <div>
               <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Technical notes</p>
-              <RichTextHtml html={order.technicalReport} className="text-slate-700 leading-relaxed" />
+              <RichTextHtml html={order.technicalReport ?? ''} className="text-slate-700 leading-relaxed" />
             </div>
           )}
         </div>
