@@ -115,7 +115,7 @@ export function BlogPage() {
                         images={normalizeOrderPhotoListFromApi(order.photoBeforeRepair)}
                         emptySrc={noImageUrl}
                         alt=""
-                        imageClassName="w-full aspect-square object-contain rounded-lg bg-white border-0 max-h-none"
+                        frameClassName="relative w-full aspect-square overflow-hidden rounded-lg bg-white border-0"
                       />
                     </div>
                     <div className="rounded-xl border border-slate-100 bg-slate-50 p-2">
@@ -126,7 +126,7 @@ export function BlogPage() {
                         images={normalizeOrderPhotoListFromApi(order.photoAfterRepair)}
                         emptySrc={noImageUrl}
                         alt=""
-                        imageClassName="w-full aspect-square object-contain rounded-lg bg-white border-0 max-h-none"
+                        frameClassName="relative w-full aspect-square overflow-hidden rounded-lg bg-white border-0"
                       />
                     </div>
                   </div>

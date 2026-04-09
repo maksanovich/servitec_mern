@@ -202,7 +202,7 @@ function OrderShowcaseSection() {
                   images={normalizeOrderPhotoListFromApi(order.photoBeforeRepair)}
                   emptySrc={noImageUrl}
                   alt="Before repair"
-                  imageClassName="w-full aspect-square object-contain rounded border-0 bg-white max-h-none"
+                  frameClassName="relative w-full aspect-square overflow-hidden rounded border-0 bg-white"
                 />
               </div>
               <div className="p-2 bg-slate-50">
@@ -211,7 +211,7 @@ function OrderShowcaseSection() {
                   images={normalizeOrderPhotoListFromApi(order.photoAfterRepair)}
                   emptySrc={noImageUrl}
                   alt="After repair"
-                  imageClassName="w-full aspect-square object-contain rounded border-0 bg-white max-h-none"
+                  frameClassName="relative w-full aspect-square overflow-hidden rounded border-0 bg-white"
                 />
               </div>
             </div>

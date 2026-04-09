@@ -3,13 +3,14 @@ import {
   trackOrderByCode,
   downloadTechnicalReportDocx,
   isOrderEligibleForTechnicalReport,
+  type OrderArea,
   type OrderTrackPublic,
+  type OrderWorkflow,
 } from '../api/orders';
 import { stateLabel } from './admin/orders/constants';
 import noImageUrl from '../assets/images/noimage.png';
 import type { OrderProgressStage } from '../api/orderProgressStages';
 import { getOrderProgressStagesPublic } from '../api/orderProgressStages';
-import type { OrderWorkflow } from '../api/orders';
 import { RichTextHtml } from '../components/ui';
 import { htmlToPlainText } from '../utils/htmlPlainText';
 import { hasOrderPhotos, normalizeOrderPhotoListFromApi } from '../utils/orderPhotos';
@@ -19,7 +20,29 @@ function formatUsd(n: number): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n);
 }
 
-type TimelineStage = Pick<OrderProgressStage, 'key' | 'label' | 'description' | 'sortOrder'>;
+type TimelineStage = Pick<OrderProgressStage, 'key' | 'label' | 'description' | 'sortOrder' | 'legacyArea'>;
+
+/** Stages only used for long non-pickup; they should not appear on the public repair timeline. */
+const QUARANTINE_ABANDONMENT_AREAS: OrderArea[] = ['quarantine', 'abandonment'];
+
+const QUARANTINE_ABANDONMENT_STAGE_KEYS = new Set([
+  'delivery-quarantine',
+  'delivery-abandonment',
+  'warranty-quarantine',
+  'warranty-abandonment',
+]);
+
+function shouldHideLiveRepairProgress(order: OrderTrackPublic): boolean {
+  if (QUARANTINE_ABANDONMENT_AREAS.includes(order.area)) return true;
+  const k = order.progressStageKey;
+  return k != null && QUARANTINE_ABANDONMENT_STAGE_KEYS.has(k);
+}
+
+function repairTimelineStages(stages: TimelineStage[]): TimelineStage[] {
+  return stages.filter(
+    (s) => s.legacyArea == null || !QUARANTINE_ABANDONMENT_AREAS.includes(s.legacyArea)
+  );
+}
 
 const FALLBACK_STAGES: TimelineStage[] = [
   {
@@ -27,54 +50,69 @@ const FALLBACK_STAGES: TimelineStage[] = [
     label: 'Inbound/Receiving',
     description: 'Your equipment was received and registered by our team.',
     sortOrder: 0,
+    legacyArea: 'entrance',
   },
   {
     key: 'diagnosis',
     label: 'Diagnosis',
     description: 'Technicians are checking the issue and defining the repair plan.',
     sortOrder: 1,
+    legacyArea: 'maintenance',
   },
   {
     key: 'approval',
     label: 'Approval',
     description: 'Confirming approval for the suggested repair/parts.',
     sortOrder: 2,
+    legacyArea: 'maintenance',
   },
   {
     key: 'waiting-parts',
     label: 'Waiting for spare parts',
     description: 'We are waiting for the required spare parts to arrive.',
     sortOrder: 3,
+    legacyArea: 'waiting-parts',
   },
   {
     key: 'repair',
     label: 'Repair',
     description: 'Repair in progress and parts replacement.',
     sortOrder: 4,
+    legacyArea: 'maintenance',
   },
   {
     key: 'testing',
     label: 'Testing',
     description: 'Final testing and quality check before warehouse prep.',
     sortOrder: 5,
+    legacyArea: 'maintenance',
   },
   {
     key: 'warehouse-ready',
     label: 'Warehouse/Ready for delivery',
     description: 'The equipment is ready in the warehouse for delivery.',
     sortOrder: 6,
+    legacyArea: 'warehouse',
   },
   {
     key: 'delivery',
     label: 'Delivery',
     description: 'Your equipment is ready for pickup or already delivered.',
     sortOrder: 7,
+    legacyArea: 'delivery',
   },
 ];
 
-function getCurrentStageIndex(stageKey: string | undefined, stages: TimelineStage[]): number {
+function getCurrentStageIndex(
+  stageKey: string | undefined,
+  timelineStages: TimelineStage[],
+  order: Pick<OrderTrackPublic, 'state'>
+): number {
+  if (timelineStages.length === 0) return 0;
+  /** Picked up / closed — repair flow is complete for display purposes. */
+  if (order.state === 'finished') return timelineStages.length - 1;
   if (!stageKey) return 0;
-  const idx = stages.findIndex((s) => s.key === stageKey);
+  const idx = timelineStages.findIndex((s) => s.key === stageKey);
   return idx === -1 ? 0 : idx;
 }
 
@@ -108,7 +146,16 @@ export function TrackPage() {
         if (!mounted) return;
         setStages(
           (list ?? [])
-            .map((s) => ({ key: s.key, label: s.label, description: s.description, sortOrder: s.sortOrder } as TimelineStage))
+            .map(
+              (s) =>
+                ({
+                  key: s.key,
+                  label: s.label,
+                  description: s.description,
+                  sortOrder: s.sortOrder,
+                  legacyArea: s.legacyArea,
+                }) as TimelineStage
+            )
             .sort((a, b) => a.sortOrder - b.sortOrder)
         );
       } catch (e) {
@@ -123,8 +170,11 @@ export function TrackPage() {
     };
   }, [order?.workflow, order?.code]);
 
-  const currentStageIndex = getCurrentStageIndex(order?.progressStageKey, stages);
-  const timelineProgress = getTimelineProgress(currentStageIndex, stages.length);
+  const timelineStages = order ? repairTimelineStages(stages) : [];
+  const currentStageIndex = order
+    ? getCurrentStageIndex(order.progressStageKey, timelineStages, order)
+    : 0;
+  const timelineProgress = getTimelineProgress(currentStageIndex, timelineStages.length);
 
   const handleTrack = async (e: FormEvent) => {
     e.preventDefault();
@@ -179,35 +229,37 @@ export function TrackPage() {
 
       {order && (
         <div className="mt-8 space-y-6 border border-slate-200 rounded-xl p-6 bg-white shadow-sm">
-          <div className="rounded-lg border border-indigo-100 bg-indigo-50 px-4 py-4" aria-busy={stagesLoading}>
-            <div className="flex items-center justify-between gap-4 mb-3">
-              <p className="text-sm font-semibold text-indigo-900">Live repair progress</p>
+          {!shouldHideLiveRepairProgress(order) && (
+            <div className="rounded-lg border border-indigo-100 bg-indigo-50 px-4 py-4" aria-busy={stagesLoading}>
+              <div className="flex items-center justify-between gap-4 mb-3">
+                <p className="text-sm font-semibold text-indigo-900">Live repair progress</p>
                 <p className="text-sm font-semibold text-indigo-800">{timelineProgress}%</p>
-            </div>
-            <div className="h-2 bg-indigo-100 rounded-full overflow-hidden mb-4">
-              <div
-                className="h-full bg-indigo-600 transition-all duration-500"
+              </div>
+              <div className="h-2 bg-indigo-100 rounded-full overflow-hidden mb-4">
+                <div
+                  className="h-full bg-indigo-600 transition-all duration-500"
                   style={{ width: `${timelineProgress}%` }}
-              />
+                />
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {timelineStages.map((step, index) => {
+                  const isDone = index <= currentStageIndex;
+                  return (
+                    <div key={step.key} className="flex items-center gap-2">
+                      <span
+                        className={`h-2.5 w-2.5 rounded-full ${isDone ? 'bg-indigo-600' : 'bg-slate-300'}`}
+                        aria-hidden="true"
+                      />
+                      <span className={`text-xs font-medium ${isDone ? 'text-indigo-900' : 'text-slate-500'}`}>
+                        {step.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="mt-3 text-xs text-indigo-900">{timelineStages[currentStageIndex]?.description}</p>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {stages.map((step, index) => {
-                const isDone = index <= currentStageIndex;
-                return (
-                  <div key={step.key} className="flex items-center gap-2">
-                    <span
-                      className={`h-2.5 w-2.5 rounded-full ${isDone ? 'bg-indigo-600' : 'bg-slate-300'}`}
-                      aria-hidden="true"
-                    />
-                    <span className={`text-xs font-medium ${isDone ? 'text-indigo-900' : 'text-slate-500'}`}>
-                      {step.label}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-              <p className="mt-3 text-xs text-indigo-900">{stages[currentStageIndex]?.description}</p>
-          </div>
+          )}
 
           <div>
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Tracking code</p>
