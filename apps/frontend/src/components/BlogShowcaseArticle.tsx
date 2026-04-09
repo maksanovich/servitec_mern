@@ -72,7 +72,7 @@ export function BlogShowcaseArticle({ order }: { order: OrderTrackPublic }) {
             images={normalizeOrderPhotoListFromApi(order.photoBeforeRepair)}
             emptySrc={noImageUrl}
             alt="Before repair"
-            imageClassName="w-full aspect-square object-contain rounded-lg border border-slate-200 bg-slate-50 max-h-none"
+            frameClassName="relative w-full aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
           />
         </div>
         <div>
@@ -81,7 +81,7 @@ export function BlogShowcaseArticle({ order }: { order: OrderTrackPublic }) {
             images={normalizeOrderPhotoListFromApi(order.photoAfterRepair)}
             emptySrc={noImageUrl}
             alt="After repair"
-            imageClassName="w-full aspect-square object-contain rounded-lg border border-slate-200 bg-slate-50 max-h-none"
+            frameClassName="relative w-full aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
           />
         </div>
       </div>
