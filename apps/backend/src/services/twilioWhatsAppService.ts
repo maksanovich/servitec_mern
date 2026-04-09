@@ -65,6 +65,59 @@ function buildSafeContentVariables(
   return Object.keys(safe).length > 0 ? safe : null;
 }
 
+/** Keys defined on the Content resource (numeric or named). Cached per contentSid. */
+const contentTemplateVarKeysCache = new Map<string, string[]>();
+
+/**
+ * Fetches variable placeholder keys for this Content template. Sending keys that are not
+ * defined on the template triggers Twilio 21656 ("Content Variables parameter is invalid"),
+ * including when the template has fewer placeholders than the app supplies.
+ */
+async function fetchContentTemplateVariableKeys(
+  client: twilio.Twilio,
+  contentSid: string
+): Promise<string[] | null> {
+  if (contentTemplateVarKeysCache.has(contentSid)) {
+    return contentTemplateVarKeysCache.get(contentSid)!;
+  }
+  try {
+    const resource = await client.content.v1.contents(contentSid).fetch();
+    const vars = resource.variables;
+    const keys = !vars || typeof vars !== 'object' ? [] : Object.keys(vars);
+    contentTemplateVarKeysCache.set(contentSid, keys);
+    return keys;
+  } catch (e) {
+    console.warn(
+      '[Twilio WhatsApp] Could not fetch Content template metadata; sending variables unfiltered:',
+      e instanceof Error ? e.message : e
+    );
+    return null;
+  }
+}
+
+/**
+ * Keeps only keys that exist on the Content template. Extra keys are dropped (fixes 21656).
+ */
+function pickVariablesForTemplate(
+  vars: Record<string | number, string>,
+  templateKeys: string[] | null
+): Record<string | number, string> {
+  if (templateKeys === null) {
+    return vars;
+  }
+  const flat: Record<string, string> = {};
+  for (const [k, v] of Object.entries(vars)) {
+    flat[String(k)] = v;
+  }
+  const out: Record<string, string> = {};
+  for (const key of templateKeys) {
+    if (Object.prototype.hasOwnProperty.call(flat, key)) {
+      out[key] = flat[key];
+    }
+  }
+  return out;
+}
+
 /**
  * Sends a WhatsApp message using a Twilio Content Template (contentSid).
  * Fails soft: callers should not abort their transaction on failure.
@@ -97,28 +150,77 @@ export async function sendWhatsAppTemplateMessage(params: {
   const token = authToken()!;
   const fromRaw = whatsappFrom()!;
   const contentSid = templateSid()!;
-  const safeContentVariables = buildSafeContentVariables(params.variables);
+
+  const client = twilio(sid, token);
+  const from = formatWhatsAppAddress(fromRaw);
+  // const from = "whatsapp:+593988589163";
+  const to = formatWhatsAppAddress(digits);
+  // const to = "whatsapp:+593963632485";
+
+  const templateKeys = await fetchContentTemplateVariableKeys(client, contentSid);
+  const picked = pickVariablesForTemplate(params.variables, templateKeys);
+
+  if (
+    templateKeys &&
+    templateKeys.length > 0 &&
+    Object.keys(picked).length === 0
+  ) {
+    const hint = templateKeys.join(', ');
+    console.log(
+      '[Twilio WhatsApp] Skipped: no values for template variable keys. Template expects:',
+      hint
+    );
+    return {
+      ok: false,
+      reason: 'twilio_error',
+      error: `WhatsApp template variables (${hint}) do not match keys sent by the app (use {{1}}…{{n}} or align names).`,
+    };
+  }
+
+  if (templateKeys !== null && templateKeys.length === 0) {
+    try {
+      await client.messages.create({
+        from,
+        to,
+        contentSid,
+      });
+      return { ok: true };
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error('Twilio WhatsApp send error:', e);
+      return { ok: false, reason: 'twilio_error', error: msg };
+    }
+  }
+
+  const safeContentVariables = buildSafeContentVariables(picked);
   if (!safeContentVariables) {
     console.log('[Twilio WhatsApp] Skipped: invalid_content_variables');
     return { ok: false, reason: 'twilio_error', error: 'Invalid empty/unsafe content variables' };
   }
 
-  const client = twilio(sid, token);
-  const from = formatWhatsAppAddress(fromRaw);
-  const to = formatWhatsAppAddress(digits);
+  // const safeContentVariables = {
+  //   "1": "Emilio y Diego",
+  //   "2": "000005",
+  //   "3": "En mantenimiento",
+  //   "4": "En espera",
+  //   "5": "SVT-TEST1"
+  // };
+  
+  // Twilio API requires contentVariables as a JSON *string*, not a JS object (error 21656).
+  const contentVariablesString = JSON.stringify(safeContentVariables);
 
-  console.log('[Twilio WhatsApp] Pre-send check — receiver (to):', to);
-  console.log('[Twilio WhatsApp] Pre-send check — Account SID:', sid);
-  console.log('[Twilio WhatsApp] Pre-send check — sender (from):', from);
-  console.log('[Twilio WhatsApp] Pre-send check — contentSid:', contentSid);
-  console.log('[Twilio WhatsApp] Pre-send check — contentVariables:', safeContentVariables);
+  if (templateKeys !== null) {
+    console.log('[Twilio WhatsApp] Template variable keys:', templateKeys.join(', '));
+  }
+  console.log('[Twilio WhatsApp] Sending to:', to, 'from:', from, 'contentSid:', contentSid);
+  console.log('[Twilio WhatsApp] contentVariables:', contentVariablesString);
 
   try {
     await client.messages.create({
       from,
       to,
       contentSid,
-      contentVariables: JSON.stringify(safeContentVariables),
+      contentVariables: contentVariablesString,
     });
     return { ok: true };
   } catch (e) {
