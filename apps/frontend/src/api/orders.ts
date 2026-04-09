@@ -241,11 +241,15 @@ export async function getOrderById(
   return data;
 }
 
+export type OrderPatchWhatsAppStatus =
+  | { sent: true }
+  | { sent: false; reason: 'no_phone' | 'not_configured' | 'send_failed'; error?: string };
+
 export async function updateOrder(
   token: string | null,
   id: string,
   payload: UpdateOrderPayload
-): Promise<{ order: OrderDetail; whatsappLink?: string }> {
+): Promise<{ order: OrderDetail; whatsappStatus?: OrderPatchWhatsAppStatus }> {
   if (!token) throw new Error('Not authenticated');
   const res = await apiFetch(`/orders/${id}`, {
     method: 'PATCH',

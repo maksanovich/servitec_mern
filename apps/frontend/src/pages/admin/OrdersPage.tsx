@@ -41,7 +41,15 @@ import { OrderExpandedRow } from './orders/OrderExpandedRow';
 import { toast } from 'sonner';
 import { useAuth } from '../../contexts/AuthContext';
 import { SUPER_ADMIN_SLUG } from '../../constants/adminPages';
-import { deleteOrder, getOrders, updateOrder, getOrderById, type OrderBudgetLine, OrderWorkflow } from '../../api/orders';
+import {
+  deleteOrder,
+  getOrders,
+  updateOrder,
+  getOrderById,
+  type OrderBudgetLine,
+  type OrderPatchWhatsAppStatus,
+  OrderWorkflow,
+} from '../../api/orders';
 import { getOrderProgressStagesPublic, type OrderProgressStage } from '../../api/orderProgressStages';
 import { getServicesSpareParts, canAddCatalogItemToBudget, type ServiceSparePartItem } from '../../api/servicesSpareParts';
 import { getSpareServerCatalog, type SpareServerRow } from '../../api/spareServer';
@@ -195,18 +203,20 @@ export function OrdersPage() {
     }
   }, [token, workflowView]);
 
-  const openWhatsappUpdate = useCallback((whatsappLink?: string, targetWindow?: Window | null) => {
-    const link = String(whatsappLink ?? '').trim();
-    if (!link) {
-      if (targetWindow) targetWindow.close();
-      toast.warning('Cannot send message via WhatsApp because the client phone is not registered.');
+  const toastWhatsAppPatchStatus = useCallback((status?: OrderPatchWhatsAppStatus) => {
+    if (!status) return;
+    if (status.sent) {
+      toast.success('WhatsApp update sent to the client.');
       return;
     }
-    if (targetWindow) {
-      targetWindow.location.href = link;
+    if (status.reason === 'no_phone') {
+      toast.warning('Order updated. No client phone number for WhatsApp.');
       return;
     }
-    window.open(link, '_blank');
+    if (status.reason === 'not_configured') {
+      return;
+    }
+    toast.error(`WhatsApp delivery failed: ${status.error ?? 'Unknown error'}`);
   }, []);
 
   const handleDeleteClick = useCallback((order: Order) => {
@@ -527,8 +537,6 @@ export function OrdersPage() {
     const stage = stages.find((s) => s.key === targetKey);
     const legacyArea = stage?.legacyArea ?? 'delivery';
     const legacyState = stage?.legacyState ?? 'delivery';
-    const shouldOpenWhatsappTab = legacyState !== deliveryOrder.state;
-    const pendingWhatsappTab = shouldOpenWhatsappTab ? window.open('', '_blank') : null;
     try {
       const adv = Number.isFinite(deliveryAdvance) ? deliveryAdvance : 0;
       const resp = await updateOrder(token, deliveryOrder.id, {
@@ -537,26 +545,23 @@ export function OrdersPage() {
         state: legacyState,
         advancement: adv,
       });
-      if (shouldOpenWhatsappTab) openWhatsappUpdate(resp.whatsappLink, pendingWhatsappTab);
+      toastWhatsAppPatchStatus(resp.whatsappStatus);
       await refetchOrders();
       setDeliveryOrder(null);
       setDeliveryAdvance(0);
       setDeliveryTargetStageKey('');
     } catch (e) {
-      if (pendingWhatsappTab) pendingWhatsappTab.close();
       setDeliveryError(e instanceof Error ? e.message : 'Failed to move order');
     } finally {
       setDeliverySaving(false);
     }
-  }, [token, deliveryOrder, deliveryTargetStageKey, stages, deliveryAdvance, refetchOrders, openWhatsappUpdate]);
+  }, [token, deliveryOrder, deliveryTargetStageKey, stages, deliveryAdvance, refetchOrders, toastWhatsAppPatchStatus]);
 
   const handleMoveConfirm = useCallback(async () => {
     if (!token || !moveConfirm) return;
     const toStage = stages.find((s) => s.key === moveConfirm.toStageKey);
     if (!toStage) return;
 
-    const shouldOpenWhatsappTab = toStage.legacyState !== moveConfirm.order.state;
-    const pendingWhatsappTab = shouldOpenWhatsappTab ? window.open('', '_blank') : null;
     setMoveLoading(true);
     setMoveError(null);
 
@@ -566,16 +571,15 @@ export function OrdersPage() {
         area: toStage.legacyArea,
         state: toStage.legacyState,
       });
-      if (shouldOpenWhatsappTab) openWhatsappUpdate(resp.whatsappLink, pendingWhatsappTab);
+      toastWhatsAppPatchStatus(resp.whatsappStatus);
       await refetchOrders();
       setMoveConfirm(null);
     } catch (e) {
-      if (pendingWhatsappTab) pendingWhatsappTab.close();
       setMoveError(e instanceof Error ? e.message : 'Failed to move order');
     } finally {
       setMoveLoading(false);
     }
-  }, [token, moveConfirm, stages, refetchOrders, openWhatsappUpdate]);
+  }, [token, moveConfirm, stages, refetchOrders, toastWhatsAppPatchStatus]);
 
   const handleMoveCancel = useCallback(() => {
     if (moveLoading) return;
@@ -670,8 +674,6 @@ export function OrdersPage() {
     const stage = stages.find((s) => s.key === warehouseTargetStageKey);
     const legacyArea = stage?.legacyArea ?? 'warehouse';
     const legacyState = stage?.legacyState ?? 'warehouse';
-    const shouldOpenWhatsappTab = legacyState !== warehouseMoveOrder.state;
-    const pendingWhatsappTab = shouldOpenWhatsappTab ? window.open('', '_blank') : null;
     setWarehouseSaving(true);
     setWarehousePhotoError(null);
     try {
@@ -696,7 +698,7 @@ export function OrdersPage() {
         state: legacyState,
         photoAfterRepair: photoUrls,
       });
-      if (shouldOpenWhatsappTab) openWhatsappUpdate(resp.whatsappLink, pendingWhatsappTab);
+      toastWhatsAppPatchStatus(resp.whatsappStatus);
       await refetchOrders();
       setWarehouseMoveOrder(null);
       setWarehouseTargetStageKey('');
@@ -704,12 +706,11 @@ export function OrdersPage() {
       setWarehousePhotoError(null);
       if (warehousePhotoInputRef.current) warehousePhotoInputRef.current.value = '';
     } catch (e) {
-      if (pendingWhatsappTab) pendingWhatsappTab.close();
       setWarehousePhotoError(e instanceof Error ? e.message : 'Failed to move order');
     } finally {
       setWarehouseSaving(false);
     }
-  }, [token, warehouseMoveOrder, warehouseTargetStageKey, warehouseAfterItems, stages, refetchOrders, openWhatsappUpdate]);
+  }, [token, warehouseMoveOrder, warehouseTargetStageKey, warehouseAfterItems, stages, refetchOrders, toastWhatsAppPatchStatus]);
 
   const sortedStagesForTabs = useMemo(
     () => [...stages].sort((a, b) => a.sortOrder - b.sortOrder),
