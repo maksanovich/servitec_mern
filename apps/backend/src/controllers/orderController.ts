@@ -20,7 +20,7 @@ import { sendOrderProgressEmail } from '../services/smtpService.js';
 import { sendWhatsAppTemplateMessage } from '../services/twilioWhatsAppService.js';
 import { applyBudgetLinesReplacementStockDelta } from '../services/replacementStockService.js';
 import type { AuthRequest } from '../middleware/auth.js';
-import { PRINT_ORDER_MESSAGES, STATUS_UPDATE_MESSAGES } from '../constants/messages.js';
+import { ORDER_STATE_LABELS, PRINT_ORDER_MESSAGES, STATUS_UPDATE_MESSAGES } from '../constants/messages.js';
 import { ensureWarrantyStages, seedDefaultStagesIfEmpty } from './orderProgressStageController.js';
 import {
   buildTechnicalReportDocxBuffer,
@@ -353,7 +353,7 @@ function buildTrackWhatsAppLink(params: { phone: string; code: string; state: st
   if (!phone) return '';
   const text = STATUS_UPDATE_MESSAGES.trackWhatsAppText({
     code: params.code,
-    state: params.state,
+    state: ORDER_STATE_LABELS[params.state as OrderState] ?? params.state,
   });
   return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
 }
@@ -1129,8 +1129,8 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
         variables: {
           1: String(doc.clientName ?? ''),
           2: String(doc.no ?? ''),
-          3: String(stateBefore ?? ''),
-          4: String(stateAfter ?? ''),
+          3: ORDER_STATE_LABELS[stateBefore] ?? String(stateBefore ?? ''),
+          4: ORDER_STATE_LABELS[stateAfter] ?? String(stateAfter ?? ''),
           5: String(doc.code ?? ''),
         },
       });
