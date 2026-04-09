@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
-import { getOrderShowcaseByCode } from '../api/orders';
-import type { OrderShowcaseItem } from '../api/orders';
+import { trackOrderByCode } from '../api/orders';
+import type { OrderTrackPublic } from '../api/orders';
 import { BlogShowcaseArticle } from '../components/BlogShowcaseArticle';
 
 export function BlogPostPage() {
   const { code } = useParams<{ code: string }>();
-  const [order, setOrder] = useState<OrderShowcaseItem | null | undefined>(undefined);
+  const [order, setOrder] = useState<OrderTrackPublic | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -18,7 +18,7 @@ export function BlogPostPage() {
     let cancelled = false;
     setOrder(undefined);
     setError(null);
-    getOrderShowcaseByCode(code)
+    trackOrderByCode(code)
       .then((r) => {
         if (!cancelled) setOrder(r?.order ?? null);
       })
