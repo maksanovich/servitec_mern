@@ -19,13 +19,13 @@ export const stateVariant: Record<Order['state'], 'success' | 'info' | 'warning'
 };
 
 export const stateLabel: Record<Order['state'], string> = {
-  income: 'Income',
-  maintenance: 'Maintenance',
-  warehouse: 'Warehouse',
-  delivery: 'Delivery',
-  waiting: 'Waiting for spare part',
-  no_solution: 'No Solution',
-  finished: 'Finished',
+  income: 'En recepcion',
+  maintenance: 'En mantenimiento',
+  warehouse: 'En almacen',
+  delivery: 'En entrega',
+  waiting: 'En espera de repuesto',
+  no_solution: 'Sin solucion',
+  finished: 'Finalizado',
 };
 
 export const AREA_TABS: { id: OrderArea; label: string; icon: typeof Wrench }[] = [

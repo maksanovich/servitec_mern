@@ -77,7 +77,7 @@ export const EMAIL_MESSAGES = {
 
 export const STATUS_UPDATE_MESSAGES = {
   trackWhatsAppText: (params: { code: string; state: string }) =>
-    `Hello Servitec! I want an update for my repair.\nCode: ${params.code}\nCurrent status: ${params.state}`,
+    `Hola Servitec. Quiero una actualización de mi reparación.\nCódigo: ${params.code}\nEstado actual: ${params.state}`,
   statusWhatsAppText: (params: {
     customerName: string;
     orderNo: string;
@@ -85,8 +85,8 @@ export const STATUS_UPDATE_MESSAGES = {
     fromState: string;
     toState: string;
   }) =>
-    `Hello ${params.customerName || 'client'}, your service order has been updated.\n` +
-    `Order No: ${params.orderNo}\n` +
-    `Tracking code: ${params.code}\n` +
-    `Status: ${params.fromState} -> ${params.toState}`,
+    `Hola ${params.customerName || 'cliente'}, su orden de servicio fue actualizada.\n` +
+    `N.° de orden: ${params.orderNo}\n` +
+    `Código de seguimiento: ${params.code}\n` +
+    `Estado: ${params.fromState} -> ${params.toState}`,
 };
