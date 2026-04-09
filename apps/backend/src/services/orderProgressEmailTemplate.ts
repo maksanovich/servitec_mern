@@ -4,6 +4,7 @@ import { Company } from '../models/Company.js';
 import { User } from '../models/User.js';
 import { OrderProgressStage } from '../models/OrderProgressStage.js';
 import { EMAIL_MESSAGES, ORDER_STATE_LABELS } from '../constants/messages.js';
+import { htmlToPlainText } from '../utils/htmlPlainText.js';
 
 export const ORDER_EMAIL_PLACEHOLDERS = [
   { key: 'customer_name', description: 'Customer display name' },
@@ -59,13 +60,16 @@ function formatMoneyEs(n: number): string {
 
 export function buildOrderEmailPlaceholderMap(ctx: OrderProgressEmailContext): Record<string, string> {
   const deviceModel = [ctx.brand, ctx.model, ctx.series].filter(Boolean).join(' ').trim();
-  const problemDescription = [ctx.equipmentCondition, ctx.technicalReport].filter(Boolean).join('\n').trim();
+  const problemDescriptor = htmlToPlainText(ctx.type);
+  const problemDescription = htmlToPlainText(
+    [ctx.equipmentCondition, ctx.technicalReport].filter(Boolean).join('\n').trim()
+  );
   return {
     customer_name: ctx.customerName,
     order_number: ctx.orderNo,
     tracking_code: ctx.trackingCode,
     device_model: deviceModel,
-    problem_descriptor: ctx.type,
+    problem_descriptor: problemDescriptor,
     problem_description: problemDescription,
     estimated_cost: formatMoneyEs(ctx.total),
     technician_name: ctx.technicianName,
