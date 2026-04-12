@@ -22,7 +22,7 @@ export function Pagination({
   return (
     <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-sm">
       <span>
-        Showing records {recordsFrom} to {recordsTo} out of {totalRecords} records
+        Registros {recordsFrom} a {recordsTo} de {totalRecords}
       </span>
       <div className="flex gap-2">
         <Button
@@ -31,7 +31,7 @@ export function Pagination({
           onClick={onPrevious}
           disabled={page <= 1}
         >
-          Previous
+          Anterior
         </Button>
         <Button
           variant="ghost"
@@ -39,7 +39,7 @@ export function Pagination({
           onClick={onNext}
           disabled={page >= totalPages}
         >
-          Next
+          Siguiente
         </Button>
       </div>
     </div>

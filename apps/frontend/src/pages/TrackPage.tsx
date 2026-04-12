@@ -17,7 +17,7 @@ import { hasOrderPhotos, normalizeOrderPhotoListFromApi } from '../utils/orderPh
 import { OrderPhotoSlider } from '../components/OrderPhotoSlider';
 
 function formatUsd(n: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n);
+  return new Intl.NumberFormat('es', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n);
 }
 
 type TimelineStage = Pick<OrderProgressStage, 'key' | 'label' | 'description' | 'sortOrder' | 'legacyArea'>;
@@ -47,57 +47,57 @@ function repairTimelineStages(stages: TimelineStage[]): TimelineStage[] {
 const FALLBACK_STAGES: TimelineStage[] = [
   {
     key: 'inbound-receiving',
-    label: 'Inbound/Receiving',
-    description: 'Your equipment was received and registered by our team.',
+    label: 'Recepción',
+    description: 'Su equipo fue recibido y registrado por nuestro equipo.',
     sortOrder: 0,
     legacyArea: 'entrance',
   },
   {
     key: 'diagnosis',
-    label: 'Diagnosis',
-    description: 'Technicians are checking the issue and defining the repair plan.',
+    label: 'Diagnóstico',
+    description: 'Los técnicos revisan la avería y definen el plan de reparación.',
     sortOrder: 1,
     legacyArea: 'maintenance',
   },
   {
     key: 'approval',
-    label: 'Approval',
-    description: 'Confirming approval for the suggested repair/parts.',
+    label: 'Aprobación',
+    description: 'Confirmación de la reparación o repuestos propuestos.',
     sortOrder: 2,
     legacyArea: 'maintenance',
   },
   {
     key: 'waiting-parts',
-    label: 'Waiting for spare parts',
-    description: 'We are waiting for the required spare parts to arrive.',
+    label: 'Espera de repuestos',
+    description: 'Estamos a la espera de los repuestos necesarios.',
     sortOrder: 3,
     legacyArea: 'waiting-parts',
   },
   {
     key: 'repair',
-    label: 'Repair',
-    description: 'Repair in progress and parts replacement.',
+    label: 'Reparación',
+    description: 'Reparación en curso y sustitución de piezas.',
     sortOrder: 4,
     legacyArea: 'maintenance',
   },
   {
     key: 'testing',
-    label: 'Testing',
-    description: 'Final testing and quality check before warehouse prep.',
+    label: 'Pruebas',
+    description: 'Pruebas finales y control de calidad antes de almacén.',
     sortOrder: 5,
     legacyArea: 'maintenance',
   },
   {
     key: 'warehouse-ready',
-    label: 'Warehouse/Ready for delivery',
-    description: 'The equipment is ready in the warehouse for delivery.',
+    label: 'Almacén / Listo para entrega',
+    description: 'El equipo está listo en almacén para su entrega.',
     sortOrder: 6,
     legacyArea: 'warehouse',
   },
   {
     key: 'delivery',
-    label: 'Delivery',
-    description: 'Your equipment is ready for pickup or already delivered.',
+    label: 'Entrega',
+    description: 'Su equipo está listo para retiro o ya fue entregado.',
     sortOrder: 7,
     legacyArea: 'delivery',
   },
@@ -188,7 +188,7 @@ export function TrackPage() {
       const { order: o } = await trackOrderByCode(code);
       setOrder(o);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Order not found');
+      setError(err instanceof Error ? err.message : 'Pedido no encontrado');
     } finally {
       setLoading(false);
     }
@@ -197,17 +197,17 @@ export function TrackPage() {
   return (
     <div className="max-w-[640px]">
       <h1 className="text-[1.75rem] font-bold tracking-tight mb-2 text-slate-900">
-        Track Your Order
+        Seguimiento de su pedido
       </h1>
       <p className="text-base text-slate-500 mb-6">
-        Enter your tracking code (same code we gave you when the equipment was received) to see status and photos.
+        Ingrese su código de seguimiento (el mismo que le dimos al recibir el equipo) para ver el estado y las fotos.
       </p>
       <form onSubmit={handleTrack} className="flex gap-3 flex-wrap">
         <input
           type="text"
           value={trackNumber}
           onChange={(e) => setTrackNumber(e.target.value)}
-          placeholder="Tracking code"
+          placeholder="Código de seguimiento"
           disabled={loading}
           autoComplete="off"
           className="flex-1 min-w-[200px] px-4 py-3 border border-slate-200 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent"
@@ -217,7 +217,7 @@ export function TrackPage() {
           disabled={loading}
           className="px-6 py-3 bg-[var(--color-accent)] text-white border-none rounded-lg font-semibold hover:bg-[var(--color-accent-hover)] transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
         >
-          {loading ? 'Searching...' : 'Track'}
+          {loading ? 'Buscando...' : 'Seguir'}
         </button>
       </form>
 
@@ -232,7 +232,7 @@ export function TrackPage() {
           {!shouldHideLiveRepairProgress(order) && (
             <div className="rounded-lg border border-indigo-100 bg-indigo-50 px-4 py-4" aria-busy={stagesLoading}>
               <div className="flex items-center justify-between gap-4 mb-3">
-                <p className="text-sm font-semibold text-indigo-900">Live repair progress</p>
+                <p className="text-sm font-semibold text-indigo-900">Avance de la reparación</p>
                 <p className="text-sm font-semibold text-indigo-800">{timelineProgress}%</p>
               </div>
               <div className="h-2 bg-indigo-100 rounded-full overflow-hidden mb-4">
@@ -262,35 +262,35 @@ export function TrackPage() {
           )}
 
           <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Tracking code</p>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Código de seguimiento</p>
             <p className="text-lg font-mono font-semibold text-slate-900">{order.code}</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div className="sm:col-span-2">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Estado</p>
               <p className="font-medium text-slate-900">
                 {stages.find((s) => s.key === order.progressStageKey)?.label ?? stateLabel[order.state]}
               </p>
             </div>
             <div className="sm:col-span-2">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Equipment</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Equipo</p>
               <p className="font-medium text-slate-900">
                 {order.brand} / {order.model} — {order.series}
               </p>
             </div>
             {order.createdAt && (
               <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Received</p>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Recibido</p>
                 <p className="font-medium text-slate-900">
-                  {new Date(order.createdAt).toLocaleString()}
+                  {new Date(order.createdAt).toLocaleString('es')}
                 </p>
               </div>
             )}
             {order.warranty !== undefined && (
               <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Warranty</p>
-                <p className="font-medium text-slate-900">{order.warranty ? 'Included' : 'No warranty'}</p>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Garantía</p>
+                <p className="font-medium text-slate-900">{order.warranty ? 'Incluida' : 'Sin garantía'}</p>
               </div>
             )}
           </div>
@@ -299,17 +299,17 @@ export function TrackPage() {
             <div className="border-t border-slate-200 pt-6 space-y-5">
               {order.budgetLines && order.budgetLines.length > 0 && (
                 <div>
-                  <p className="text-sm font-semibold text-slate-800 mb-3">Products & services used</p>
+                  <p className="text-sm font-semibold text-slate-800 mb-3">Productos y servicios aplicados</p>
                   <p className="text-xs text-slate-500 mb-3">
-                    Items recorded for this technical service and their prices.
+                    Conceptos registrados en este servicio técnico y sus precios.
                   </p>
                   <div className="overflow-x-auto rounded-lg border border-slate-200">
                     <table className="w-full text-sm text-left">
                       <thead>
                         <tr className="bg-slate-50 border-b border-slate-200">
-                          <th className="px-3 py-2 font-semibold text-slate-700">Product / service</th>
-                          <th className="px-3 py-2 font-semibold text-slate-700 text-right whitespace-nowrap">Unit price</th>
-                          <th className="px-3 py-2 font-semibold text-slate-700 text-right whitespace-nowrap">Qty</th>
+                          <th className="px-3 py-2 font-semibold text-slate-700">Producto / servicio</th>
+                          <th className="px-3 py-2 font-semibold text-slate-700 text-right whitespace-nowrap">Precio unit.</th>
+                          <th className="px-3 py-2 font-semibold text-slate-700 text-right whitespace-nowrap">Cant.</th>
                           <th className="px-3 py-2 font-semibold text-slate-700 text-right whitespace-nowrap">Subtotal</th>
                         </tr>
                       </thead>
@@ -347,9 +347,9 @@ export function TrackPage() {
                   order.salesContact.email?.trim() ||
                   order.salesContact.companyName?.trim()) && (
                   <div>
-                    <p className="text-sm font-semibold text-slate-800 mb-2">Sales contact</p>
+                    <p className="text-sm font-semibold text-slate-800 mb-2">Contacto de ventas</p>
                     <p className="text-xs text-slate-500 mb-3">
-                      For questions about this bill or spare parts, reach our sales team.
+                      Para consultas sobre esta factura o repuestos, contacte a nuestro equipo de ventas.
                     </p>
                     <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm space-y-2">
                       {order.salesContact.companyName?.trim() && (
@@ -357,7 +357,7 @@ export function TrackPage() {
                       )}
                       {order.salesContact.phone?.trim() && (
                         <p className="text-slate-800">
-                          <span className="text-slate-500 mr-2">Phone</span>
+                          <span className="text-slate-500 mr-2">Teléfono</span>
                           <a
                             href={`tel:${order.salesContact.phone.replace(/\s/g, '')}`}
                             className="font-medium text-indigo-700 hover:underline"
@@ -368,7 +368,7 @@ export function TrackPage() {
                       )}
                       {order.salesContact.email?.trim() && (
                         <p className="text-slate-800">
-                          <span className="text-slate-500 mr-2">Email</span>
+                          <span className="text-slate-500 mr-2">Correo</span>
                           <a
                             href={`mailto:${order.salesContact.email.trim()}`}
                             className="font-medium text-indigo-700 hover:underline break-all"
@@ -385,7 +385,7 @@ export function TrackPage() {
 
           {isOrderEligibleForTechnicalReport(order) && (
             <div className="border-t border-slate-200 pt-6">
-              <p className="text-sm font-semibold text-slate-800 mb-2">Technical report</p>
+              <p className="text-sm font-semibold text-slate-800 mb-2">Informe técnico</p>
               <button
                 type="button"
                 disabled={reportLoading}
@@ -395,14 +395,14 @@ export function TrackPage() {
                   try {
                     await downloadTechnicalReportDocx(order.code);
                   } catch (err) {
-                    setReportError(err instanceof Error ? err.message : 'Download failed');
+                    setReportError(err instanceof Error ? err.message : 'Error al descargar');
                   } finally {
                     setReportLoading(false);
                   }
                 }}
                 className="inline-flex items-center px-4 py-2.5 rounded-lg bg-slate-900 text-white font-semibold hover:bg-slate-800 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                {reportLoading ? 'Preparing…' : 'Download technical report (.docx)'}
+                {reportLoading ? 'Preparando…' : 'Descargar informe técnico (.docx)'}
               </button>
               {reportError && (
                 <p className="mt-2 text-sm text-red-600" role="alert">
@@ -413,22 +413,24 @@ export function TrackPage() {
           )}
 
           <div className="border-t border-slate-200 pt-6">
-            <p className="text-sm font-semibold text-slate-800 mb-3">Repair Trust Card</p>
+            <p className="text-sm font-semibold text-slate-800 mb-3">Tarjeta de confianza</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">Parts quality</p>
-                <p className="font-medium text-slate-900">Verified by Servitec</p>
+                <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">Calidad de piezas</p>
+                <p className="font-medium text-slate-900">Verificado por Servitec</p>
               </div>
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">Quality checklist</p>
+                <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">Lista de calidad</p>
                 <p className="font-medium text-slate-900">
-                  {order.state === 'finished' || order.state === 'delivery' ? 'Final test passed' : 'In progress'}
+                  {order.state === 'finished' || order.state === 'delivery' ? 'Prueba final aprobada' : 'En curso'}
                 </p>
               </div>
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">Photo evidence</p>
+                <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">Evidencia fotográfica</p>
                 <p className="font-medium text-slate-900">
-                  {hasOrderPhotos(order.photoAfterRepair) ? 'Before & after available' : 'Before photo available'}
+                  {hasOrderPhotos(order.photoAfterRepair)
+                    ? 'Antes y después disponibles'
+                    : 'Foto del antes disponible'}
                 </p>
               </div>
             </div>
@@ -442,24 +444,24 @@ export function TrackPage() {
                 rel="noreferrer"
                 className="inline-flex items-center px-4 py-2.5 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition-colors"
               >
-                Request status update on WhatsApp
+                Solicitar actualización por WhatsApp
               </a>
             </div>
           )}
 
           {(htmlToPlainText(order.equipmentCondition ?? '') || htmlToPlainText(order.technicalReport ?? '')) && (
             <div className="border-t border-slate-200 pt-6">
-              <p className="text-sm font-semibold text-slate-800 mb-3">Technical Notes</p>
+              <p className="text-sm font-semibold text-slate-800 mb-3">Notas técnicas</p>
               <div className="space-y-4 text-sm text-slate-900">
                 {htmlToPlainText(order.equipmentCondition ?? '') && (
                   <div>
-                    <p className="font-medium text-slate-900 mb-1">Condition</p>
+                    <p className="font-medium text-slate-900 mb-1">Condición</p>
                     <RichTextHtml html={order.equipmentCondition ?? ''} className="text-slate-900" />
                   </div>
                 )}
                 {htmlToPlainText(order.technicalReport ?? '') && (
                   <div>
-                    <p className="font-medium text-slate-900 mb-1">Report</p>
+                    <p className="font-medium text-slate-900 mb-1">Informe</p>
                     <RichTextHtml html={order.technicalReport ?? ''} className="text-slate-900" />
                   </div>
                 )}
@@ -468,22 +470,22 @@ export function TrackPage() {
           )}
 
           <div className="border-t border-slate-200 pt-6">
-            <p className="text-sm font-semibold text-slate-800 mb-3">Photos</p>
+            <p className="text-sm font-semibold text-slate-800 mb-3">Fotos</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
-                <p className="text-xs text-slate-500 mb-2">Before repair</p>
+                <p className="text-xs text-slate-500 mb-2">Antes de la reparación</p>
                 <OrderPhotoSlider
                   images={normalizeOrderPhotoListFromApi(order.photoBeforeRepair)}
                   emptySrc={noImageUrl}
-                  alt="Equipment before repair"
+                  alt="Equipo antes de la reparación"
                 />
               </div>
               <div>
-                <p className="text-xs text-slate-500 mb-2">After repair</p>
+                <p className="text-xs text-slate-500 mb-2">Después de la reparación</p>
                 <OrderPhotoSlider
                   images={normalizeOrderPhotoListFromApi(order.photoAfterRepair)}
                   emptySrc={noImageUrl}
-                  alt="Equipment after repair"
+                  alt="Equipo después de la reparación"
                 />
               </div>
             </div>

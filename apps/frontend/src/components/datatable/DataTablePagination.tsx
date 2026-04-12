@@ -28,7 +28,7 @@ export function DataTablePagination({
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 w-full px-5 mt-4">
       <div className="text-sm text-slate-600 dark:text-slate-400">
-        Showing {start} to {end} of {rowCount} Entries
+        {start}–{end} de {rowCount} registros
       </div>
       <div className="flex items-center gap-1">
         <button
@@ -36,7 +36,7 @@ export function DataTablePagination({
           onClick={() => onChangePage(1, rowCount)}
           disabled={currentPage <= 1}
           className="p-1.5 rounded text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-50 disabled:pointer-events-none"
-          aria-label="First page"
+          aria-label="Primera página"
         >
           <ChevronsLeft className="size-4" />
         </button>
@@ -45,7 +45,7 @@ export function DataTablePagination({
           onClick={() => onChangePage(currentPage - 1, rowCount)}
           disabled={currentPage <= 1}
           className="p-1.5 rounded text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-50 disabled:pointer-events-none"
-          aria-label="Previous page"
+          aria-label="Página anterior"
         >
           <ChevronLeft className="size-4" />
         </button>
@@ -68,7 +68,7 @@ export function DataTablePagination({
           onClick={() => onChangePage(currentPage + 1, rowCount)}
           disabled={currentPage >= totalPages}
           className="p-1.5 rounded text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-50 disabled:pointer-events-none"
-          aria-label="Next page"
+          aria-label="Página siguiente"
         >
           <ChevronRight className="size-4" />
         </button>
@@ -77,7 +77,7 @@ export function DataTablePagination({
           onClick={() => onChangePage(totalPages, rowCount)}
           disabled={currentPage >= totalPages}
           className="p-1.5 rounded text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 disabled:opacity-50 disabled:pointer-events-none"
-          aria-label="Last page"
+          aria-label="Última página"
         >
           <ChevronsRight className="size-4" />
         </button>

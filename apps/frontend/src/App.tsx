@@ -93,7 +93,7 @@ function App() {
               path="config"
               element={
                 <RequirePage page="/admin">
-                  <AdminPlaceholder title="Configuration" />
+                  <AdminPlaceholder title="Configuración" />
                 </RequirePage>
               }
             />
@@ -101,7 +101,7 @@ function App() {
               path="activity"
               element={
                 <RequirePage page="/admin">
-                  <AdminPlaceholder title="Activity" />
+                  <AdminPlaceholder title="Actividad" />
                 </RequirePage>
               }
             />
@@ -169,7 +169,7 @@ function App() {
               path="brand/new"
               element={
                 <RequirePage page="/admin/brand">
-                  <AdminPlaceholder title="New Brand" />
+                  <AdminPlaceholder title="Nueva marca" />
                 </RequirePage>
               }
             />
@@ -185,7 +185,7 @@ function App() {
               path="model/new"
               element={
                 <RequirePage page="/admin/models">
-                  <AdminPlaceholder title="New Model" />
+                  <AdminPlaceholder title="Nuevo modelo" />
                 </RequirePage>
               }
             />
@@ -201,7 +201,7 @@ function App() {
               path="accessories/new"
               element={
                 <RequirePage page="/admin/accessories">
-                  <AdminPlaceholder title="New Accessory" />
+                  <AdminPlaceholder title="Nuevo accesorio" />
                 </RequirePage>
               }
             />
@@ -281,7 +281,7 @@ function App() {
               path="docs"
               element={
                 <RequirePage page="/admin/docs">
-                  <AdminPlaceholder title="Documentation" />
+                  <AdminPlaceholder title="Documentación" />
                 </RequirePage>
               }
             />

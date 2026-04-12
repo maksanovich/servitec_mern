@@ -80,13 +80,13 @@ function isNavItemActive(path: string, pathname: string): boolean {
 function formatRelativeTime(ts: number): string {
   const diff = Date.now() - ts;
   const seconds = Math.floor(diff / 1000);
-  if (seconds < 45) return 'Just now';
+  if (seconds < 45) return 'Ahora';
   const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 60) return `Hace ${minutes} min`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return `Hace ${hours} h`;
   const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  return `Hace ${days} d`;
 }
 
 function HeaderUserAvatar({
@@ -105,7 +105,7 @@ function HeaderUserAvatar({
   }, [avatar]);
 
   const url = !failed && resolved ? resolved : noImageUrl;
-  const label = (name || email || 'User').trim() || 'User';
+  const label = (name || email || 'Usuario').trim() || 'Usuario';
 
   return (
     <img
@@ -120,52 +120,52 @@ function HeaderUserAvatar({
 const navGroups: NavGroup[] = [
   {
     label: null,
-    items: [{ path: '/admin', label: 'Dashboard', icon: LayoutDashboard }],
+    items: [{ path: '/admin', label: 'Panel', icon: LayoutDashboard }],
   },
   {
-    label: 'Operations',
+    label: 'Operaciones',
     items: [
-      { path: '/admin/order', label: 'Orders', icon: Wrench },
+      { path: '/admin/order', label: 'Pedidos', icon: Wrench },
       {
         path: '/admin/order/movements',
-        label: 'Order movements',
+        label: 'Movimientos de pedidos',
         icon: History,
         accessPath: '/admin/order',
         visibleOnlyFor: [SUPER_ADMIN_SLUG, ADMIN_SLUG],
       },
-      { path: '/admin/pre-diagnosis', label: 'Pre-Diagnosis', icon: Stethoscope },
+      { path: '/admin/pre-diagnosis', label: 'Pre-diagnóstico', icon: Stethoscope },
     ],
   },
   {
-    label: 'Workshop Setup',
+    label: 'Taller',
     items: [
-      { path: '/admin/clients', label: 'Clients', icon: UserCircle },
-      { path: '/admin/brand', label: 'Brand', icon: Tag },
-      { path: '/admin/models', label: 'Models', icon: Cpu },
-      { path: '/admin/accessories', label: 'Accessories', icon: Layers },
-      { path: '/admin/products', label: 'Products', icon: ShoppingBag },
+      { path: '/admin/clients', label: 'Clientes', icon: UserCircle },
+      { path: '/admin/brand', label: 'Marcas', icon: Tag },
+      { path: '/admin/models', label: 'Modelos', icon: Cpu },
+      { path: '/admin/accessories', label: 'Accesorios', icon: Layers },
+      { path: '/admin/products', label: 'Productos', icon: ShoppingBag },
     ],
   },
   {
-    label: 'Catalog & Finance',
+    label: 'Catálogo y finanzas',
     items: [
-      { path: '/admin/services', label: 'Services', icon: Package },
-      { path: '/admin/spare', label: 'Spare Parts', icon: Boxes },
-      { path: '/admin/income', label: 'Income', icon: DollarSign },
+      { path: '/admin/services', label: 'Servicios', icon: Package },
+      { path: '/admin/spare', label: 'Repuestos', icon: Boxes },
+      { path: '/admin/income', label: 'Ingresos', icon: DollarSign },
     ],
   },
   {
-    label: 'System',
+    label: 'Sistema',
     items: [
-      { path: '/admin/company', label: 'Company', icon: Building2 },
-      { path: '/admin/mail', label: 'Mail', icon: Mail },
-      { path: '/admin/users', label: 'Users', icon: Users },
+      { path: '/admin/company', label: 'Empresa', icon: Building2 },
+      { path: '/admin/mail', label: 'Correo', icon: Mail },
+      { path: '/admin/users', label: 'Usuarios', icon: Users },
       { path: '/admin/roles', label: 'Roles', icon: Shield },
     ],
   },
   {
     label: null,
-    items: [{ path: '/admin/docs', label: 'Documentation', icon: FileQuestion }],
+    items: [{ path: '/admin/docs', label: 'Documentación', icon: FileQuestion }],
   },
 ];
 
@@ -277,7 +277,7 @@ export function AdminLayout() {
                 company?.logo?.trim() ||
                 (sidebarCollapsed ? headerLogoUrl : logoUrl)
               }
-              alt={company?.companyName || 'Company'}
+              alt={company?.companyName || 'Empresa'}
               className={
                 sidebarCollapsed
                   ? 'h-10 w-10 object-contain'
@@ -340,7 +340,7 @@ export function AdminLayout() {
               <Menu className="w-5 h-5" />
             </button>
             <div className="flex-1 max-w-xl">
-              <Input leftIcon={Search} placeholder="Write something..." />
+              <Input leftIcon={Search} placeholder="Buscar..." />
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -359,7 +359,7 @@ export function AdminLayout() {
                 setAppsPanelOpen((prev) => !prev);
               }}
               className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-              aria-label="Apps"
+              aria-label="Aplicaciones"
               aria-expanded={appsPanelOpen}
               aria-controls="apps-panel"
             >
@@ -373,7 +373,7 @@ export function AdminLayout() {
                   setNotificationsOpen((prev) => !prev);
                 }}
                 className="relative p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                aria-label="Notifications"
+                aria-label="Notificaciones"
                 aria-expanded={notificationsOpen}
                 aria-haspopup="dialog"
               >
@@ -387,16 +387,16 @@ export function AdminLayout() {
               {notificationsOpen && (
                 <div
                   role="dialog"
-                  aria-label="Notifications"
+                  aria-label="Notificaciones"
                   className="absolute right-0 top-full mt-2 w-[min(100vw-2rem,22rem)] max-h-[min(28rem,calc(100vh-5rem))] flex flex-col bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-xl shadow-xl z-[100]"
                 >
                   <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-slate-200 dark:border-slate-600 flex-shrink-0">
                     <div>
-                      <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Notifications</h2>
+                      <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Notificaciones</h2>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
                         {notifications.length === 0
-                          ? 'No items yet'
-                          : `${unreadCount} unread`}
+                          ? 'Sin elementos'
+                          : `${unreadCount} sin leer`}
                       </p>
                     </div>
                     <div className="flex items-center gap-1">
@@ -405,8 +405,8 @@ export function AdminLayout() {
                           type="button"
                           onClick={() => markAllRead()}
                           className="p-1.5 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                          title="Mark all as read"
-                          aria-label="Mark all as read"
+                          title="Marcar todo como leído"
+                          aria-label="Marcar todo como leído"
                         >
                           <CheckCheck className="w-4 h-4" />
                         </button>
@@ -417,7 +417,7 @@ export function AdminLayout() {
                           onClick={() => clearAll()}
                           className="px-2 py-1 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
                         >
-                          Clear
+                          Vaciar
                         </button>
                       )}
                     </div>
@@ -426,9 +426,9 @@ export function AdminLayout() {
                     {notifications.length === 0 ? (
                       <div className="px-4 py-10 text-center text-slate-500 dark:text-slate-400">
                         <Inbox className="w-10 h-10 mx-auto mb-3 opacity-50" />
-                        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Nothing here yet</p>
+                        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Aún no hay nada</p>
                         <p className="text-xs mt-1 max-w-[16rem] mx-auto">
-                          Important updates from the admin app will appear here when they are recorded.
+                          Las actualizaciones importantes de la aplicación aparecerán aquí cuando se registren.
                         </p>
                       </div>
                     ) : (
@@ -493,7 +493,7 @@ export function AdminLayout() {
                                   remove(n.id);
                                 }}
                                 className="absolute top-2 right-2 z-10 p-1 rounded opacity-0 group-hover:opacity-100 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/80 dark:hover:bg-slate-600"
-                                aria-label="Dismiss notification"
+                                aria-label="Descartar notificación"
                               >
                                 <X className="w-3.5 h-3.5" />
                               </button>
@@ -510,9 +510,9 @@ export function AdminLayout() {
               {!sidebarCollapsed && (
                 <div className="text-right hidden sm:block">
                   <div className="text-sm font-medium text-slate-900 dark:text-white">
-                    {user?.name || user?.email || 'Administrator'}
+                    {user?.name || user?.email || 'Administrador'}
                   </div>
-                  <div className="text-xs text-slate-500 capitalize">{user?.role?.name || user?.role?.slug?.replace(/_/g, ' ') || 'Admin'}</div>
+                  <div className="text-xs text-slate-500 capitalize">{user?.role?.name || user?.role?.slug?.replace(/_/g, ' ') || 'Administrador'}</div>
                 </div>
               )}
               <div className="relative overflow-visible" ref={profileDropdownRef}>
@@ -520,7 +520,7 @@ export function AdminLayout() {
                   type="button"
                   onClick={() => setProfileDropdownOpen((prev) => !prev)}
                   className="flex items-center gap-2 p-1.5 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
-                  title="Profile menu"
+                  title="Menú de perfil"
                 >
                   <HeaderUserAvatar name={user?.name} email={user?.email} avatar={user?.avatar} />
                   <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-white dark:border-slate-800" />
@@ -533,7 +533,7 @@ export function AdminLayout() {
                       className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50"
                     >
                       <User className="w-4 h-4" />
-                      Profile
+                      Perfil
                     </Link>
                     <hr className="my-1 border-slate-200 dark:border-slate-600" />
                     <button
@@ -542,7 +542,7 @@ export function AdminLayout() {
                       className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 text-left"
                     >
                       <LogOut className="w-4 h-4" />
-                      Logout
+                      Cerrar sesión
                     </button>
                   </div>
                 )}
@@ -566,27 +566,27 @@ export function AdminLayout() {
           type="button"
           onClick={() => setAppsPanelOpen(false)}
           className="absolute inset-0 bg-slate-900/35 dark:bg-slate-950/60"
-          aria-label="Close app panel"
+          aria-label="Cerrar panel de aplicaciones"
         />
         <aside
           id="apps-panel"
           role="dialog"
           aria-modal="true"
-          aria-label="Apps panel"
+          aria-label="Panel de aplicaciones"
           className={`absolute right-0 top-0 h-full w-full max-w-sm bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 shadow-2xl transform transition-transform duration-200 ${
             appsPanelOpen ? 'translate-x-0' : 'translate-x-full'
           }`}
         >
           <div className="h-14 px-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
             <div>
-              <h2 className="text-base font-semibold text-slate-900 dark:text-white">Apps</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Quick access to admin modules</p>
+              <h2 className="text-base font-semibold text-slate-900 dark:text-white">Aplicaciones</h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Acceso rápido a los módulos</p>
             </div>
             <button
               type="button"
               onClick={() => setAppsPanelOpen(false)}
               className="p-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-              aria-label="Close apps panel"
+              aria-label="Cerrar panel de aplicaciones"
             >
               <Menu className="w-5 h-5 rotate-90" />
             </button>
@@ -595,7 +595,7 @@ export function AdminLayout() {
           <div className="p-4 overflow-y-auto h-[calc(100%-56px)] space-y-6">
             <section>
               <h3 className="px-1 mb-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                Fast Access
+                Acceso rápido
               </h3>
               <div className="grid grid-cols-2 gap-2">
                 {quickAccessApps.map(({ path, label, icon: Icon }) => {

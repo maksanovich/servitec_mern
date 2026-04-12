@@ -75,10 +75,10 @@ export function DashboardPage() {
     if (!orders.length) {
       return {
         kpiData: [
-          { label: 'Income', value: '$0.00', sublabel: 'Total' as const, icon: DollarSign },
-          { label: 'Orders', value: '0', sublabel: 'Total' as const, icon: Wrench },
-          { label: 'Maintenance Orders', value: '0', sublabel: null, icon: Wrench },
-          { label: 'Orders Delivered', value: '0', sublabel: null, icon: Wrench },
+          { label: 'Ingresos', value: '$0.00', sublabel: 'Total' as const, icon: DollarSign },
+          { label: 'Pedidos', value: '0', sublabel: 'Total' as const, icon: Wrench },
+          { label: 'En mantenimiento', value: '0', sublabel: null, icon: Wrench },
+          { label: 'En entrega', value: '0', sublabel: null, icon: Wrench },
         ],
         largestInvestmentData: [] as LargestInvestmentRow[],
         mostOrdersData: [] as MostOrdersRow[],
@@ -96,10 +96,10 @@ export function DashboardPage() {
     const deliveredOrders = orders.filter((o) => o.state === 'delivery').length;
 
     const kpiDataComputed = [
-      { label: 'Income', value: `$${totalIncome.toFixed(2)}`, sublabel: 'Total' as const, icon: DollarSign },
-      { label: 'Orders', value: String(totalOrders), sublabel: 'Total' as const, icon: Wrench },
-      { label: 'Maintenance Orders', value: String(maintenanceOrders), sublabel: null, icon: Wrench },
-      { label: 'Orders Delivered', value: String(deliveredOrders), sublabel: null, icon: Wrench },
+      { label: 'Ingresos', value: `$${totalIncome.toFixed(2)}`, sublabel: 'Total' as const, icon: DollarSign },
+      { label: 'Pedidos', value: String(totalOrders), sublabel: 'Total' as const, icon: Wrench },
+      { label: 'En mantenimiento', value: String(maintenanceOrders), sublabel: null, icon: Wrench },
+      { label: 'En entrega', value: String(deliveredOrders), sublabel: null, icon: Wrench },
     ];
 
     const byCustomer = new Map<
@@ -158,8 +158,8 @@ export function DashboardPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Dashboard - DIGITALSERVER TECHNICAL SERVICE"
-        breadcrumb={[{ label: 'Dashboard', icon: Home }]}
+        title="Panel - DIGITALSERVER TECHNICAL SERVICE"
+        breadcrumb={[{ label: 'Panel', icon: Home }]}
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -167,7 +167,7 @@ export function DashboardPage() {
           <KpiCard
             key={label}
             label={label}
-            value={loading && value !== '$0.00' ? 'Loading…' : value}
+            value={loading && value !== '$0.00' ? 'Cargando…' : value}
             sublabel={sublabel}
             icon={icon}
           />
@@ -178,14 +178,14 @@ export function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="overflow-hidden">
-          <CardHeader title="Client with Largest Investment" />
+          <CardHeader title="Cliente con mayor inversión" />
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader columns={['Date', 'Customer', 'Investment']} />
+              <TableHeader columns={['Fecha', 'Cliente', 'Inversión']} />
               <TableBody>
                 {largestInvestmentData.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={3}>No data available.</TableCell>
+                    <TableCell colSpan={3}>No hay datos disponibles.</TableCell>
                   </TableRow>
                 ) : (
                   largestInvestmentData.map((row, i) => (
@@ -206,14 +206,14 @@ export function DashboardPage() {
         </Card>
 
         <Card className="overflow-hidden">
-          <CardHeader title="Client with the Most Orders" />
+          <CardHeader title="Cliente con más pedidos" />
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader columns={['Date', 'Customer', 'Orders']} />
+              <TableHeader columns={['Fecha', 'Cliente', 'Pedidos']} />
               <TableBody>
                 {mostOrdersData.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={3}>No data available.</TableCell>
+                    <TableCell colSpan={3}>No hay datos disponibles.</TableCell>
                   </TableRow>
                 ) : (
                   mostOrdersData.map((row, i) => (

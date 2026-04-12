@@ -9,7 +9,7 @@ import { OrderPhotoSlider } from '../components/OrderPhotoSlider';
 
 function formatDate(date?: string) {
   if (!date) return '—';
-  return new Date(date).toLocaleDateString(undefined, {
+  return new Date(date).toLocaleDateString('es', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -32,10 +32,10 @@ export function BlogPage() {
       <div className="w-full">
         <div className="mb-8">
           <h1 className="text-[1.75rem] font-bold tracking-tight mb-2 text-slate-900">
-            Repair Stories
+            Historias de reparación
           </h1>
           <p className="text-base text-slate-500">
-            Real examples of our repairs, with before/after photos and technical notes.
+            Ejemplos reales de nuestras reparaciones, con fotos antes/después y notas técnicas.
           </p>
         </div>
 
@@ -64,16 +64,16 @@ export function BlogPage() {
     <div className="w-full">
       <div className="mb-8">
         <h1 className="text-[1.75rem] font-bold tracking-tight mb-2 text-slate-900">
-          Repair Stories
+          Historias de reparación
         </h1>
         <p className="text-base text-slate-500">
-          Our completed repairs and technical solutions. Open any story for full before & after
-          photos and technician notes.
+          Nuestras reparaciones terminadas y soluciones técnicas. Abra cualquier historia para ver
+          fotos completas antes y después y las notas del técnico.
         </p>
       </div>
 
       {orders.length === 0 ? (
-        <p className="text-slate-500 py-8">No repair stories to show yet.</p>
+        <p className="text-slate-500 py-8">Aún no hay historias de reparación para mostrar.</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {orders.map((order) => {
@@ -99,7 +99,7 @@ export function BlogPage() {
                       </div>
                     </div>
                     <div className="shrink-0 text-right">
-                      <p className="text-xs uppercase tracking-wide text-slate-500">Published</p>
+                      <p className="text-xs uppercase tracking-wide text-slate-500">Publicado</p>
                       <time dateTime={order.createdAt} className="text-sm font-medium text-slate-600">
                         {formatDate(order.createdAt)}
                       </time>
@@ -109,7 +109,7 @@ export function BlogPage() {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="rounded-xl border border-slate-100 bg-slate-50 p-2">
                       <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-slate-500 mb-2">
-                        Before
+                        Antes
                       </p>
                       <OrderPhotoSlider
                         images={normalizeOrderPhotoListFromApi(order.photoBeforeRepair)}
@@ -120,7 +120,7 @@ export function BlogPage() {
                     </div>
                     <div className="rounded-xl border border-slate-100 bg-slate-50 p-2">
                       <p className="text-[0.6875rem] font-semibold uppercase tracking-wide text-slate-500 mb-2">
-                        After
+                        Después
                       </p>
                       <OrderPhotoSlider
                         images={normalizeOrderPhotoListFromApi(order.photoAfterRepair)}
@@ -139,7 +139,7 @@ export function BlogPage() {
 
                   <div className="mt-auto flex items-center justify-between pt-1">
                     <span className="text-sm font-medium text-[var(--color-accent)] group-hover:text-[var(--color-accent-hover)] transition-colors">
-                      Read full story →
+                      Leer historia completa →
                     </span>
                   </div>
                 </div>
