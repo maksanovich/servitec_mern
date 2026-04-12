@@ -14,7 +14,7 @@ export function Loader({ size = 'md', className = '' }: LoaderProps) {
     <div
       className={`rounded-full border-slate-200 dark:border-slate-600 border-t-slate-600 dark:border-t-slate-300 animate-spin ${sizeClasses[size]} ${className}`}
       role="status"
-      aria-label="Loading"
+      aria-label="Cargando"
     />
   );
 }
@@ -24,7 +24,7 @@ export function PageLoader() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
         <Loader size="lg" />
-        <p className="text-sm text-slate-500 dark:text-slate-400 animate-pulse">Loading…</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400 animate-pulse">Cargando…</p>
       </div>
     </div>
   );

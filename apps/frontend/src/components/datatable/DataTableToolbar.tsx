@@ -4,7 +4,7 @@ import { DateRangePicker, Input } from '../ui';
 export function formatDateLabel(d: string) {
   if (!d) return '';
   const date = new Date(d);
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  return date.toLocaleDateString('es', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 export interface DataTableToolbarProps {
@@ -65,7 +65,7 @@ export function DataTableToolbar({
       <div className="flex flex-wrap items-center gap-3">
         {showRows && (
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">Rows</span>
+            <span className="text-sm font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">Filas</span>
             <select
               value={pageSize}
               onChange={(e) => onPageSizeChange(Number(e.target.value))}
@@ -82,7 +82,7 @@ export function DataTableToolbar({
         <div className="ml-auto flex flex-wrap items-center gap-3">
           {showSearch && (
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">Search</span>
+              <span className="text-sm font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">Buscar</span>
               <Input
                 placeholder={searchPlaceholder}
                 value={searchValue ?? ''}
@@ -93,7 +93,7 @@ export function DataTableToolbar({
           )}
           {showDateRange && (
             <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">Date range</span>
+              <span className="text-sm font-medium text-slate-600 dark:text-slate-400 whitespace-nowrap">Rango de fechas</span>
               <DateRangePicker
                 startDate={startDate}
                 endDate={endDate}

@@ -3,10 +3,10 @@ import { Link, useLocation, Outlet } from 'react-router-dom';
 export function Layout() {
   const location = useLocation();
   const navItems = [
-    { path: '/', label: 'Home' },
+    { path: '/', label: 'Inicio' },
     { path: '/blog', label: 'Blog' },
-    { path: '/diagnosis', label: 'Pre-Diagnosis' },
-    { path: '/track', label: 'Track Order' },
+    { path: '/diagnosis', label: 'Pre-diagnóstico' },
+    { path: '/track', label: 'Seguir pedido' },
   ];
 
   return (

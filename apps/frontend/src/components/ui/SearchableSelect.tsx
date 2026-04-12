@@ -20,14 +20,14 @@ export function SearchableSelect({
   options,
   value,
   onValueChange,
-  placeholder = '-- Select --',
-  searchPlaceholder = 'Search…',
+  placeholder = '-- Seleccionar --',
+  searchPlaceholder = 'Buscar…',
   onQueryChange,
   filterOptions = true,
   disabled,
   className = '',
   buttonClassName = '',
-  emptyText = 'No results',
+  emptyText = 'Sin resultados',
 }: SearchableSelectProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);

@@ -24,7 +24,7 @@ export function BlogPostPage() {
       })
       .catch((e: Error) => {
         if (!cancelled) {
-          setError(e.message || 'Failed to load');
+          setError(e.message || 'Error al cargar');
           setOrder(null);
         }
       });
@@ -41,7 +41,7 @@ export function BlogPostPage() {
           className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to blog
+          Volver al blog
         </Link>
         <div className="h-80 rounded-xl bg-slate-200 animate-pulse" />
       </div>
@@ -56,7 +56,7 @@ export function BlogPostPage() {
           className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to blog
+          Volver al blog
         </Link>
         <p className="text-slate-600 py-8">{error}</p>
       </div>
@@ -71,10 +71,10 @@ export function BlogPostPage() {
           className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to blog
+          Volver al blog
         </Link>
-        <h1 className="text-[1.75rem] font-bold tracking-tight mb-2 text-slate-900">Not found</h1>
-        <p className="text-slate-500 mb-6">This repair story is not available or no longer listed.</p>
+        <h1 className="text-[1.75rem] font-bold tracking-tight mb-2 text-slate-900">No encontrado</h1>
+        <p className="text-slate-500 mb-6">Esta historia de reparación no está disponible o ya no se muestra.</p>
       </div>
     );
   }
@@ -86,7 +86,7 @@ export function BlogPostPage() {
         className="inline-flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 mb-6"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to blog
+        Volver al blog
       </Link>
       <BlogShowcaseArticle order={order} />
     </div>

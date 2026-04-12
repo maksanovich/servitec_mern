@@ -66,7 +66,7 @@ export function Modal({ open, onClose, title, children, headerActions, size = 'm
               size="sm"
               onClick={onClose}
               className="p-1.5 -mr-1.5"
-              aria-label="Close"
+              aria-label="Cerrar"
             >
               <X className="w-5 h-5" />
             </Button>

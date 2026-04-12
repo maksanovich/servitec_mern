@@ -7,7 +7,7 @@ import { OrderPhotoSlider } from './OrderPhotoSlider';
 import { stateLabel } from '../pages/admin/orders/constants';
 
 function formatUsd(n: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n);
+  return new Intl.NumberFormat('es', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n);
 }
 
 function normalizePhoneForWa(raw: string): string {
@@ -20,8 +20,8 @@ function buildSalesWhatsAppLink(order: OrderTrackPublic): string {
   const normalized = normalizePhoneForWa(phone);
   if (!normalized) return '';
   const spareParts = (order.budgetLines ?? []).map((l) => l.name).filter(Boolean);
-  const partsText = spareParts.length > 0 ? spareParts.join(', ') : 'the spare parts from this repair';
-  const text = `Hi, I want to purchase ${partsText}. Tracking code: ${order.code}.`;
+  const partsText = spareParts.length > 0 ? spareParts.join(', ') : 'los repuestos de esta reparación';
+  const text = `Hola, quiero comprar ${partsText}. Código de seguimiento: ${order.code}.`;
   return `https://wa.me/${normalized}?text=${encodeURIComponent(text)}`;
 }
 
@@ -37,7 +37,7 @@ export function BlogShowcaseArticle({ order }: { order: OrderTrackPublic }) {
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-500 mb-4">
           <time dateTime={order.createdAt}>
             {order.createdAt
-              ? new Date(order.createdAt).toLocaleDateString(undefined, {
+              ? new Date(order.createdAt).toLocaleDateString('es', {
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric',
@@ -49,38 +49,38 @@ export function BlogShowcaseArticle({ order }: { order: OrderTrackPublic }) {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Status</p>
+            <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Estado</p>
             <p className="font-medium text-slate-900">{stateLabel[order.state]}</p>
           </div>
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Received</p>
+            <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Recibido</p>
             <p className="font-medium text-slate-900">
-              {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : '—'}
+              {order.createdAt ? new Date(order.createdAt).toLocaleDateString('es') : '—'}
             </p>
           </div>
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Warranty</p>
-            <p className="font-medium text-slate-900">{order.warranty ? 'Included' : 'No warranty'}</p>
+            <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Garantía</p>
+            <p className="font-medium text-slate-900">{order.warranty ? 'Incluida' : 'Sin garantía'}</p>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 px-6 pb-6">
         <div>
-          <p className="text-xs font-semibold text-slate-500 uppercase mb-2">Before</p>
+          <p className="text-xs font-semibold text-slate-500 uppercase mb-2">Antes</p>
           <OrderPhotoSlider
             images={normalizeOrderPhotoListFromApi(order.photoBeforeRepair)}
             emptySrc={noImageUrl}
-            alt="Before repair"
+            alt="Antes de la reparación"
             frameClassName="relative w-full aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
           />
         </div>
         <div>
-          <p className="text-xs font-semibold text-slate-500 uppercase mb-2">After</p>
+          <p className="text-xs font-semibold text-slate-500 uppercase mb-2">Después</p>
           <OrderPhotoSlider
             images={normalizeOrderPhotoListFromApi(order.photoAfterRepair)}
             emptySrc={noImageUrl}
-            alt="After repair"
+            alt="Después de la reparación"
             frameClassName="relative w-full aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-50"
           />
         </div>
@@ -90,13 +90,13 @@ export function BlogShowcaseArticle({ order }: { order: OrderTrackPublic }) {
         <div className="px-6 pb-6 pt-0 space-y-4">
           {htmlToPlainText(order.equipmentCondition ?? '') && (
             <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Condition</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Condición</p>
               <RichTextHtml html={order.equipmentCondition ?? ''} className="text-slate-700 leading-relaxed" />
             </div>
           )}
           {htmlToPlainText(order.technicalReport ?? '') && (
             <div>
-              <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Technical notes</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Notas técnicas</p>
               <RichTextHtml html={order.technicalReport ?? ''} className="text-slate-700 leading-relaxed" />
             </div>
           )}
@@ -107,14 +107,14 @@ export function BlogShowcaseArticle({ order }: { order: OrderTrackPublic }) {
         <div className="px-6 pb-6 pt-0 space-y-5">
           {order.budgetLines && order.budgetLines.length > 0 && (
             <div>
-              <p className="text-sm font-semibold text-slate-800 mb-2">Spare parts used</p>
+              <p className="text-sm font-semibold text-slate-800 mb-2">Repuestos utilizados</p>
               <div className="overflow-x-auto rounded-lg border border-slate-200">
                 <table className="w-full text-sm text-left">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200">
-                      <th className="px-3 py-2 font-semibold text-slate-700">Spare part / service</th>
-                      <th className="px-3 py-2 font-semibold text-slate-700 text-right whitespace-nowrap">Unit</th>
-                      <th className="px-3 py-2 font-semibold text-slate-700 text-right whitespace-nowrap">Qty</th>
+                      <th className="px-3 py-2 font-semibold text-slate-700">Repuesto / servicio</th>
+                      <th className="px-3 py-2 font-semibold text-slate-700 text-right whitespace-nowrap">Unit.</th>
+                      <th className="px-3 py-2 font-semibold text-slate-700 text-right whitespace-nowrap">Cant.</th>
                       <th className="px-3 py-2 font-semibold text-slate-700 text-right whitespace-nowrap">Subtotal</th>
                     </tr>
                   </thead>
@@ -149,7 +149,7 @@ export function BlogShowcaseArticle({ order }: { order: OrderTrackPublic }) {
 
           {(order.salesContact?.phone?.trim() || order.salesContact?.email?.trim()) && (
             <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-4 text-sm space-y-3">
-              <p className="text-sm font-semibold text-slate-800">Purchase or ask about spare parts</p>
+              <p className="text-sm font-semibold text-slate-800">Comprar o consultar repuestos</p>
               <div className="flex flex-wrap gap-2">
                 {salesWhatsAppLink && (
                   <a
@@ -158,7 +158,7 @@ export function BlogShowcaseArticle({ order }: { order: OrderTrackPublic }) {
                     rel="noreferrer"
                     className="inline-flex items-center px-3 py-2 rounded-lg bg-emerald-600 text-white font-semibold hover:bg-emerald-700 transition-colors"
                   >
-                    Buy via WhatsApp
+                    Comprar por WhatsApp
                   </a>
                 )}
                 {order.salesContact?.phone?.trim() && (
@@ -166,7 +166,7 @@ export function BlogShowcaseArticle({ order }: { order: OrderTrackPublic }) {
                     href={`tel:${order.salesContact.phone.replace(/\s/g, '')}`}
                     className="inline-flex items-center px-3 py-2 rounded-lg border border-slate-300 text-slate-800 font-medium hover:bg-white transition-colors"
                   >
-                    Call sales
+                    Llamar a ventas
                   </a>
                 )}
                 {order.salesContact?.email?.trim() && (
@@ -174,7 +174,7 @@ export function BlogShowcaseArticle({ order }: { order: OrderTrackPublic }) {
                     href={`mailto:${order.salesContact.email.trim()}`}
                     className="inline-flex items-center px-3 py-2 rounded-lg border border-slate-300 text-slate-800 font-medium hover:bg-white transition-colors"
                   >
-                    Email sales
+                    Correo a ventas
                   </a>
                 )}
               </div>

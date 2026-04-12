@@ -32,7 +32,7 @@ export function LoginPage() {
       const target = userCanAccessPath(loggedInUser, from) ? from : firstAccessiblePagePath(loggedInUser);
       navigate(target, { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
     } finally {
       setLoading(false);
     }
@@ -43,7 +43,7 @@ export function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="bg-slate-800 border border-slate-700 rounded-xl p-8 shadow-xl">
           <div className="text-center mb-6">
-            <h1 className="text-2xl font-bold text-white">Admin Login</h1>
+            <h1 className="text-2xl font-bold text-white">Acceso administración</h1>
             <p className="text-slate-400 text-sm mt-1">Servitec</p>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -54,7 +54,7 @@ export function LoginPage() {
             )}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-1.5">
-                Email
+                Correo electrónico
               </label>
               <input
                 id="email"
@@ -69,7 +69,7 @@ export function LoginPage() {
             </div>
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-1.5">
-                Password
+                Contraseña
               </label>
               <input
                 id="password"
@@ -88,11 +88,11 @@ export function LoginPage() {
               isLoading={loading}
               disabled={loading}
             >
-              Sign in
+              Entrar
             </Button>
           </form>
           <p className="text-slate-500 text-xs mt-4 text-center">
-            Default: {DEFAULT_EMAIL} / {DEFAULT_PASSWORD}
+            Por defecto: {DEFAULT_EMAIL} / {DEFAULT_PASSWORD}
           </p>
         </div>
       </div>

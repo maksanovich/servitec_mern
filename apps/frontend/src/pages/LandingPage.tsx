@@ -12,18 +12,18 @@ import { OrderPhotoSlider } from '../components/OrderPhotoSlider';
 const SLIDER_ITEMS = [
   {
     image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1200',
-    title: 'Professional Repair Services',
-    subtitle: 'Expert technicians for all your equipment needs',
+    title: 'Servicio de reparación profesional',
+    subtitle: 'Técnicos expertos para todas sus necesidades de equipos',
   },
   {
     image: 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=1200',
-    title: 'Quality You Can Trust',
-    subtitle: 'Comprehensive warranty and after-service support',
+    title: 'Calidad en la que puede confiar',
+    subtitle: 'Garantía integral y soporte posterior al servicio',
   },
   {
     image: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=1200',
-    title: 'Fast & Reliable',
-    subtitle: 'Track your order status anytime, anywhere',
+    title: 'Rápido y confiable',
+    subtitle: 'Consulte el estado de su pedido en cualquier momento y lugar',
   },
 ];
 
@@ -66,7 +66,7 @@ function HeroSlider() {
             className={`w-2.5 h-2.5 rounded-full transition-colors ${
               i === index ? 'bg-white' : 'bg-white/50 hover:bg-white/70'
             }`}
-            aria-label={`Go to slide ${i + 1}`}
+            aria-label={`Ir a la diapositiva ${i + 1}`}
           />
         ))}
       </div>
@@ -74,14 +74,14 @@ function HeroSlider() {
         <button
           onClick={() => setIndex((i) => (i - 1 + SLIDER_ITEMS.length) % SLIDER_ITEMS.length)}
           className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-colors"
-          aria-label="Previous slide"
+          aria-label="Diapositiva anterior"
         >
           ‹
         </button>
         <button
           onClick={() => setIndex((i) => (i + 1) % SLIDER_ITEMS.length)}
           className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/40 text-white flex items-center justify-center transition-colors"
-          aria-label="Next slide"
+          aria-label="Diapositiva siguiente"
         >
           ›
         </button>
@@ -93,20 +93,20 @@ function HeroSlider() {
 function AboutSection() {
   return (
     <section className="py-12 md:py-16">
-      <h2 className="text-2xl font-bold text-slate-900 mb-6">About Us</h2>
+      <h2 className="text-2xl font-bold text-slate-900 mb-6">Sobre nosotros</h2>
       <div className="prose prose-slate max-w-none">
         <p className="text-slate-600 leading-relaxed mb-4">
-          <strong>Servitec</strong> provides professional technical service and warranty management
-          for your equipment. Our experienced technicians handle repairs with precision, and we
-          maintain full transparency throughout the process.
+          <strong>Servitec</strong> ofrece servicio técnico profesional y gestión de garantías para
+          su equipo. Nuestros técnicos experimentados realizan reparaciones con precisión y
+          mantenemos la transparencia en todo el proceso.
         </p>
         <p className="text-slate-600 leading-relaxed mb-4">
-          From intake to delivery, we keep you informed. Use your tracking code to check status,
-          view before and after photos, and read technical notes at any time.
+          Desde el ingreso hasta la entrega, le mantenemos informado. Use su código de seguimiento
+          para ver el estado, fotos del antes y después y notas técnicas en cualquier momento.
         </p>
         <p className="text-slate-600 leading-relaxed">
-          We offer a wide range of repair solutions for various equipment types. Your satisfaction
-          and equipment longevity are our priorities.
+          Ofrecemos soluciones de reparación para distintos tipos de equipos. Su satisfacción y la
+          durabilidad de su equipo son nuestras prioridades.
         </p>
       </div>
     </section>
@@ -127,7 +127,7 @@ function ProductsSection() {
   if (loading) {
     return (
       <section className="py-12 md:py-16">
-        <h2 className="text-2xl font-bold text-slate-900 mb-6">Our Products & Services</h2>
+        <h2 className="text-2xl font-bold text-slate-900 mb-6">Nuestros productos y servicios</h2>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="h-24 rounded-lg bg-slate-200 animate-pulse" />
@@ -141,7 +141,7 @@ function ProductsSection() {
 
   return (
     <section className="py-12 md:py-16">
-      <h2 className="text-2xl font-bold text-slate-900 mb-6">Our Products & Services</h2>
+      <h2 className="text-2xl font-bold text-slate-900 mb-6">Nuestros productos y servicios</h2>
       <div className="flex flex-wrap gap-3">
         {products.map((p) => (
           <span
@@ -170,7 +170,7 @@ function OrderShowcaseSection() {
   if (loading) {
     return (
       <section className="py-12 md:py-16">
-        <h2 className="text-2xl font-bold text-slate-900 mb-6">Completed Work</h2>
+        <h2 className="text-2xl font-bold text-slate-900 mb-6">Trabajos realizados</h2>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-64 rounded-xl bg-slate-200 animate-pulse" />
@@ -184,9 +184,9 @@ function OrderShowcaseSection() {
 
   return (
     <section className="py-12 md:py-16">
-      <h2 className="text-2xl font-bold text-slate-900 mb-2">Completed Work</h2>
+      <h2 className="text-2xl font-bold text-slate-900 mb-2">Trabajos realizados</h2>
       <p className="text-slate-500 mb-6">
-        See before & after results and technical notes from our finished repairs.
+        Vea resultados de antes y después y notas técnicas de nuestras reparaciones finalizadas.
       </p>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {orders.map((order) => (
@@ -197,20 +197,20 @@ function OrderShowcaseSection() {
           >
             <div className="grid grid-cols-2 gap-0 border-b border-slate-100">
               <div className="p-2 bg-slate-50">
-                <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Before</p>
+                <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Antes</p>
                 <OrderPhotoSlider
                   images={normalizeOrderPhotoListFromApi(order.photoBeforeRepair)}
                   emptySrc={noImageUrl}
-                  alt="Before repair"
+                  alt="Antes de la reparación"
                   frameClassName="relative w-full aspect-square overflow-hidden rounded border-0 bg-white"
                 />
               </div>
               <div className="p-2 bg-slate-50">
-                <p className="text-xs font-semibold text-slate-500 uppercase mb-1">After</p>
+                <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Después</p>
                 <OrderPhotoSlider
                   images={normalizeOrderPhotoListFromApi(order.photoAfterRepair)}
                   emptySrc={noImageUrl}
-                  alt="After repair"
+                  alt="Después de la reparación"
                   frameClassName="relative w-full aspect-square overflow-hidden rounded border-0 bg-white"
                 />
               </div>
@@ -221,7 +221,7 @@ function OrderShowcaseSection() {
               </p>
               <p className="text-xs text-slate-500 mb-3">{order.type}</p>
               <span className="text-sm text-[var(--color-accent)] font-medium">
-                View full story →
+                Ver historia completa →
               </span>
             </div>
           </Link>
@@ -244,9 +244,9 @@ function PreDiagnosisPreviewSection() {
 
   return (
     <section className="py-12 md:py-16">
-      <h2 className="text-2xl font-bold text-slate-900 mb-2">Smart Pre-Diagnosis</h2>
+      <h2 className="text-2xl font-bold text-slate-900 mb-2">Pre-diagnóstico inteligente</h2>
       <p className="text-slate-500 mb-6">
-        These rules are managed by our admin team and updated in real time.
+        Estas reglas las gestiona nuestro equipo y se actualizan en tiempo real.
       </p>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {rules.map((rule) => (
@@ -266,7 +266,7 @@ function PreDiagnosisPreviewSection() {
           to="/diagnosis"
           className="inline-block px-5 py-2.5 border border-emerald-200 text-emerald-700 font-semibold rounded-lg hover:border-emerald-300 transition-colors"
         >
-          Open Smart Pre-Diagnosis
+          Abrir pre-diagnóstico inteligente
         </Link>
       </div>
     </section>
@@ -282,30 +282,30 @@ export function LandingPage() {
 
       <div className="text-center mb-12">
         <h1 className="text-[clamp(2rem,5vw,3rem)] font-bold tracking-tight leading-tight mb-4 text-slate-900">
-          Technical Service & Warranty
+          Servicio técnico y garantía
         </h1>
         <p className="text-lg text-slate-500 mb-8 leading-relaxed max-w-2xl mx-auto">
-          Professional repair and warranty management for your equipment. Track your order status
-          anytime.
+          Reparación profesional y gestión de garantías para su equipo. Consulte el estado de su
+          pedido en cualquier momento.
         </p>
         <div className="flex gap-3 justify-center flex-wrap">
           <Link
             to="/diagnosis"
             className="inline-block px-6 py-3 border border-emerald-200 text-emerald-700 font-semibold rounded-lg hover:border-emerald-300 transition-colors"
           >
-            Smart Pre-Diagnosis
+            Pre-diagnóstico inteligente
           </Link>
           <Link
             to="/track"
             className="inline-block px-6 py-3 bg-[var(--color-accent)] text-white font-semibold rounded-lg hover:bg-[var(--color-accent-hover)] transition-colors"
           >
-            Track Order
+            Seguir pedido
           </Link>
           <Link
             to="/blog"
             className="inline-block px-6 py-3 border border-slate-200 text-slate-900 font-medium rounded-lg hover:border-slate-300 transition-colors"
           >
-            Browse Solutions
+            Ver soluciones
           </Link>
         </div>
       </div>

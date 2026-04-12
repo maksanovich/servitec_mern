@@ -27,16 +27,16 @@ export interface AgendaItem {
 const columns: TableColumn<AgendaItem>[] = [
   {
     id: 'date',
-    name: 'Date',
+    name: 'Fecha',
     selector: (row) => row.date,
     sortable: true,
     sortFunction: (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
   },
-  { id: 'customer', name: 'Customer', selector: (row) => row.customer, sortable: true },
-  { id: 'stage', name: 'Stage', selector: (row) => row.stage, sortable: true },
-  { id: 'state', name: 'State', selector: (row) => row.state, sortable: true },
-  { id: 'service', name: 'Service', selector: (row) => row.service, sortable: true },
-  { id: 'advancement', name: 'Advancement', selector: (row) => row.advancement, sortable: true },
+  { id: 'customer', name: 'Cliente', selector: (row) => row.customer, sortable: true },
+  { id: 'stage', name: 'Etapa', selector: (row) => row.stage, sortable: true },
+  { id: 'state', name: 'Estado', selector: (row) => row.state, sortable: true },
+  { id: 'service', name: 'Servicio', selector: (row) => row.service, sortable: true },
+  { id: 'advancement', name: 'Avance', selector: (row) => row.advancement, sortable: true },
   {
     id: 'total',
     name: 'Total',
@@ -46,7 +46,7 @@ const columns: TableColumn<AgendaItem>[] = [
   },
 ];
 
-const exportOptions = { title: 'Agenda Items', filename: 'agenda-items' };
+const exportOptions = { title: 'Agenda', filename: 'agenda' };
 
 export function AgendaItemsTable() {
   const { token } = useAuth();
@@ -173,8 +173,8 @@ export function AgendaItemsTable() {
         onFilteredDataChange={onFilteredDataChange}
         rightContent={
           <ButtonGroup>
-            <Button variant="secondary" size="sm" leftIcon={Download} onClick={exportPDF} title="Export PDF" className="p-2" aria-label="Export PDF" />
-            <Button variant="secondary" size="sm" leftIcon={FileSpreadsheet} onClick={exportExcel} title="Export Excel" className="p-2" aria-label="Export Excel" />
+            <Button variant="secondary" size="sm" leftIcon={Download} onClick={exportPDF} title="Exportar PDF" className="p-2" aria-label="Exportar PDF" />
+            <Button variant="secondary" size="sm" leftIcon={FileSpreadsheet} onClick={exportExcel} title="Exportar Excel" className="p-2" aria-label="Exportar Excel" />
           </ButtonGroup>
         }
       />
