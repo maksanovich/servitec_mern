@@ -16,17 +16,11 @@ import { RichTextHtml } from '../components/ui';
 import { htmlToPlainText } from '../utils/htmlPlainText';
 import { hasOrderPhotos, normalizeOrderPhotoListFromApi } from '../utils/orderPhotos';
 import { OrderPhotoSlider } from '../components/OrderPhotoSlider';
+import { cleanBudgetLineDetail } from '../utils/budgetLineDetail';
+import { ZoomableImage } from '../components/ZoomableImage';
 
 function formatUsd(n: number): string {
   return new Intl.NumberFormat('es', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n);
-}
-
-function cleanBudgetLineDetail(detail?: string): string {
-  if (!detail?.trim()) return '';
-  const text = detail.trim();
-  const withoutIdPrefix = text.replace(/^\s*(?:id|codigo|c[oó]digo)\s*[:#-]?\s*\S+\s*(?:\||-|,)\s*/i, '');
-  const withoutIdOnly = withoutIdPrefix.replace(/^\s*(?:id|codigo|c[oó]digo)\s*[:#-]?\s*/i, '').trim();
-  return withoutIdOnly;
 }
 
 type TimelineStage = Pick<OrderProgressStage, 'key' | 'label' | 'description' | 'sortOrder' | 'legacyArea'>;
@@ -324,20 +318,21 @@ export function TrackPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {order.budgetLines.map((line, i) => (
+                        {order.budgetLines.map((line, i) => {
+                          const detail = cleanBudgetLineDetail(line.details);
+                          return (
                           <tr key={`${line.serviceId}-${i}`} className="border-b border-slate-100 last:border-0">
-                            <td className="px-3 py-2">
-                              <img
+                            <td className="px-3 py-2 align-top">
+                              <ZoomableImage
                                 src={line.spareImage?.trim() ? line.spareImage : repairImageUrl}
                                 alt={line.name}
-                                className="h-12 w-12 rounded-md object-cover border border-slate-200"
-                                loading="lazy"
                               />
                             </td>
                             <td className="px-3 py-2 font-medium text-slate-900">
-                              {/* <p>{line.name}</p> */}
-                              {cleanBudgetLineDetail(line.details) && (
-                                <p className="text-xs text-slate-500 mt-0.5">{cleanBudgetLineDetail(line.details)}</p>
+                              {detail ? (
+                                <p className="text-xs text-slate-500">{detail}</p>
+                              ) : (
+                                <p className="text-sm">{line.name}</p>
                               )}
                             </td>
                             <td className="px-3 py-2 text-slate-800 text-right tabular-nums">{formatUsd(line.price)}</td>
@@ -346,7 +341,8 @@ export function TrackPage() {
                               {formatUsd(line.total)}
                             </td>
                           </tr>
-                        ))}
+                          );
+                        })}
                       </tbody>
                       {order.total != null && Number.isFinite(order.total) && (
                         <tfoot>

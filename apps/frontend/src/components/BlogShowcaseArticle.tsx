@@ -1,10 +1,13 @@
 import type { OrderTrackPublic } from '../api/orders';
 import noImageUrl from '../assets/images/noimage.png';
+import repairImageUrl from '../assets/images/repair.png';
 import { RichTextHtml } from './ui';
 import { htmlToPlainText } from '../utils/htmlPlainText';
 import { normalizeOrderPhotoListFromApi } from '../utils/orderPhotos';
 import { OrderPhotoSlider } from './OrderPhotoSlider';
 import { stateLabel } from '../pages/admin/orders/constants';
+import { cleanBudgetLineDetail } from '../utils/budgetLineDetail';
+import { ZoomableImage } from './ZoomableImage';
 
 function formatUsd(n: number): string {
   return new Intl.NumberFormat('es', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n);
@@ -107,33 +110,54 @@ export function BlogShowcaseArticle({ order }: { order: OrderTrackPublic }) {
         <div className="px-6 pb-6 pt-0 space-y-5">
           {order.budgetLines && order.budgetLines.length > 0 && (
             <div>
-              <p className="text-sm font-semibold text-slate-800 mb-2">Repuestos utilizados</p>
+              <p className="text-sm font-semibold text-slate-800 mb-3">Productos y servicios aplicados</p>
+              <p className="text-xs text-slate-500 mb-3">
+                Conceptos registrados en este servicio técnico y sus precios.
+              </p>
               <div className="overflow-x-auto rounded-lg border border-slate-200">
                 <table className="w-full text-sm text-left">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200">
-                      <th className="px-3 py-2 font-semibold text-slate-700">Repuesto / servicio</th>
-                      <th className="px-3 py-2 font-semibold text-slate-700 text-right whitespace-nowrap">Unit.</th>
+                      <th className="px-3 py-2 font-semibold text-slate-700">Imagen</th>
+                      <th className="px-3 py-2 font-semibold text-slate-700">Producto / servicio</th>
+                      <th className="px-3 py-2 font-semibold text-slate-700 text-right whitespace-nowrap">
+                        Precio unit.
+                      </th>
                       <th className="px-3 py-2 font-semibold text-slate-700 text-right whitespace-nowrap">Cant.</th>
                       <th className="px-3 py-2 font-semibold text-slate-700 text-right whitespace-nowrap">Subtotal</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {order.budgetLines.map((line, i) => (
-                      <tr key={`${line.serviceId}-${i}`} className="border-b border-slate-100 last:border-0">
-                        <td className="px-3 py-2 font-medium text-slate-900">{line.name}</td>
-                        <td className="px-3 py-2 text-right tabular-nums text-slate-800">{formatUsd(line.price)}</td>
-                        <td className="px-3 py-2 text-right tabular-nums text-slate-800">{line.amount}</td>
-                        <td className="px-3 py-2 text-right tabular-nums font-medium text-slate-900">
-                          {formatUsd(line.total)}
-                        </td>
-                      </tr>
-                    ))}
+                    {order.budgetLines.map((line, i) => {
+                      const detail = cleanBudgetLineDetail(line.details);
+                      return (
+                        <tr key={`${line.serviceId}-${i}`} className="border-b border-slate-100 last:border-0">
+                          <td className="px-3 py-2 align-top">
+                            <ZoomableImage
+                              src={line.spareImage?.trim() ? line.spareImage : repairImageUrl}
+                              alt={line.name}
+                            />
+                          </td>
+                          <td className="px-3 py-2 font-medium text-slate-900">
+                            {detail ? (
+                              <p className="text-xs text-slate-500">{detail}</p>
+                            ) : (
+                              <p className="text-sm">{line.name}</p>
+                            )}
+                          </td>
+                          <td className="px-3 py-2 text-right tabular-nums text-slate-800">{formatUsd(line.price)}</td>
+                          <td className="px-3 py-2 text-right tabular-nums text-slate-800">{line.amount}</td>
+                          <td className="px-3 py-2 text-right tabular-nums font-medium text-slate-900">
+                            {formatUsd(line.total)}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                   {order.total != null && Number.isFinite(order.total) && (
                     <tfoot>
                       <tr className="bg-slate-50">
-                        <td colSpan={3} className="px-3 py-2 text-right font-semibold text-slate-700">
+                        <td colSpan={4} className="px-3 py-2 text-right font-semibold text-slate-700">
                           Total
                         </td>
                         <td className="px-3 py-2 text-right font-bold text-slate-900 tabular-nums">

@@ -1,5 +1,7 @@
 import { Link, useLocation, Outlet } from 'react-router-dom';
 
+import Logo from '../assets/images/logo.png';
+
 export function Layout() {
   const location = useLocation();
   const navItems = [
@@ -14,7 +16,7 @@ export function Layout() {
       <header className="bg-white border-b border-slate-200 sticky top-0 z-[100]">
         <div className="max-w-[1120px] mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="text-xl font-bold tracking-tight text-slate-900">
-            Servitec
+            <img src={Logo} alt="Logo" className="w-40 h-10" />
           </Link>
           <nav className="flex gap-8">
             {navItems.map(({ path, label }) => (

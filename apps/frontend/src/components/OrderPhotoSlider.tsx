@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Modal } from './ui/Modal';
 
 const DEFAULT_FRAME_CLASS =
   'relative w-full h-64 overflow-hidden rounded-lg border border-slate-200 bg-slate-50';
@@ -24,6 +25,7 @@ export function OrderPhotoSlider({
 }: OrderPhotoSliderProps) {
   const urls = images.filter(Boolean);
   const [idx, setIdx] = useState(0);
+  const [zoomOpen, setZoomOpen] = useState(false);
 
   useEffect(() => {
     setIdx(0);
@@ -49,37 +51,56 @@ export function OrderPhotoSlider({
         <img
           src={currentSrc}
           alt={alt}
-          className={['h-full w-full object-contain', imageClassName].filter(Boolean).join(' ')}
+          className={['relative z-0 h-full w-full object-contain pointer-events-none', imageClassName]
+            .filter(Boolean)
+            .join(' ')}
         />
+        {n > 0 && (
+          <button
+            type="button"
+            onClick={() => setZoomOpen(true)}
+            className="absolute inset-0 z-[5] cursor-zoom-in bg-transparent border-0 p-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-accent)]"
+            aria-label="Ampliar imagen"
+          />
+        )}
 
         {n > 1 && (
           <>
             <button
               type="button"
-              onClick={() => go(-1)}
-              className="absolute left-2 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/85 text-slate-800 shadow-md border border-slate-200/80 hover:bg-white"
+              onClick={(e) => {
+                e.stopPropagation();
+                go(-1);
+              }}
+              className="absolute left-2 top-1/2 z-10 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/85 text-slate-800 shadow-md border border-slate-200/80 hover:bg-white"
               aria-label="Foto anterior"
             >
               <ChevronLeft className="h-5 w-5" aria-hidden />
             </button>
             <button
               type="button"
-              onClick={() => go(1)}
-              className="absolute right-2 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/85 text-slate-800 shadow-md border border-slate-200/80 hover:bg-white"
+              onClick={(e) => {
+                e.stopPropagation();
+                go(1);
+              }}
+              className="absolute right-2 top-1/2 z-10 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/85 text-slate-800 shadow-md border border-slate-200/80 hover:bg-white"
               aria-label="Foto siguiente"
             >
               <ChevronRight className="h-5 w-5" aria-hidden />
             </button>
-            <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5 pointer-events-none">
+            <div className="absolute bottom-2 left-0 right-0 z-10 flex justify-center gap-1.5 pointer-events-none">
               {urls.map((_, i) => (
                 <button
                   key={i}
                   type="button"
-                  onClick={() => setIdx(i)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIdx(i);
+                  }}
                   className={`pointer-events-auto h-2 w-2 rounded-full transition-colors ${
                     i === safeIdx ? 'bg-slate-800' : 'bg-white/80 border border-slate-300'
                   }`}
-                  aria-label={`Photo ${i + 1} of ${n}`}
+                  aria-label={`Foto ${i + 1} de ${n}`}
                   aria-current={i === safeIdx ? 'true' : undefined}
                 />
               ))}
@@ -87,6 +108,41 @@ export function OrderPhotoSlider({
           </>
         )}
       </div>
+
+      <Modal
+        open={zoomOpen && n > 0}
+        onClose={() => setZoomOpen(false)}
+        title={n > 1 ? `${alt} (${safeIdx + 1} / ${n})` : alt}
+        size="2xl"
+      >
+        <div className="relative flex min-h-[40vh] items-center justify-center px-1 sm:px-4">
+          {n > 1 && (
+            <button
+              type="button"
+              onClick={() => go(-1)}
+              className="absolute left-0 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-800 shadow-md hover:bg-slate-50 sm:left-2"
+              aria-label="Foto anterior"
+            >
+              <ChevronLeft className="h-6 w-6" aria-hidden />
+            </button>
+          )}
+          <img
+            src={currentSrc}
+            alt={alt}
+            className="max-h-[min(85vh,1200px)] w-auto max-w-full object-contain"
+          />
+          {n > 1 && (
+            <button
+              type="button"
+              onClick={() => go(1)}
+              className="absolute right-0 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-800 shadow-md hover:bg-slate-50 sm:right-2"
+              aria-label="Foto siguiente"
+            >
+              <ChevronRight className="h-6 w-6" aria-hidden />
+            </button>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }
