@@ -9,6 +9,7 @@ import {
 } from '../api/orders';
 import { stateLabel } from './admin/orders/constants';
 import noImageUrl from '../assets/images/noimage.png';
+import repairImageUrl from '../assets/images/repair.png';
 import type { OrderProgressStage } from '../api/orderProgressStages';
 import { getOrderProgressStagesPublic } from '../api/orderProgressStages';
 import { RichTextHtml } from '../components/ui';
@@ -18,6 +19,14 @@ import { OrderPhotoSlider } from '../components/OrderPhotoSlider';
 
 function formatUsd(n: number): string {
   return new Intl.NumberFormat('es', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n);
+}
+
+function cleanBudgetLineDetail(detail?: string): string {
+  if (!detail?.trim()) return '';
+  const text = detail.trim();
+  const withoutIdPrefix = text.replace(/^\s*(?:id|codigo|c[oó]digo)\s*[:#-]?\s*\S+\s*(?:\||-|,)\s*/i, '');
+  const withoutIdOnly = withoutIdPrefix.replace(/^\s*(?:id|codigo|c[oó]digo)\s*[:#-]?\s*/i, '').trim();
+  return withoutIdOnly;
 }
 
 type TimelineStage = Pick<OrderProgressStage, 'key' | 'label' | 'description' | 'sortOrder' | 'legacyArea'>;
@@ -307,6 +316,7 @@ export function TrackPage() {
                     <table className="w-full text-sm text-left">
                       <thead>
                         <tr className="bg-slate-50 border-b border-slate-200">
+                          <th className="px-3 py-2 font-semibold text-slate-700">Imagen</th>
                           <th className="px-3 py-2 font-semibold text-slate-700">Producto / servicio</th>
                           <th className="px-3 py-2 font-semibold text-slate-700 text-right whitespace-nowrap">Precio unit.</th>
                           <th className="px-3 py-2 font-semibold text-slate-700 text-right whitespace-nowrap">Cant.</th>
@@ -316,7 +326,20 @@ export function TrackPage() {
                       <tbody>
                         {order.budgetLines.map((line, i) => (
                           <tr key={`${line.serviceId}-${i}`} className="border-b border-slate-100 last:border-0">
-                            <td className="px-3 py-2 font-medium text-slate-900">{line.name}</td>
+                            <td className="px-3 py-2">
+                              <img
+                                src={line.spareImage?.trim() ? line.spareImage : repairImageUrl}
+                                alt={line.name}
+                                className="h-12 w-12 rounded-md object-cover border border-slate-200"
+                                loading="lazy"
+                              />
+                            </td>
+                            <td className="px-3 py-2 font-medium text-slate-900">
+                              {/* <p>{line.name}</p> */}
+                              {cleanBudgetLineDetail(line.details) && (
+                                <p className="text-xs text-slate-500 mt-0.5">{cleanBudgetLineDetail(line.details)}</p>
+                              )}
+                            </td>
                             <td className="px-3 py-2 text-slate-800 text-right tabular-nums">{formatUsd(line.price)}</td>
                             <td className="px-3 py-2 text-slate-800 text-right tabular-nums">{line.amount}</td>
                             <td className="px-3 py-2 text-slate-900 text-right font-medium tabular-nums">
@@ -328,7 +351,7 @@ export function TrackPage() {
                       {order.total != null && Number.isFinite(order.total) && (
                         <tfoot>
                           <tr className="bg-slate-50">
-                            <td colSpan={3} className="px-3 py-2 text-right font-semibold text-slate-700">
+                            <td colSpan={4} className="px-3 py-2 text-right font-semibold text-slate-700">
                               Total
                             </td>
                             <td className="px-3 py-2 text-right font-bold text-slate-900 tabular-nums">

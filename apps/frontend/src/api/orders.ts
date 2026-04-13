@@ -121,6 +121,8 @@ export interface OrderBudgetLine {
   price: number;
   amount: number;
   total: number;
+  details?: string;
+  spareImage?: string | null;
 }
 
 export interface OrderDetail {
