@@ -84,8 +84,8 @@ function ActionDropdown({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={actionBtnClass}
-        title="Actions"
-        aria-label="Actions"
+        title="Acciones"
+        aria-label="Acciones"
         aria-expanded={open}
       >
         <ChevronDown className="w-4 h-4" />
@@ -102,7 +102,7 @@ function ActionDropdown({
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
             onClick={() => { onEdit(client); setOpen(false); }}
           >
-            <Pencil className="w-4 h-4" /> Edit
+            <Pencil className="w-4 h-4" /> Editar
           </button>
           <button
             type="button"
@@ -119,7 +119,7 @@ function ActionDropdown({
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
             onClick={() => { onDelete(client); setOpen(false); }}
           >
-            <Trash2 className="w-4 h-4" /> Delete
+            <Trash2 className="w-4 h-4" /> Eliminar
           </button>
         </div>,
         document.body
@@ -135,7 +135,7 @@ export function getClientsColumns(
   return [
   {
     id: 'clientescodigo',
-    name: 'Code',
+    name: 'Código',
     selector: (row) => row.clientescodigo,
     sortable: true,
     width: '130px',
@@ -147,7 +147,7 @@ export function getClientsColumns(
   },
   {
     id: 'razonsocial',
-    name: 'Business name',
+    name: 'Razón social',
     selector: (row) => row.razonsocial,
     sortable: true,
     minWidth: '180px',
@@ -157,7 +157,7 @@ export function getClientsColumns(
   },
   {
     id: 'nombrecomercial',
-    name: 'Trade name',
+    name: 'Nombre comercial',
     selector: (row) => row.nombrecomercial,
     sortable: true,
     minWidth: '140px',
@@ -167,7 +167,7 @@ export function getClientsColumns(
   },
   {
     id: 'identificacion',
-    name: 'ID number',
+    name: 'Identificación',
     selector: (row) => row.identificacion,
     sortable: true,
     width: '150px',
@@ -177,7 +177,7 @@ export function getClientsColumns(
   },
   {
     id: 'email',
-    name: 'E-mail',
+    name: 'Correo',
     selector: (row) => row.email,
     sortable: true,
     minWidth: '200px',
@@ -187,7 +187,7 @@ export function getClientsColumns(
   },
   {
     id: 'telefono1',
-    name: 'Phone',
+    name: 'Teléfono',
     selector: (row) => row.telefono1,
     sortable: true,
     width: '150px',
@@ -197,7 +197,7 @@ export function getClientsColumns(
   },
   {
     id: 'ciudad',
-    name: 'City',
+    name: 'Ciudad',
     selector: (row) => row.ciudad,
     sortable: true,
     width: '120px',
@@ -207,7 +207,7 @@ export function getClientsColumns(
   },
   {
     id: 'fechacreacion',
-    name: 'CreatedAt',
+    name: 'Fecha de alta',
     selector: (row) => row.fechacreacion,
     sortable: true,
     width: '140px',
@@ -217,19 +217,19 @@ export function getClientsColumns(
   },
   {
     id: 'estado',
-    name: 'Status',
+    name: 'Estado',
     selector: (row) => row.estado,
     sortable: true,
     width: '100px',
     cell: (row) => (
       <Badge variant={row.estado ? 'success' : 'error'}>
-        {row.estado ? 'Active' : 'Inactive'}
+        {row.estado ? 'Activo' : 'Inactivo'}
       </Badge>
     ),
   },
   {
     id: 'action',
-    name: 'Action',
+    name: 'Acciones',
     sortable: false,
     width: '80px',
     cell: (row) => <ActionDropdown client={row} onEdit={onEdit} onDelete={onDelete} />,

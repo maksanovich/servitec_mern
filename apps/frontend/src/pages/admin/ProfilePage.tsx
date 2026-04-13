@@ -85,7 +85,7 @@ export function ProfilePage() {
     try {
       await updateProfile(token, { name: userName.trim(), phone: userPhone.trim() });
       await refreshUser();
-      setUserMessage({ type: 'success', text: 'Profile updated.' });
+      setUserMessage({ type: 'success', text: 'Perfil actualizado.' });
     } catch (e) {
       setUserMessage({ type: 'error', text: (e as Error).message });
     } finally {
@@ -105,7 +105,7 @@ export function ProfilePage() {
         phone: companyForm.phone.trim(),
         address: companyForm.address.trim(),
       });
-      setCompanyMessage({ type: 'success', text: 'Company updated.' });
+      setCompanyMessage({ type: 'success', text: 'Empresa actualizada.' });
     } catch (e) {
       setCompanyMessage({ type: 'error', text: (e as Error).message });
     } finally {
@@ -116,10 +116,10 @@ export function ProfilePage() {
   if (!user) {
     return (
       <div className="space-y-4">
-        <PageHeader title="Profile" breadcrumb={[{ label: 'Profile', icon: UserIcon }]} />
+        <PageHeader title="Perfil" breadcrumb={[{ label: 'Perfil', icon: UserIcon }]} />
         <Card>
           <CardContent className="py-12 text-center text-slate-500 dark:text-slate-400">
-            No user data available. Please log in again.
+            No hay datos de usuario. Inicie sesión de nuevo.
           </CardContent>
         </Card>
       </div>
@@ -130,7 +130,7 @@ export function ProfilePage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Profile" breadcrumb={[{ label: 'Profile', icon: UserIcon }]} />
+      <PageHeader title="Perfil" breadcrumb={[{ label: 'Perfil', icon: UserIcon }]} />
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Profile summary */}
@@ -141,12 +141,12 @@ export function ProfilePage() {
                 {initial}
               </div>
               <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-                {user.name || 'No name'}
+                {user.name || 'Sin nombre'}
               </h2>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{user.email}</p>
               <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium capitalize">
                 <Shield className="w-3.5 h-3.5" />
-                {user.role?.name || user.role?.slug?.replace(/_/g, ' ') || 'User'}
+                {user.role?.name || user.role?.slug?.replace(/_/g, ' ') || 'Usuario'}
               </div>
             </div>
           </CardContent>
@@ -154,35 +154,35 @@ export function ProfilePage() {
 
         {/* Account details - editable */}
         <Card className="lg:col-span-2">
-          <CardHeader title="Account details" />
+          <CardHeader title="Datos de la cuenta" />
           <CardContent className="pt-0 space-y-4">
-            <DetailRow icon={Hash} label="User ID" value={user.id} />
-            <DetailRow icon={Mail} label="Email" value={user.email} />
+            <DetailRow icon={Hash} label="ID de usuario" value={user.id} />
+            <DetailRow icon={Mail} label="Correo" value={user.email} />
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-                  Display name
+                  Nombre visible
                 </label>
                 <Input
                   value={userName}
                   onChange={(e) => setUserName(e.target.value)}
-                  placeholder="Your name"
+                  placeholder="Su nombre"
                 />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-                  Phone
+                  Teléfono
                 </label>
                 <Input
                   value={userPhone}
                   onChange={(e) => setUserPhone(e.target.value)}
-                  placeholder="Phone"
+                  placeholder="Teléfono"
                 />
               </div>
             </div>
             <DetailRow
               icon={Shield}
-              label="Role"
+              label="Rol"
               value={user.role ? (user.role.name || user.role.slug.replace(/_/g, ' ')) : '—'}
             />
             {userMessage && (
@@ -204,7 +204,7 @@ export function ProfilePage() {
               disabled={userSaving}
               isLoading={userSaving}
             >
-              Save changes
+              Guardar cambios
             </Button>
           </CardContent>
         </Card>
@@ -215,27 +215,27 @@ export function ProfilePage() {
         <CardHeader title="Role information" />
         <CardContent className="pt-0">
           <p className="text-sm text-slate-600 dark:text-slate-300">
-            Your role (
-            <span className="font-medium capitalize">{user.role?.name || user.role?.slug?.replace(/_/g, ' ') || 'user'}</span>) determines which
-            areas of the admin panel you can access. Contact an administrator to change your role
-            or permissions.
+            Su rol (
+            <span className="font-medium capitalize">{user.role?.name || user.role?.slug?.replace(/_/g, ' ') || 'usuario'}</span>) define qué
+            zonas del panel puede usar. Pida a un administrador que cambie su rol
+            o permisos si lo necesita.
           </p>
         </CardContent>
       </Card>
 
       {/* Company info - editable */}
       <Card>
-        <CardHeader title="Company" />
+        <CardHeader title="Empresa" />
         <CardContent className="pt-0 space-y-4">
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-                Company name
+                Razón social
               </label>
               <Input
                 value={companyForm.companyName}
                 onChange={(e) => setCompanyForm((f) => ({ ...f, companyName: e.target.value }))}
-                placeholder="Company name"
+                placeholder="Razón social"
               />
             </div>
             <div>
@@ -250,18 +250,18 @@ export function ProfilePage() {
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-                Company email
+                Correo de la empresa
               </label>
               <Input
                 type="email"
                 value={companyForm.email}
                 onChange={(e) => setCompanyForm((f) => ({ ...f, email: e.target.value }))}
-                placeholder="Email"
+                placeholder="Correo"
               />
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-                Company phone
+                Teléfono de la empresa
               </label>
               <Input
                 value={companyForm.phone}
@@ -271,12 +271,12 @@ export function ProfilePage() {
             </div>
             <div className="sm:col-span-2">
               <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-                Address
+                Dirección
               </label>
               <Input
                 value={companyForm.address}
                 onChange={(e) => setCompanyForm((f) => ({ ...f, address: e.target.value }))}
-                placeholder="Address"
+                placeholder="Dirección"
               />
             </div>
           </div>
@@ -299,7 +299,7 @@ export function ProfilePage() {
             disabled={companySaving}
             isLoading={companySaving}
           >
-            Save company
+            Guardar empresa
           </Button>
         </CardContent>
       </Card>

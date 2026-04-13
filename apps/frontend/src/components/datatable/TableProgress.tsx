@@ -17,11 +17,11 @@ export function TableProgress() {
       style={{ opacity: visible ? 1 : 0 }}
       role="status"
       aria-live="polite"
-      aria-label="Loading"
+      aria-label="Cargando"
     >
       <div className="flex flex-col items-center gap-3">
         <Loader size="lg" />
-        <span className="text-sm text-slate-500 dark:text-slate-400 animate-pulse">Loading…</span>
+        <span className="text-sm text-slate-500 dark:text-slate-400 animate-pulse">Cargando…</span>
       </div>
     </div>
   );

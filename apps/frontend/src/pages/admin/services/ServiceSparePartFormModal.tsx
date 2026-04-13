@@ -182,7 +182,7 @@ export function ServiceSparePartFormModal({
               className="w-full min-h-[110px] rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               value={details}
               onChange={(e) => setDetails(e.target.value)}
-              placeholder="Optional details…"
+              placeholder="Detalles opcionales…"
             />
           </div>
         </div>

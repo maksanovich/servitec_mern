@@ -68,71 +68,71 @@ const DEFAULT_STAGES: Array<{
 }> = [
   {
     key: 'inbound-receiving',
-    label: 'Inbound/Receiving',
-    description: 'Your equipment was received and registered by our team.',
+    label: 'Recepción / Ingreso',
+    description: 'Su equipo fue recibido y registrado por nuestro equipo.',
     sortOrder: 0,
     workflow: 'standard',
     legacyArea: 'entrance',
   },
   {
     key: 'diagnosis',
-    label: 'Diagnosis',
-    description: 'Technicians are checking the issue and defining the repair plan.',
+    label: 'Diagnóstico',
+    description: 'Los técnicos revisan la falla y definen el plan de reparación.',
     sortOrder: 1,
     workflow: 'standard',
     legacyArea: 'maintenance',
   },
   {
     key: 'approval',
-    label: 'Approval',
-    description: 'Confirming approval for the suggested repair/parts.',
+    label: 'Aprobación',
+    description: 'Confirmación de la aprobación de la reparación o repuestos sugeridos.',
     sortOrder: 2,
     workflow: 'standard',
     legacyArea: 'maintenance',
   },
   {
     key: 'waiting-parts',
-    label: 'Waiting for spare parts',
-    description: 'We are waiting for the required spare parts to arrive.',
+    label: 'Espera de repuestos',
+    description: 'Estamos a la espera de que lleguen los repuestos necesarios.',
     sortOrder: 3,
     workflow: 'standard',
     legacyArea: 'waiting-parts',
   },
   {
     key: 'repair',
-    label: 'Repair',
-    description: 'Repair in progress and parts replacement.',
+    label: 'Reparación',
+    description: 'Reparación en curso y sustitución de piezas.',
     sortOrder: 4,
     workflow: 'standard',
     legacyArea: 'maintenance',
   },
   {
     key: 'testing',
-    label: 'Testing',
-    description: 'Final testing and quality check before warehouse prep.',
+    label: 'Pruebas',
+    description: 'Pruebas finales y control de calidad antes del almacén.',
     sortOrder: 5,
     workflow: 'standard',
     legacyArea: 'maintenance',
   },
   {
     key: 'warehouse-ready',
-    label: 'Warehouse/Ready for delivery',
-    description: 'The equipment is ready in the warehouse for delivery.',
+    label: 'Almacén / Listo para entrega',
+    description: 'El equipo está listo en almacén para su entrega.',
     sortOrder: 6,
     workflow: 'standard',
     legacyArea: 'warehouse',
   },
   {
     key: 'delivery',
-    label: 'Delivery',
-    description: 'Your equipment is ready for pickup or already delivered.',
+    label: 'Entrega',
+    description: 'Su equipo está listo para retiro o ya fue entregado.',
     sortOrder: 7,
     workflow: 'standard',
     legacyArea: 'delivery',
   },
 ];
 
-/** Default warranty pipeline (English labels). */
+/** Etapas por defecto del flujo de garantía (español). */
 const DEFAULT_WARRANTY_STAGES: Array<{
   key: string;
   label: string;
@@ -143,98 +143,98 @@ const DEFAULT_WARRANTY_STAGES: Array<{
 }> = [
   {
     key: 'warranty-receiving',
-    label: 'Equipment intake',
-    description: 'Product received with fault details and customer information.',
+    label: 'Recepción del equipo',
+    description: 'Producto recibido con detalle de la falla y datos del cliente.',
     sortOrder: 0,
     workflow: 'warranty',
     legacyArea: 'entrance',
   },
   {
     key: 'warranty-diagnosis',
-    label: 'In diagnosis',
-    description: 'Initial review to confirm the fault and physical condition.',
+    label: 'En diagnóstico',
+    description: 'Revisión inicial para confirmar la falla y el estado físico.',
     sortOrder: 1,
     workflow: 'warranty',
     legacyArea: 'maintenance',
   },
   {
     key: 'warranty-validation',
-    label: 'Warranty validation',
-    description: 'Confirm warranty eligibility: invoice, timeframe, and conditions.',
+    label: 'Validación de garantía',
+    description: 'Confirmar elegibilidad: factura, plazos y condiciones de garantía.',
     sortOrder: 2,
     workflow: 'warranty',
     legacyArea: 'maintenance',
   },
   {
     key: 'warranty-transferred-asc',
-    label: 'Transferred to authorized service center',
-    description: 'Sent to the distributor or manufacturer.',
+    label: 'Transferido a centro de servicio autorizado',
+    description: 'Enviado al distribuidor o fabricante.',
     sortOrder: 3,
     workflow: 'warranty',
     legacyArea: 'maintenance',
   },
   {
     key: 'warranty-waiting-provider-approval',
-    label: 'Awaiting approval',
-    description: 'The provider reviews and decides whether warranty applies.',
+    label: 'En espera de aprobación',
+    description: 'El proveedor revisa y decide si aplica la garantía.',
     sortOrder: 4,
     workflow: 'warranty',
     legacyArea: 'waiting-parts',
   },
   {
     key: 'warranty-approved',
-    label: 'Approved',
-    description: 'Warranty was accepted.',
+    label: 'Aprobado',
+    description: 'La garantía fue aceptada.',
     sortOrder: 5,
     workflow: 'warranty',
     legacyArea: 'maintenance',
   },
   {
     key: 'warranty-rejected',
-    label: 'Rejected',
-    description: 'Warranty does not apply — include the reason.',
+    label: 'Rechazado',
+    description: 'No aplica garantía; incluir el motivo.',
     sortOrder: 6,
     workflow: 'warranty',
     legacyArea: 'maintenance',
   },
   {
     key: 'warranty-solution-in-progress',
-    label: 'Solution in progress',
-    description: 'Repair, replacement, or credit note.',
+    label: 'En proceso de solución',
+    description: 'Reparación, reemplazo o nota de crédito.',
     sortOrder: 7,
     workflow: 'warranty',
     legacyArea: 'maintenance',
   },
   {
     key: 'warranty-solution-done',
-    label: 'Solution completed',
-    description: 'Equipment repaired or replacement received.',
+    label: 'Solución implementada',
+    description: 'Equipo reparado o reemplazo recibido.',
     sortOrder: 8,
     workflow: 'warranty',
     legacyArea: 'warehouse',
   },
   {
     key: 'warranty-ready-pickup',
-    label: 'Ready for pickup',
-    description: 'Available for the customer to collect.',
+    label: 'Listo para entrega',
+    description: 'Disponible para que el cliente lo retire.',
     sortOrder: 9,
     workflow: 'warranty',
     legacyArea: 'delivery',
   },
 ];
 
-/** Previous default Spanish labels — only rows that still match are migrated to English. */
-const WARRANTY_LEGACY_SPANISH_LABELS: Record<string, string> = {
-  'warranty-receiving': 'Recepción del equipo',
-  'warranty-diagnosis': 'En diagnóstico',
-  'warranty-validation': 'Validación de garantía',
-  'warranty-transferred-asc': 'Transferido a centro de servicio autorizado',
-  'warranty-waiting-provider-approval': 'En espera de aprobación',
-  'warranty-approved': 'Aprobado',
-  'warranty-rejected': 'Rechazado',
-  'warranty-solution-in-progress': 'En proceso de solución',
-  'warranty-solution-done': 'Solución implementada',
-  'warranty-ready-pickup': 'Listo para entrega',
+/** Etiquetas en inglés anteriores: solo las filas que coincidan se migran al español actual. */
+const WARRANTY_LEGACY_ENGLISH_LABELS: Record<string, string> = {
+  'warranty-receiving': 'Equipment intake',
+  'warranty-diagnosis': 'In diagnosis',
+  'warranty-validation': 'Warranty validation',
+  'warranty-transferred-asc': 'Transferred to authorized service center',
+  'warranty-waiting-provider-approval': 'Awaiting approval',
+  'warranty-approved': 'Approved',
+  'warranty-rejected': 'Rejected',
+  'warranty-solution-in-progress': 'Solution in progress',
+  'warranty-solution-done': 'Solution completed',
+  'warranty-ready-pickup': 'Ready for pickup',
 };
 
 export async function seedDefaultStagesIfEmpty(): Promise<void> {
@@ -243,7 +243,7 @@ export async function seedDefaultStagesIfEmpty(): Promise<void> {
   await OrderProgressStage.insertMany(DEFAULT_STAGES);
 }
 
-/** Ensures warranty stages exist and legacy rows have `workflow: standard`. */
+/** Asegura que existan las etapas de garantía y que las filas heredadas tengan `workflow: standard`. */
 export async function ensureWarrantyStages(): Promise<void> {
   await seedDefaultStagesIfEmpty();
   await OrderProgressStage.updateMany(
@@ -251,7 +251,7 @@ export async function ensureWarrantyStages(): Promise<void> {
     { $set: { workflow: 'standard' } }
   );
   for (const row of DEFAULT_WARRANTY_STAGES) {
-    const oldLabel = WARRANTY_LEGACY_SPANISH_LABELS[row.key];
+    const oldLabel = WARRANTY_LEGACY_ENGLISH_LABELS[row.key];
     if (oldLabel) {
       await OrderProgressStage.updateOne(
         { key: row.key, label: oldLabel },
@@ -268,7 +268,7 @@ export async function ensureWarrantyStages(): Promise<void> {
   await ensureQuarantineAbandonmentStages();
 }
 
-/** Stages for automated quarantine / abandonment after long non-pickup (see delivery quarantine cron). */
+/** Etapas de cuarentena / abandono automáticos tras largo tiempo sin retiro (ver cron de cuarentena en entrega). */
 const QUARANTINE_ABANDONMENT_STAGES: Array<{
   key: string;
   label: string;
@@ -279,32 +279,34 @@ const QUARANTINE_ABANDONMENT_STAGES: Array<{
 }> = [
   {
     key: 'delivery-quarantine',
-    label: 'Quarantine',
-    description: 'Equipment unclaimed; moved to quarantine after two months in delivery without pickup.',
+    label: 'Cuarentena',
+    description:
+      'Equipo sin reclamar; pasado a cuarentena tras dos meses en entrega sin retiro.',
     sortOrder: 8,
     workflow: 'standard',
     legacyArea: 'quarantine',
   },
   {
     key: 'delivery-abandonment',
-    label: 'Abandonment',
-    description: 'Equipment moved to abandonment storage after four months without pickup.',
+    label: 'Abandono',
+    description: 'Equipo trasladado a almacén de abandono tras cuatro meses sin retiro.',
     sortOrder: 9,
     workflow: 'standard',
     legacyArea: 'abandonment',
   },
   {
     key: 'warranty-quarantine',
-    label: 'Quarantine',
-    description: 'Equipment unclaimed; moved to quarantine after two months in delivery without pickup.',
+    label: 'Cuarentena',
+    description:
+      'Equipo sin reclamar; pasado a cuarentena tras dos meses en entrega sin retiro.',
     sortOrder: 10,
     workflow: 'warranty',
     legacyArea: 'quarantine',
   },
   {
     key: 'warranty-abandonment',
-    label: 'Abandonment',
-    description: 'Equipment moved to abandonment storage after four months without pickup.',
+    label: 'Abandono',
+    description: 'Equipo trasladado a almacén de abandono tras cuatro meses sin retiro.',
     sortOrder: 11,
     workflow: 'warranty',
     legacyArea: 'abandonment',
@@ -334,8 +336,8 @@ export async function getOrderProgressStagesPublic(req: Request, res: Response):
     const stages = await OrderProgressStage.find(q).sort({ workflow: 1, sortOrder: 1 }).lean();
     return res.json({ stages: stages.map(toStageResponse) });
   } catch (err) {
-    console.error('Get public order progress stages error:', err);
-    return res.status(500).json({ error: 'Server error' });
+    console.error('Error al obtener etapas públicas de progreso de orden:', err);
+    return res.status(500).json({ error: 'Error del servidor' });
   }
 }
 
@@ -374,8 +376,8 @@ export async function getOrderProgressStagesAdmin(req: Request, res: Response): 
     const stages = await OrderProgressStage.find(q).sort({ workflow: 1, sortOrder: 1 }).lean();
     return res.json({ stages: stages.map(toStageResponse) });
   } catch (err) {
-    console.error('Get admin order progress stages error:', err);
-    return res.status(500).json({ error: 'Server error' });
+    console.error('Error al obtener etapas de progreso de orden (admin):', err);
+    return res.status(500).json({ error: 'Error del servidor' });
   }
 }
 
@@ -390,10 +392,12 @@ export async function createOrderProgressStage(req: Request, res: Response): Pro
     const sortOrderRaw = body.sortOrder;
     const workflowRaw = body.workflow != null ? body.workflow : 'standard';
 
-    if (!key) return res.status(400).json({ error: 'key is required' });
-    if (!label) return res.status(400).json({ error: 'label is required' });
-    if (!validateStageLegacyArea(legacyArea)) return res.status(400).json({ error: 'legacyArea is invalid' });
-    if (!validateStageWorkflow(workflowRaw)) return res.status(400).json({ error: 'workflow is invalid' });
+    if (!key) return res.status(400).json({ error: 'La clave (key) es obligatoria' });
+    if (!label) return res.status(400).json({ error: 'La etiqueta (label) es obligatoria' });
+    if (!validateStageLegacyArea(legacyArea))
+      return res.status(400).json({ error: 'legacyArea no es válido' });
+    if (!validateStageWorkflow(workflowRaw))
+      return res.status(400).json({ error: 'workflow no es válido' });
     const workflow = workflowRaw as OrderProgressStageWorkflow;
 
     const max = await OrderProgressStage.findOne({ workflow }).sort({ sortOrder: -1 }).lean();
@@ -404,20 +408,20 @@ export async function createOrderProgressStage(req: Request, res: Response): Pro
   } catch (err) {
     const error = err as Error & { code?: number };
     if (error?.message?.includes('E11000')) {
-      return res.status(409).json({ error: 'A stage with this key already exists' });
+      return res.status(409).json({ error: 'Ya existe una etapa con esta clave' });
     }
-    console.error('Create order progress stage error:', err);
-    return res.status(500).json({ error: 'Server error' });
+    console.error('Error al crear etapa de progreso de orden:', err);
+    return res.status(500).json({ error: 'Error del servidor' });
   }
 }
 
 export async function updateOrderProgressStage(req: Request, res: Response): Promise<Response | void> {
   try {
     const id = String(req.params.id ?? '').trim();
-    if (!id) return res.status(400).json({ error: 'id is required' });
+    if (!id) return res.status(400).json({ error: 'El id es obligatorio' });
 
     const doc = await OrderProgressStage.findById(id);
-    if (!doc) return res.status(404).json({ error: 'Stage not found' });
+    if (!doc) return res.status(404).json({ error: 'Etapa no encontrada' });
 
     const body = req.body as Record<string, unknown>;
     const nextLabel = body.label != null ? String(body.label ?? '').trim() : undefined;
@@ -426,43 +430,46 @@ export async function updateOrderProgressStage(req: Request, res: Response): Pro
     const nextSortOrder = body.sortOrder != null ? Number(body.sortOrder) : undefined;
 
     if (nextLabel !== undefined) {
-      if (!nextLabel) return res.status(400).json({ error: 'label cannot be empty' });
+      if (!nextLabel) return res.status(400).json({ error: 'La etiqueta no puede estar vacía' });
       doc.label = nextLabel;
     }
     if (nextDescription !== undefined) doc.description = nextDescription;
     if (nextLegacyArea !== undefined) {
-      if (!validateStageLegacyArea(nextLegacyArea)) return res.status(400).json({ error: 'legacyArea is invalid' });
+      if (!validateStageLegacyArea(nextLegacyArea))
+        return res.status(400).json({ error: 'legacyArea no es válido' });
       doc.legacyArea = nextLegacyArea;
     }
     if (nextSortOrder !== undefined) {
-      if (!Number.isFinite(nextSortOrder)) return res.status(400).json({ error: 'sortOrder must be a number' });
+      if (!Number.isFinite(nextSortOrder))
+        return res.status(400).json({ error: 'sortOrder debe ser un número' });
       doc.sortOrder = nextSortOrder;
     }
 
     await doc.save();
     return res.json({ stage: toStageResponse(doc.toObject() as any) });
   } catch (err) {
-    console.error('Update order progress stage error:', err);
-    return res.status(500).json({ error: 'Server error' });
+    console.error('Error al actualizar etapa de progreso de orden:', err);
+    return res.status(500).json({ error: 'Error del servidor' });
   }
 }
 
 export async function deleteOrderProgressStage(req: Request, res: Response): Promise<Response | void> {
   try {
     const id = String(req.params.id ?? '').trim();
-    if (!id) return res.status(400).json({ error: 'id is required' });
+    if (!id) return res.status(400).json({ error: 'El id es obligatorio' });
 
     await ensureWarrantyStages();
 
     const deleted = await OrderProgressStage.findById(id).lean();
-    if (!deleted) return res.status(404).json({ error: 'Stage not found' });
+    if (!deleted) return res.status(404).json({ error: 'Etapa no encontrada' });
 
     const wf = stageWorkflow(deleted);
     const totalInWorkflow = await OrderProgressStage.countDocuments({ workflow: wf });
-    if (totalInWorkflow <= 1) return res.status(400).json({ error: 'Cannot delete the last stage in this workflow' });
+    if (totalInWorkflow <= 1)
+      return res.status(400).json({ error: 'No se puede eliminar la última etapa de este flujo' });
 
     const remaining = await OrderProgressStage.find({ _id: { $ne: id }, workflow: wf }).sort({ sortOrder: 1 }).lean();
-    if (remaining.length === 0) return res.status(400).json({ error: 'No remaining stages' });
+    if (remaining.length === 0) return res.status(400).json({ error: 'No quedan etapas' });
 
     const replacement = (() => {
       const less = remaining.filter((s) => Number(s.sortOrder ?? 0) < Number(deleted.sortOrder ?? 0));
@@ -487,8 +494,8 @@ export async function deleteOrderProgressStage(req: Request, res: Response): Pro
     await OrderProgressStage.findByIdAndDelete(id);
     return res.json({ ok: true });
   } catch (err) {
-    console.error('Delete order progress stage error:', err);
-    return res.status(500).json({ error: 'Server error' });
+    console.error('Error al eliminar etapa de progreso de orden:', err);
+    return res.status(500).json({ error: 'Error del servidor' });
   }
 }
 

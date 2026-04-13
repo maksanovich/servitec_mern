@@ -66,7 +66,7 @@ import {
 
 export type { Order };
 
-const exportOptions = { title: 'Orders', filename: 'orders' };
+const exportOptions = { title: 'Pedidos', filename: 'pedidos' };
 
 /** One icon per tab index so stages that share a legacy area still look distinct. */
 const STAGE_TAB_ICONS: LucideIcon[] = [
@@ -206,17 +206,17 @@ export function OrdersPage() {
   const toastWhatsAppPatchStatus = useCallback((status?: OrderPatchWhatsAppStatus) => {
     if (!status) return;
     if (status.sent) {
-      toast.success('WhatsApp update sent to the client.');
+      toast.success('Actualización de WhatsApp enviada al cliente.');
       return;
     }
     if (status.reason === 'no_phone') {
-      toast.warning('Order updated. No client phone number for WhatsApp.');
+      toast.warning('Pedido actualizado. No hay teléfono del cliente para WhatsApp.');
       return;
     }
     if (status.reason === 'not_configured') {
       return;
     }
-    toast.error(`WhatsApp delivery failed: ${status.error ?? 'Unknown error'}`);
+    toast.error(`Error al enviar por WhatsApp: ${status.error ?? 'Error desconocido'}`);
   }, []);
 
   const handleDeleteClick = useCallback((order: Order) => {
@@ -233,7 +233,7 @@ export function OrdersPage() {
       setDeleteConfirm(null);
       await refetchOrders();
     } catch (e) {
-      setDeleteError(e instanceof Error ? e.message : 'Failed to delete order');
+      setDeleteError(e instanceof Error ? e.message : 'No se pudo eliminar el pedido');
     } finally {
       setDeleteLoading(false);
     }
@@ -432,7 +432,7 @@ export function OrdersPage() {
         if (!servicesData.length) setServicesData(servicesResp.items);
         if (!spareCatalogData.length) setSpareCatalogData(spareResp.items);
       } catch (e) {
-        setBudgetError(e instanceof Error ? e.message : 'Failed to load budget details');
+        setBudgetError(e instanceof Error ? e.message : 'No se pudo cargar el presupuesto');
         setBudgetLines([]);
         setBudgetClientTarifasid(0);
       } finally {
@@ -472,7 +472,7 @@ export function OrdersPage() {
       setBudgetClientTarifasid(0);
       setBudgetLines([]);
     } catch (e) {
-      setBudgetError(e instanceof Error ? e.message : 'Failed to save budget');
+      setBudgetError(e instanceof Error ? e.message : 'No se pudo guardar el presupuesto');
     } finally {
       setBudgetSaving(false);
     }
@@ -513,7 +513,7 @@ export function OrdersPage() {
       } catch (e) {
         setDeliveryOrder(order);
         setDeliveryAdvance(0);
-        setDeliveryError(e instanceof Error ? e.message : 'Failed to load delivery details');
+        setDeliveryError(e instanceof Error ? e.message : 'No se pudo cargar la entrega');
       } finally {
         setDeliveryLoading(false);
       }
@@ -551,7 +551,7 @@ export function OrdersPage() {
       setDeliveryAdvance(0);
       setDeliveryTargetStageKey('');
     } catch (e) {
-      setDeliveryError(e instanceof Error ? e.message : 'Failed to move order');
+      setDeliveryError(e instanceof Error ? e.message : 'No se pudo mover el pedido');
     } finally {
       setDeliverySaving(false);
     }
@@ -575,7 +575,7 @@ export function OrdersPage() {
       await refetchOrders();
       setMoveConfirm(null);
     } catch (e) {
-      setMoveError(e instanceof Error ? e.message : 'Failed to move order');
+      setMoveError(e instanceof Error ? e.message : 'No se pudo mover el pedido');
     } finally {
       setMoveLoading(false);
     }
@@ -624,7 +624,7 @@ export function OrdersPage() {
 
   const validateWarehouseImage = useCallback((file: File): string | null => {
     if (!file.type.startsWith('image/')) {
-      return 'Please select an image (JPEG, PNG, WebP or GIF).';
+      return 'Seleccione una imagen (JPEG, PNG, WebP o GIF).';
     }
     if (file.size > MAX_ORDER_PHOTO_BYTES) {
       return `Each image must be under ${(MAX_ORDER_PHOTO_BYTES / (1024 * 1024)).toFixed(0)}MB.`;
@@ -706,7 +706,7 @@ export function OrdersPage() {
       setWarehousePhotoError(null);
       if (warehousePhotoInputRef.current) warehousePhotoInputRef.current.value = '';
     } catch (e) {
-      setWarehousePhotoError(e instanceof Error ? e.message : 'Failed to move order');
+      setWarehousePhotoError(e instanceof Error ? e.message : 'No se pudo mover el pedido');
     } finally {
       setWarehouseSaving(false);
     }
@@ -762,7 +762,7 @@ export function OrdersPage() {
               size="sm"
               className="min-w-0 p-1.5"
               disabled={!addable}
-              title={addable ? undefined : 'Not enough stock to add'}
+              title={addable ? undefined : 'Stock insuficiente para añadir'}
               onClick={() => addToBudget(row)}
               aria-label={addable ? `Add ${row.name}` : `Cannot add ${row.name} — not enough stock`}
             >
@@ -846,7 +846,7 @@ export function OrdersPage() {
               size="sm"
               className="min-w-0 p-1.5"
               disabled={!addable}
-              title={addable ? undefined : 'Not enough stock to add'}
+              title={addable ? undefined : 'Stock insuficiente para añadir'}
               onClick={() => addSpareToBudget(row)}
               aria-label={addable ? `Add ${label}` : `Cannot add ${label} — not enough stock`}
             >
@@ -864,8 +864,8 @@ export function OrdersPage() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
-          title="Orders - DIGITALSERVER TECHNICAL SERVICE"
-          breadcrumb={[{ label: 'Operations', icon: Home }, { label: 'Orders' }]}
+          title="Pedidos — Servicio técnico DIGITALSERVER"
+          breadcrumb={[{ label: 'Operaciones', icon: Home }, { label: 'Pedidos' }]}
         />
         <div className="flex flex-col items-stretch sm:flex-row sm:items-center gap-2">
           <ButtonGroup className="sm:mr-auto">
@@ -875,7 +875,7 @@ export function OrdersPage() {
               size="md"
               onClick={() => setWorkflowView('standard')}
             >
-              Standard repair
+              Reparación estándar
             </Button>
             <Button
               type="button"
@@ -883,7 +883,7 @@ export function OrdersPage() {
               size="md"
               onClick={() => setWorkflowView('warranty')}
             >
-              Warranty
+              Garantía
             </Button>
           </ButtonGroup>
           <Link to="/admin/order/new">
@@ -893,13 +893,13 @@ export function OrdersPage() {
               leftIcon={Wrench}
               className="sm:ml-auto"
             >
-              New Order
+              Nuevo pedido
             </Button>
           </Link>
           {user?.role?.slug === SUPER_ADMIN_SLUG && (
             <Link to="/admin/order/stages">
               <Button variant="secondary" size="md" className="sm:ml-2" leftIcon={FileText}>
-                Manage stages
+                Gestionar etapas
               </Button>
             </Link>
           )}
@@ -909,7 +909,7 @@ export function OrdersPage() {
       {/* Stage tabs */}
       <div className="flex w-full gap-1 border-b border-slate-200 dark:border-slate-700">
         {stagesLoading && (
-          <div className="flex-1 px-4 py-3 text-sm text-slate-500 dark:text-slate-400">Loading stages…</div>
+          <div className="flex-1 px-4 py-3 text-sm text-slate-500 dark:text-slate-400">Cargando etapas…</div>
         )}
         {!stagesLoading &&
           sortedStagesForTabs.map((s, index) => {
@@ -952,18 +952,18 @@ export function OrdersPage() {
                 size="sm"
                 leftIcon={FileText}
                 onClick={exportPDF}
-                title="Export PDF"
+                title="Exportar PDF"
                 className="p-2 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20"
-                aria-label="Export PDF"
+                aria-label="Exportar PDF"
               />
               <Button
                 variant="secondary"
                 size="sm"
                 leftIcon={FileSpreadsheet}
                 onClick={exportExcel}
-                title="Export Excel"
+                title="Exportar Excel"
                 className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
-                aria-label="Export Excel"
+                aria-label="Exportar Excel"
               />
             </ButtonGroup>
           }
@@ -973,7 +973,7 @@ export function OrdersPage() {
       <Modal
         open={!!deliveryOrder}
         onClose={closeDeliveryModal}
-        title="Equipment Delivery"
+        title="Entrega de equipo"
         size="lg"
       >
         {deliveryError && (
@@ -984,14 +984,14 @@ export function OrdersPage() {
 
         <div className="border-b border-slate-200 dark:border-slate-700 pb-4 mb-4">
           <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100 uppercase tracking-wide">
-            Service details
+            Detalles del servicio
           </h3>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">
-              Advance (*)
+              Anticipo (*)
             </label>
             <Input
               type="number"
@@ -1014,7 +1014,7 @@ export function OrdersPage() {
           </div>
           <div>
             <label className="block text-xs font-semibold text-red-600 dark:text-red-400 mb-1">
-              Debt (*)
+              Deuda (*)
             </label>
             <Input
               type="text"
@@ -1033,7 +1033,7 @@ export function OrdersPage() {
             onClick={closeDeliveryModal}
             disabled={deliverySaving}
           >
-            Cancel
+            Cancelar
           </Button>
           <Button
             type="button"
@@ -1042,7 +1042,7 @@ export function OrdersPage() {
             onClick={handleDeliverySave}
             isLoading={deliverySaving}
           >
-            Keep
+            Guardar
           </Button>
         </div>
       </Modal>
@@ -1050,7 +1050,7 @@ export function OrdersPage() {
       <Modal
         open={!!warehouseMoveOrder}
         onClose={closeWarehouseModal}
-        title="Move to Warehouse"
+        title="Mover al almacén"
         size="lg"
       >
         {warehousePhotoError && (
@@ -1062,7 +1062,7 @@ export function OrdersPage() {
         <div className="space-y-4">
           <div>
             <p className="text-sm text-slate-600">
-              Upload one or more after-repair / fixed photos before moving this order to the warehouse.
+              Suba una o más fotos posteriores a la reparación antes de mover este pedido al almacén.
             </p>
           </div>
 
@@ -1081,8 +1081,8 @@ export function OrdersPage() {
                     type="button"
                     onClick={() => removeWarehouseAfterPhoto(p.id)}
                     className="absolute -top-1 -right-1 p-1 rounded-full bg-red-500 text-white hover:bg-red-600 shadow"
-                    title="Remove photo"
-                    aria-label="Remove after-repair photo"
+                    title="Quitar foto"
+                    aria-label="Quitar foto posterior a la reparación"
                     disabled={warehouseSaving}
                   >
                     <X className="w-3.5 h-3.5" />
@@ -1122,14 +1122,14 @@ export function OrdersPage() {
                 onClick={() => warehousePhotoInputRef.current?.click()}
                 disabled={warehouseSaving}
               >
-                Add after-repair photos
+                Añadir fotos posteriores a la reparación
               </Button>
             </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
             <Button type="button" variant="red" size="md" onClick={closeWarehouseModal} disabled={warehouseSaving}>
-              Cancel
+              Cancelar
             </Button>
             <Button
               type="button"
@@ -1138,7 +1138,7 @@ export function OrdersPage() {
               onClick={handleWarehouseMove}
               isLoading={warehouseSaving}
             >
-              Move to Warehouse
+              Mover al almacén
             </Button>
           </div>
         </div>
@@ -1147,15 +1147,15 @@ export function OrdersPage() {
       <Modal
         open={!!budgetOrder}
         onClose={closeBudgetModal}
-        title={budgetOrder ? `Edit budget — ${budgetOrder.no}` : 'Edit budget'}
+        title={budgetOrder ? `Editar presupuesto — ${budgetOrder.no}` : 'Editar presupuesto'}
         size="2xl"
         headerActions={
           <>
             <Button type="button" variant="red" size="md" onClick={closeBudgetModal} disabled={budgetSaving}>
-              Cancel
+              Cancelar
             </Button>
             <Button type="button" variant="primary" size="md" onClick={handleBudgetSave} isLoading={budgetSaving}>
-              Keep
+              Guardar
             </Button>
           </>
         }
@@ -1168,25 +1168,25 @@ export function OrdersPage() {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <Card className="min-h-0 flex flex-col">
             <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
-              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Services</h3>
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Servicios</h3>
             </div>
             <div className="p-0 flex-1 min-h-0">
               <DataTableWithToolbar<ServiceSparePartItem>
                 data={availableServices}
                 columns={servicesColumns}
                 searchFields={['name']}
-                searchPlaceholder="Search:"
+                searchPlaceholder="Buscar:"
                 pageSizeOptions={[10, 25, 50]}
                 defaultPageSize={10}
                 noDataComponent={
                   catalogLoading ? (
                     <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
                       <Loader size="md" />
-                      <span className="text-sm">Loading…</span>
+                      <span className="text-sm">Cargando…</span>
                     </div>
                   ) : (
                     <div className="py-12 text-center text-slate-500 dark:text-slate-400">
-                      No services found.
+                      No se encontraron servicios.
                     </div>
                   )
                 }
@@ -1196,25 +1196,25 @@ export function OrdersPage() {
 
           <Card className="min-h-0 flex flex-col">
             <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
-              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Spare parts</h3>
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Repuestos</h3>
             </div>
             <div className="p-0 flex-1 min-h-0">
               <DataTableWithToolbar<SpareServerRow>
                 data={spareCatalogData}
                 columns={spareColumns}
                 searchFields={['description', 'productocodigo']}
-                searchPlaceholder="Search:"
+                searchPlaceholder="Buscar:"
                 pageSizeOptions={[10, 25, 50]}
                 defaultPageSize={10}
                 noDataComponent={
                   catalogLoading ? (
                     <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
                       <Loader size="md" />
-                      <span className="text-sm">Loading…</span>
+                      <span className="text-sm">Cargando…</span>
                     </div>
                   ) : (
                     <div className="py-12 text-center text-slate-500 dark:text-slate-400">
-                      No spare parts found.
+                      No se encontraron repuestos.
                     </div>
                   )
                 }
@@ -1224,16 +1224,16 @@ export function OrdersPage() {
 
           <Card className="min-h-0 flex flex-col">
             <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
-              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Budget Details</h3>
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Detalle del presupuesto</h3>
             </div>
             <div className="p-0 flex-1 min-h-0">
               <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-600 flex-1 min-h-0">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
-                      <th className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">Item</th>
-                      <th className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">Price</th>
-                      <th className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">Amount</th>
+                      <th className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">Ítem</th>
+                      <th className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">Precio</th>
+                      <th className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">Cantidad</th>
                       <th className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">Total</th>
                       <th className="w-10 py-3 px-4" />
                     </tr>
@@ -1242,7 +1242,7 @@ export function OrdersPage() {
                     {budgetLines.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="py-12 text-center text-slate-500 dark:text-slate-400">
-                          No items. Add from Services or Spare parts.
+                          Sin ítems. Añada desde Servicios o Repuestos.
                         </td>
                       </tr>
                     ) : (
@@ -1269,7 +1269,7 @@ export function OrdersPage() {
                               type="button"
                               onClick={() => removeBudgetLine(line.id)}
                               className="p-1 text-slate-400 hover:text-red-500 dark:hover:text-red-400"
-                              aria-label="Remove"
+                              aria-label="Quitar"
                             >
                               <X className="w-4 h-4" />
                             </button>
@@ -1301,14 +1301,14 @@ export function OrdersPage() {
         open={!!deleteConfirm}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
-        title="Delete order"
+        title="Eliminar pedido"
         message={
           deleteConfirm
-            ? `Are you sure you want to delete "${deleteConfirm.no}"? This action cannot be undone.`
+            ? `¿Seguro que desea eliminar "${deleteConfirm.no}"? Esta acción no se puede deshacer.`
             : ''
         }
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
         variant="danger"
         isLoading={deleteLoading}
         error={deleteError}
@@ -1317,14 +1317,14 @@ export function OrdersPage() {
         open={!!moveConfirm}
         onClose={handleMoveCancel}
         onConfirm={handleMoveConfirm}
-        title="Move order"
+        title="Mover pedido"
         message={
           moveConfirm
-            ? `Move order "${moveConfirm.order.no}" to "${stages.find((s) => s.key === moveConfirm.toStageKey)?.label ?? moveConfirm.toStageKey
+            ? `¿Mover el pedido "${moveConfirm.order.no}" a "${stages.find((s) => s.key === moveConfirm.toStageKey)?.label ?? moveConfirm.toStageKey
             }"?`
             : ''
         }
-        confirmLabel="Yes"
+        confirmLabel="Sí"
         cancelLabel="No"
         isLoading={moveLoading}
         error={moveError}

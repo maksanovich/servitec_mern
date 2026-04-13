@@ -12,7 +12,7 @@ import {
 
 export function formatPrice(n: number | null) {
   if (n == null || Number.isNaN(n)) return '—';
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n);
+  return new Intl.NumberFormat('es', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(n);
 }
 
 export function formatDate(iso: string | null) {
@@ -79,7 +79,7 @@ export function SparePartThumbnail({
 
   if (phase === 'loading') {
     return (
-      <div className={boxClass} title="Loading image">
+      <div className={boxClass} title="Cargando imagen">
         <Loader size="sm" />
       </div>
     );
@@ -102,7 +102,7 @@ export function SparePartThumbnail({
   return (
     <div
       className={`${boxClass} text-slate-400`}
-      title={phase === 'error' ? 'Image failed to load' : 'No image in Perseo'}
+      title={phase === 'error' ? 'No se pudo cargar la imagen' : 'Sin imagen en Perseo'}
     >
       <ImageOff className={variant === 'modal' ? 'w-10 h-10 opacity-60' : 'w-5 h-5 opacity-60'} aria-hidden />
     </div>
@@ -112,7 +112,7 @@ export function SparePartThumbnail({
 export const sparePartsColumns: TableColumn<SpareServerRow>[] = [
   {
     id: 'image',
-    name: 'Image',
+    name: 'Imagen',
     selector: () => '',
     sortable: false,
     width: '76px',
@@ -125,7 +125,7 @@ export const sparePartsColumns: TableColumn<SpareServerRow>[] = [
   },
   {
     id: 'productocodigo',
-    name: 'Code',
+    name: 'Código',
     selector: (row) => row.productocodigo,
     sortable: true,
     width: '120px',
@@ -135,7 +135,7 @@ export const sparePartsColumns: TableColumn<SpareServerRow>[] = [
   },
   {
     id: 'productosid',
-    name: 'Product ID',
+    name: 'ID producto',
     selector: (row) => row.productosid,
     sortable: true,
     width: '104px',
@@ -146,7 +146,7 @@ export const sparePartsColumns: TableColumn<SpareServerRow>[] = [
   },
   {
     id: 'description',
-    name: 'Description',
+    name: 'Descripción',
     selector: (row) => row.description,
     sortable: true,
     minWidth: '220px',
@@ -158,7 +158,7 @@ export const sparePartsColumns: TableColumn<SpareServerRow>[] = [
   },
   {
     id: 'tarifasPrecios',
-    name: 'Tariff prices',
+    name: 'Precios por tarifa',
     selector: (row) => formatSpareTariffPriceListPlain(row),
     sortable: true,
     sortFunction: (a, b) => spareTariffPriceListSortKey(a) - spareTariffPriceListSortKey(b),
@@ -174,9 +174,9 @@ export const sparePartsColumns: TableColumn<SpareServerRow>[] = [
           {list.map((e, i) => (
             <span
               key={`${e.tarifasid ?? 'x'}-${i}`}
-              title={e.tarifasid != null ? `Tariff id ${e.tarifasid}` : 'Tariff'}
+              title={e.tarifasid != null ? `Tarifa ${e.tarifasid}` : 'Tarifa'}
             >
-              {e.tarifasid != null ? `T${e.tarifasid}` : 'Tariff'}: {formatPrice(e.base)}
+              {e.tarifasid != null ? `T${e.tarifasid}` : 'Tarifa'}: {formatPrice(e.base)}
             </span>
           ))}
         </div>

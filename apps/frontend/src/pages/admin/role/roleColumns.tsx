@@ -75,8 +75,8 @@ function ActionDropdown({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={actionBtnClass}
-        title="Actions"
-        aria-label="Actions"
+        title="Acciones"
+        aria-label="Acciones"
         aria-expanded={open}
       >
         <ChevronDown className="w-4 h-4" />
@@ -98,7 +98,7 @@ function ActionDropdown({
                 setOpen(false);
               }}
             >
-              <Pencil className="w-4 h-4" /> Edit
+              <Pencil className="w-4 h-4" /> Editar
             </button>
             {role.slug !== SUPER_ADMIN_SLUG && (
               <button
@@ -109,7 +109,7 @@ function ActionDropdown({
                   setOpen(false);
                 }}
               >
-                <Trash2 className="w-4 h-4" /> Delete
+                <Trash2 className="w-4 h-4" /> Eliminar
               </button>
             )}
           </div>,
@@ -125,15 +125,15 @@ const stateVariant: Record<Role['state'], 'success' | 'error'> = {
 };
 
 const stateLabel: Record<Role['state'], string> = {
-  active: 'Active',
-  inactive: 'Inactive',
+  active: 'Activo',
+  inactive: 'Inactivo',
 };
 
 export function getRoleColumns(actions: RoleColumnActions): TableColumn<Role>[] {
   return [
     {
       id: 'name',
-      name: 'Name',
+      name: 'Nombre',
       selector: (row) => row.name,
       sortable: true,
       minWidth: '160px',
@@ -143,7 +143,7 @@ export function getRoleColumns(actions: RoleColumnActions): TableColumn<Role>[] 
     },
     {
       id: 'slug',
-      name: 'Slug',
+      name: 'Identificador',
       selector: (row) => row.slug,
       sortable: true,
       minWidth: '120px',
@@ -155,7 +155,7 @@ export function getRoleColumns(actions: RoleColumnActions): TableColumn<Role>[] 
     },
     {
       id: 'description',
-      name: 'Description',
+      name: 'Descripción',
       selector: (row) => row.description,
       sortable: true,
       minWidth: '220px',
@@ -167,7 +167,7 @@ export function getRoleColumns(actions: RoleColumnActions): TableColumn<Role>[] 
     },
     {
       id: 'state',
-      name: 'State',
+      name: 'Estado',
       selector: (row) => row.state,
       sortable: true,
       width: '100px',
@@ -177,7 +177,7 @@ export function getRoleColumns(actions: RoleColumnActions): TableColumn<Role>[] 
     },
     {
       id: 'action',
-      name: 'Action',
+      name: 'Acciones',
       sortable: false,
       width: '80px',
       cell: (row) => (

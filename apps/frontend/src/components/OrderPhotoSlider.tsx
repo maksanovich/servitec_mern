@@ -58,7 +58,7 @@ export function OrderPhotoSlider({
               type="button"
               onClick={() => go(-1)}
               className="absolute left-2 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/85 text-slate-800 shadow-md border border-slate-200/80 hover:bg-white"
-              aria-label="Previous photo"
+              aria-label="Foto anterior"
             >
               <ChevronLeft className="h-5 w-5" aria-hidden />
             </button>
@@ -66,7 +66,7 @@ export function OrderPhotoSlider({
               type="button"
               onClick={() => go(1)}
               className="absolute right-2 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/85 text-slate-800 shadow-md border border-slate-200/80 hover:bg-white"
-              aria-label="Next photo"
+              aria-label="Foto siguiente"
             >
               <ChevronRight className="h-5 w-5" aria-hidden />
             </button>

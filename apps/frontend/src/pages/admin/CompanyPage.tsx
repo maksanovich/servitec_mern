@@ -63,8 +63,8 @@ export function CompanyPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Company - DIGITALSERVER TECHNICAL SERVICE"
-        breadcrumb={[{ label: 'System', icon: Home }, { label: 'Company' }]}
+        title="Empresa — Servicio técnico DIGITALSERVER"
+        breadcrumb={[{ label: 'Sistema', icon: Home }, { label: 'Empresa' }]}
       />
 
       <Card className="overflow-hidden">
@@ -72,7 +72,7 @@ export function CompanyPage() {
           data={tableData}
           columns={columns}
           searchFields={['ruc', 'companyName', 'email', 'phone', 'address']}
-          searchPlaceholder="Look for:"
+          searchPlaceholder="Buscar:"
           pageSizeOptions={[10, 25, 50, 100]}
           defaultPageSize={10}
           onFilteredDataChange={onFilteredDataChange}
@@ -83,18 +83,18 @@ export function CompanyPage() {
                 size="sm"
                 leftIcon={FileSpreadsheet}
                 onClick={exportExcel}
-                title="Export Excel"
+                title="Exportar Excel"
                 className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
-                aria-label="Export Excel"
+                aria-label="Exportar Excel"
               />
               <Button
                 variant="secondary"
                 size="sm"
                 leftIcon={FileText}
                 onClick={exportPDF}
-                title="Export PDF"
+                title="Exportar PDF"
                 className="p-2 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20"
-                aria-label="Export PDF"
+                aria-label="Exportar PDF"
               />
             </ButtonGroup>
           }

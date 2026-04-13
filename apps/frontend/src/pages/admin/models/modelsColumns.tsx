@@ -61,8 +61,8 @@ function ActionDropdown({ model, actions }: { model: Model; actions: ModelColumn
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={actionBtnClass}
-        title="Actions"
-        aria-label="Actions"
+        title="Acciones"
+        aria-label="Acciones"
         aria-expanded={open}
       >
         <ChevronDown className="w-4 h-4" />
@@ -79,14 +79,14 @@ function ActionDropdown({ model, actions }: { model: Model; actions: ModelColumn
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
             onClick={() => { actions.onEdit(model); setOpen(false); }}
           >
-            <Pencil className="w-4 h-4" /> Edit
+            <Pencil className="w-4 h-4" /> Editar
           </button>
           <button
             type="button"
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"
             onClick={() => { actions.onDelete(model); setOpen(false); }}
           >
-            <Trash2 className="w-4 h-4" /> Delete
+            <Trash2 className="w-4 h-4" /> Eliminar
           </button>
         </div>,
         document.body
@@ -101,14 +101,14 @@ const stateVariant: Record<string, 'success' | 'error'> = {
 };
 
 const stateLabel: Record<string, string> = {
-  active: 'Active',
-  inactive: 'Inactive',
+  active: 'Activo',
+  inactive: 'Inactivo',
 };
 
 export const getModelsColumns = (actions: ModelColumnActions): TableColumn<Model>[] => [
   {
     id: 'brand',
-    name: 'Brand',
+    name: 'Marca',
     selector: (row) => row.brand,
     sortable: true,
     minWidth: '200px',
@@ -118,7 +118,7 @@ export const getModelsColumns = (actions: ModelColumnActions): TableColumn<Model
   },
   {
     id: 'model',
-    name: 'model',
+    name: 'Modelo',
     selector: (row) => row.model,
     sortable: true,
     minWidth: '200px',
@@ -128,7 +128,7 @@ export const getModelsColumns = (actions: ModelColumnActions): TableColumn<Model
   },
   {
     id: 'state',
-    name: 'State',
+    name: 'Estado',
     selector: (row) => row.state,
     sortable: true,
     width: '120px',
@@ -138,7 +138,7 @@ export const getModelsColumns = (actions: ModelColumnActions): TableColumn<Model
   },
   {
     id: 'action',
-    name: 'Action',
+    name: 'Acciones',
     sortable: false,
     width: '80px',
     cell: (row) => <ActionDropdown model={row} actions={actions} />,

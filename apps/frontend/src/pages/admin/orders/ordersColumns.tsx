@@ -19,7 +19,7 @@ import { Badge } from '../../../components/ui';
 import type { TableColumn } from '../../../components/datatable';
 import type { Order } from './types';
 import type { OrderProgressStage } from '../../../api/orderProgressStages';
-import { priorityVariant, stateVariant, stateLabel } from './constants';
+import { priorityLabel, priorityVariant, stateVariant, stateLabel } from './constants';
 import { downloadTechnicalReportDocx } from '../../../api/orders';
 
 const actionBtnClass =
@@ -139,7 +139,7 @@ function ActionDropdown({
               setOpen(false);
             }}
           >
-            <Wrench className="w-4 h-4" /> Maintenance
+            <Wrench className="w-4 h-4" /> Mantenimiento
           </button>
           <button
             type="button"
@@ -149,7 +149,7 @@ function ActionDropdown({
               setOpen(false);
             }}
           >
-            <Printer className="w-4 h-4" /> Print
+            <Printer className="w-4 h-4" /> Imprimir
           </button>
           <button
             type="button"
@@ -159,7 +159,7 @@ function ActionDropdown({
               setOpen(false);
             }}
           >
-            <Pencil className="w-4 h-4" /> Edit
+            <Pencil className="w-4 h-4" /> Editar
           </button>
           <button
             type="button"
@@ -170,7 +170,7 @@ function ActionDropdown({
             }}
             disabled={isDeleteLoading}
           >
-            <Trash2 className="w-4 h-4" /> {isDeleteLoading ? 'Deleting…' : 'Delete'}
+            <Trash2 className="w-4 h-4" /> {isDeleteLoading ? 'Eliminando…' : 'Eliminar'}
           </button>
         </>
       ) : order.area === 'delivery' ? (
@@ -180,7 +180,7 @@ function ActionDropdown({
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
             onClick={() => { onPrint(order); setOpen(false); }}
           >
-            <Printer className="w-4 h-4" /> Print
+            <Printer className="w-4 h-4" /> Imprimir
           </button>
         </>
       ) : order.area === 'waiting-parts' ? (
@@ -195,21 +195,21 @@ function ActionDropdown({
               setOpen(false);
             }}
           >
-            <Wrench className="w-4 h-4" /> Part received — resume maintenance
+            <Wrench className="w-4 h-4" /> Repuesto recibido — reanudar mantenimiento
           </button>
           <button
             type="button"
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
             onClick={() => { onPrint(order); setOpen(false); }}
           >
-            <Printer className="w-4 h-4" /> Print
+            <Printer className="w-4 h-4" /> Imprimir
           </button>
           <button
             type="button"
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
             onClick={() => { navigate(`/admin/order/${order.id}/edit`); setOpen(false); }}
           >
-            <Pencil className="w-4 h-4" /> Edit
+            <Pencil className="w-4 h-4" /> Editar
           </button>
           <button
             type="button"
@@ -217,7 +217,7 @@ function ActionDropdown({
             onClick={() => { onDelete(order); setOpen(false); }}
             disabled={isDeleteLoading}
           >
-            <Trash2 className="w-4 h-4" /> {isDeleteLoading ? 'Deleting…' : 'Delete'}
+            <Trash2 className="w-4 h-4" /> {isDeleteLoading ? 'Eliminando…' : 'Eliminar'}
           </button>
         </>
       ) : order.area === 'maintenance' ? (
@@ -234,7 +234,7 @@ function ActionDropdown({
               setOpen(false);
             }}
           >
-            <DollarSign className="w-4 h-4" /> Edit budget
+            <DollarSign className="w-4 h-4" /> Editar presupuesto
           </button>
           <button
             type="button"
@@ -246,7 +246,7 @@ function ActionDropdown({
               setOpen(false);
             }}
           >
-            <Clock className="w-4 h-4" /> Waiting for spare part
+            <Clock className="w-4 h-4" /> Esperando repuesto
           </button>
           <button
             type="button"
@@ -260,7 +260,7 @@ function ActionDropdown({
               setOpen(false);
             }}
           >
-            <RefreshCw className="w-4 h-4" /> Replacement
+            <RefreshCw className="w-4 h-4" /> Reemplazo
           </button>
           <button
             type="button"
@@ -274,7 +274,7 @@ function ActionDropdown({
               setOpen(false);
             }}
           >
-            <Package className="w-4 h-4" /> Store
+            <Package className="w-4 h-4" /> Almacén
           </button>
           <button
             type="button"
@@ -284,7 +284,7 @@ function ActionDropdown({
               setOpen(false);
             }}
           >
-            <Pencil className="w-4 h-4" /> Edit
+            <Pencil className="w-4 h-4" /> Editar
           </button>
           <button
             type="button"
@@ -294,7 +294,7 @@ function ActionDropdown({
               setOpen(false);
             }}
           >
-            <Printer className="w-4 h-4" /> Print
+            <Printer className="w-4 h-4" /> Imprimir
           </button>
         </>
       ) : order.area === 'warehouse' ? (
@@ -304,7 +304,7 @@ function ActionDropdown({
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-amber-700 dark:text-amber-200 hover:bg-amber-500/10 dark:hover:bg-amber-500/20"
             onClick={() => { navigate(`/admin/order/${order.id}/edit`); setOpen(false); }}
           >
-            <Pencil className="w-4 h-4" /> Edit
+            <Pencil className="w-4 h-4" /> Editar
           </button>
           <button
             type="button"
@@ -318,14 +318,14 @@ function ActionDropdown({
               setOpen(false);
             }}
           >
-            <Truck className="w-4 h-4" /> Deliver
+            <Truck className="w-4 h-4" /> Entregar
           </button>
           <button
             type="button"
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-sky-700 dark:text-sky-200 hover:bg-sky-500/10 dark:hover:bg-sky-500/20"
             onClick={() => { onPrint(order); setOpen(false); }}
           >
-            <Printer className="w-4 h-4" /> Print
+            <Printer className="w-4 h-4" /> Imprimir
           </button>
         </>
       ) : (
@@ -342,35 +342,35 @@ function ActionDropdown({
               setOpen(false);
             }}
           >
-            <DollarSign className="w-4 h-4" /> Edit budget
+            <DollarSign className="w-4 h-4" /> Editar presupuesto
           </button>
           <button
             type="button"
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-amber-700 dark:text-amber-200 hover:bg-slate-100 dark:hover:bg-slate-700"
             onClick={() => { onStore(order); setOpen(false); }}
           >
-            <Package className="w-4 h-4" /> Store
+            <Package className="w-4 h-4" /> Almacén
           </button>
           <button
             type="button"
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-violet-700 dark:text-violet-200 hover:bg-slate-100 dark:hover:bg-slate-700"
             onClick={() => { onReplacement(order); setOpen(false); }}
           >
-            <RefreshCw className="w-4 h-4" /> Replacement
+            <RefreshCw className="w-4 h-4" /> Reemplazo
           </button>
           <button
             type="button"
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
             onClick={() => { onPrint(order); setOpen(false); }}
           >
-            <Printer className="w-4 h-4" /> Print
+            <Printer className="w-4 h-4" /> Imprimir
           </button>
           <button
             type="button"
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
             onClick={() => { navigate(`/admin/order/${order.id}/edit`); setOpen(false); }}
           >
-            <Pencil className="w-4 h-4" /> Edit
+            <Pencil className="w-4 h-4" /> Editar
           </button>
           <button
             type="button"
@@ -378,7 +378,7 @@ function ActionDropdown({
             onClick={() => { onDelete(order); setOpen(false); }}
             disabled={isDeleteLoading}
           >
-            <Trash2 className="w-4 h-4" /> {isDeleteLoading ? 'Deleting…' : 'Delete'}
+            <Trash2 className="w-4 h-4" /> {isDeleteLoading ? 'Eliminando…' : 'Eliminar'}
           </button>
         </>
       )}
@@ -392,8 +392,8 @@ function ActionDropdown({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={actionBtnClass}
-        title="Actions"
-        aria-label="Actions"
+        title="Acciones"
+        aria-label="Acciones"
         aria-expanded={open}
       >
         <ChevronDown className="w-4 h-4" />
@@ -538,7 +538,7 @@ function StageActionDropdown({
             setOpen(false);
           }}
         >
-          Prev: {prevStage.label}
+          Ant.: {prevStage.label}
         </button>
       )}
 
@@ -560,7 +560,7 @@ function StageActionDropdown({
           <button
             type="button"
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-200 hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20"
-            title="Mark warranty as approved"
+            title="Marcar garantía como aprobada"
             onClick={() => {
               onMoveToStage!(order, warrantyApprovedStageDirect.key);
               setOpen(false);
@@ -571,7 +571,7 @@ function StageActionDropdown({
           <button
             type="button"
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-rose-700 dark:text-rose-200 hover:bg-rose-500/10 dark:hover:bg-rose-500/20"
-            title="Mark warranty as rejected"
+            title="Marcar garantía como rechazada"
             onClick={() => {
               onMoveToStage!(order, warrantyRejectedStageDirect.key);
               setOpen(false);
@@ -586,7 +586,7 @@ function StageActionDropdown({
         <button
           type="button"
           className="flex w-full items-center gap-2 px-3 py-2 text-sm text-sky-700 dark:text-sky-200 hover:bg-sky-500/10 dark:hover:bg-sky-500/20"
-          title="Move directly to repair (skip intermediate stages)"
+          title="Ir directamente a reparación (omitir etapas intermedias)"
           onClick={() => {
             if (!onMoveToStage) return;
             onMoveToStage(order, repairStageDirect.key);
@@ -602,7 +602,7 @@ function StageActionDropdown({
         <button
           type="button"
           className="flex w-full items-center gap-2 px-3 py-2 text-sm text-sky-700 dark:text-sky-200 hover:bg-sky-500/10 dark:hover:bg-sky-500/20"
-          title="Move directly to in-process solution"
+          title="Ir directamente a solución en curso"
           onClick={() => {
             if (!onMoveToStage) return;
             onMoveToStage(order, warrantySolutionStageDirect.key);
@@ -623,7 +623,7 @@ function StageActionDropdown({
             setOpen(false);
           }}
         >
-          Edit budget
+          Editar presupuesto
         </button>
       )}
 
@@ -635,7 +635,7 @@ function StageActionDropdown({
           setOpen(false);
         }}
       >
-        <Printer className="w-4 h-4" /> Print
+        <Printer className="w-4 h-4" /> Imprimir
       </button>
 
       {showDownloadTechnicalReport && (
@@ -646,21 +646,21 @@ function StageActionDropdown({
           onClick={async () => {
             const code = codeTrimmed;
             if (!code) {
-              toast.error('Order has no tracking code for the report.');
+              toast.error('El pedido no tiene código de seguimiento para el informe.');
               return;
             }
             setReportLoading(true);
             try {
               await downloadTechnicalReportDocx(code);
             } catch (err) {
-              toast.error(err instanceof Error ? err.message : 'Failed to download report');
+              toast.error(err instanceof Error ? err.message : 'No se pudo descargar el informe');
             } finally {
               setReportLoading(false);
             }
           }}
         >
           <FileText className="w-4 h-4 shrink-0" />
-          {reportLoading ? 'Preparing…' : 'Download report'}
+          {reportLoading ? 'Preparando…' : 'Descargar informe'}
         </button>
       )}
 
@@ -672,7 +672,7 @@ function StageActionDropdown({
           setOpen(false);
         }}
       >
-        <Pencil className="w-4 h-4" /> Edit
+        <Pencil className="w-4 h-4" /> Editar
       </button>
 
       <button
@@ -684,7 +684,7 @@ function StageActionDropdown({
         }}
         disabled={isDeleteLoading}
       >
-        <Trash2 className="w-4 h-4" /> {isDeleteLoading ? 'Deleting…' : 'Delete'}
+        <Trash2 className="w-4 h-4" /> {isDeleteLoading ? 'Eliminando…' : 'Eliminar'}
       </button>
     </div>
   );
@@ -696,8 +696,8 @@ function StageActionDropdown({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={actionBtnClass}
-        title="Actions"
-        aria-label="Actions"
+        title="Acciones"
+        aria-label="Acciones"
         aria-expanded={open}
       >
         <ChevronDown className="w-4 h-4" />
@@ -723,33 +723,33 @@ export function getOrdersColumns(
   const columns: TableColumn<Order>[] = [
   {
     id: 'no',
-    name: 'No.',
+    name: 'N.º',
     selector: (row) => row.no,
     sortable: true,
     width: '100px',
   },
   {
     id: 'code',
-    name: 'Code.',
+    name: 'Código',
     selector: (row) => row.code,
     sortable: true,
     width: '90px',
   },
   {
     id: 'priority',
-    name: 'Prio.',
+    name: 'Prior.',
     selector: (row) => row.priority,
     sortable: true,
     width: '100px',
     cell: (row) => (
       <Badge variant={priorityVariant[row.priority]}>
-        {row.priority.charAt(0).toUpperCase() + row.priority.slice(1)}
+        {priorityLabel[row.priority]}
       </Badge>
     ),
   },
   {
     id: 'state',
-    name: 'State',
+    name: 'Estado',
     selector: (row) => row.state,
     sortable: true,
     width: '150px',
@@ -759,14 +759,14 @@ export function getOrdersColumns(
   },
   {
     id: 'type',
-    name: 'Type',
+    name: 'Tipo',
     selector: (row) => row.type,
     sortable: true,
     width: '110px',
   },
   {
     id: 'equipment',
-    name: 'Equipment',
+    name: 'Equipo',
     selector: (row) => row.equipment,
     sortable: true,
     minWidth: '120px',
@@ -779,7 +779,7 @@ export function getOrdersColumns(
           className={
             `text-slate-700 dark:text-slate-300 ${isInServiceOld ? 'animate-pulse text-rose-600 dark:text-rose-300 font-semibold' : ''}`
           }
-          title={isInServiceOld ? 'In service for more than 7 days' : undefined}
+          title={isInServiceOld ? 'En servicio más de 7 días' : undefined}
         >
           {row.equipment}
         </span>
@@ -788,7 +788,7 @@ export function getOrdersColumns(
   },
   {
     id: 'series',
-    name: 'Series',
+    name: 'Serie',
     selector: (row) => row.series,
     sortable: true,
     width: '110px',
@@ -807,7 +807,7 @@ export function getOrdersColumns(
   },
   {
     id: 'technical',
-    name: 'Technical',
+    name: 'Técnico',
     selector: (row) => row.technical,
     sortable: true,
     minWidth: '180px',
@@ -827,7 +827,7 @@ export function getOrdersColumns(
   },
   {
     id: 'action',
-    name: 'Action',
+    name: 'Acciones',
     sortable: false,
     width: '80px',
     cell: (row) => (

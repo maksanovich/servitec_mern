@@ -14,8 +14,8 @@ import {
 } from '../../api/orderStageEmailTemplates';
 
 const WORKFLOW_OPTIONS: Array<{ value: OrderWorkflow; label: string }> = [
-  { value: 'standard', label: 'Standard repair' },
-  { value: 'warranty', label: 'Warranty' },
+  { value: 'standard', label: 'Reparación estándar' },
+  { value: 'warranty', label: 'Garantía' },
 ];
 
 export function MailConfigurationPage() {
@@ -124,7 +124,7 @@ export function MailConfigurationPage() {
         next.push(template);
         return next.sort((a, b) => a.stageKey.localeCompare(b.stageKey));
       });
-      toast.success('Template saved');
+      toast.success('Plantilla guardada');
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -157,8 +157,8 @@ export function MailConfigurationPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Mail configuration"
-        breadcrumb={[{ label: 'System', icon: Home }, { label: 'Mail' }]}
+        title="Configuración de correo"
+        breadcrumb={[{ label: 'Sistema', icon: Home }, { label: 'Correo' }]}
       />
 
       <Card className="p-2">
@@ -166,7 +166,7 @@ export function MailConfigurationPage() {
           <div className="flex flex-wrap items-center gap-3">
             <Mail className="w-5 h-5 text-slate-500 dark:text-slate-400" aria-hidden />
             <p className="text-sm text-slate-600 dark:text-slate-300">
-              Customize the customer email sent when an order enters each repair stage. Use placeholders like{' '}
+              Personalice el correo al cliente cuando un pedido entra en cada etapa. Use marcadores como{' '}
               <code className="text-xs bg-slate-100 dark:bg-slate-800 px-1 rounded">
                 {'{customer_name}'}
               </code>
@@ -183,7 +183,7 @@ export function MailConfigurationPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                    Pipeline
+                    Flujo
                   </label>
                   <Select
                     value={workflow}
@@ -193,43 +193,43 @@ export function MailConfigurationPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                    Repair stage
+                    Etapa de reparación
                   </label>
                   <Select
                     value={stageKey}
                     onChange={(e) => setStageKey(e.target.value)}
                     options={stageOptions}
-                    placeholder="Select stage"
+                    placeholder="Seleccionar etapa"
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                  Subject (optional — leave empty to use the default subject)
+                  Asunto (opcional — vacío para el predeterminado)
                 </label>
                 <Input
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  placeholder="e.g. Update on your order {order_number}"
+                  placeholder="p. ej. Actualización de su pedido {order_number}"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                  Message body (optional — leave empty to use the default body)
+                  Cuerpo del mensaje (opcional — vacío para el predeterminado)
                 </label>
                 <textarea
                   rows={12}
                   className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500/40"
                   value={body}
                   onChange={(e) => setBody(e.target.value)}
-                  placeholder={`Hello {customer_name},\n\nYour order {order_number} is now in stage: {stage_label}.\n\nTracking: {tracking_code}`}
+                  placeholder={`Hola {customer_name},\n\nSu pedido {order_number} está ahora en la etapa: {stage_label}.\n\nSeguimiento: {tracking_code}`}
                 />
               </div>
 
               <div>
-                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">Insert placeholder</p>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">Insertar marcador</p>
                 <div className="flex flex-wrap gap-2">
                   {placeholders.map((p) => (
                     <button
@@ -247,10 +247,10 @@ export function MailConfigurationPage() {
 
               <div className="flex flex-wrap gap-2">
                 <Button type="button" variant="secondary" onClick={handlePreview} disabled={!stageKey}>
-                  Preview email
+                  Vista previa
                 </Button>
                 <Button type="button" onClick={handleSave} disabled={!stageKey || saving}>
-                  {saving ? 'Saving…' : 'Save template'}
+                  {saving ? 'Guardando…' : 'Guardar plantilla'}
                 </Button>
               </div>
             </>
@@ -258,7 +258,7 @@ export function MailConfigurationPage() {
         </div>
       </Card>
 
-      <Modal open={previewOpen} onClose={() => setPreviewOpen(false)} title="Email preview">
+      <Modal open={previewOpen} onClose={() => setPreviewOpen(false)} title="Vista previa del correo">
         <div className="space-y-3 max-w-lg">
           {previewLoading ? (
             <div className="flex justify-center py-8">
@@ -267,11 +267,11 @@ export function MailConfigurationPage() {
           ) : (
             <>
               <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Subject</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Asunto</p>
                 <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{previewSubject}</p>
               </div>
               <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Body</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Cuerpo</p>
                 <pre className="text-slate-800 dark:text-slate-200 whitespace-pre-wrap text-sm font-sans bg-slate-50 dark:bg-slate-900/80 rounded-lg p-3 border border-slate-200 dark:border-slate-600 max-h-80 overflow-auto">
                   {previewText}
                 </pre>

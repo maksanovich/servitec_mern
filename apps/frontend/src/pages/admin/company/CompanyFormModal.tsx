@@ -193,7 +193,7 @@ export function CompanyFormModal({
   const iconClass = 'absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400';
 
   return (
-    <Modal open={open} onClose={onClose} title="Update Company" size="xl">
+    <Modal open={open} onClose={onClose} title="Actualizar empresa" size="xl">
       <form onSubmit={handleSubmit} className="space-y-4">
         <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
           COMPANY DETAILS
@@ -205,7 +205,7 @@ export function CompanyFormModal({
             <Input
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
-              placeholder="Company name"
+              placeholder="Razón social"
               required
             />
           </div>
@@ -335,7 +335,7 @@ export function CompanyFormModal({
                 accept={ACCEPT_IMAGES}
                 onChange={handleFileChange}
                 className="hidden"
-                aria-label="Upload logo"
+                aria-label="Subir logo"
               />
               <Button
                 type="button"

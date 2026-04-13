@@ -12,7 +12,7 @@ import type { DailyIncomeEntry } from './income/types';
 import { useAuth } from '../../contexts/AuthContext';
 import { getOrders, type OrderListItem } from '../../api/orders';
 
-const exportOptions = { title: 'Daily Income', filename: 'daily-income' };
+const exportOptions = { title: 'Ingresos diarios', filename: 'ingresos-diarios' };
 
 export function IncomePage() {
   const { token } = useAuth();
@@ -63,10 +63,10 @@ export function IncomePage() {
     if (!orders.length) {
       return {
         revenueKpis: [
-          { label: 'Income', value: '$0.00', sublabel: 'Daily' as const, icon: DollarSign },
-          { label: 'Weekly Income', value: '$0.00', sublabel: 'Total' as const, icon: DollarSign },
-          { label: 'Monthly Income', value: '$0.00', sublabel: null, icon: DollarSign },
-          { label: 'Total Revenue', value: '$0.00', sublabel: null, icon: DollarSign },
+          { label: 'Ingresos', value: '$0.00', sublabel: 'Hoy' as const, icon: DollarSign },
+          { label: 'Ingresos semanales', value: '$0.00', sublabel: 'Total' as const, icon: DollarSign },
+          { label: 'Ingresos mensuales', value: '$0.00', sublabel: null, icon: DollarSign },
+          { label: 'Ingresos totales', value: '$0.00', sublabel: null, icon: DollarSign },
         ],
         dailyIncomeRows: [] as DailyIncomeEntry[],
       };
@@ -134,21 +134,21 @@ export function IncomePage() {
     rows.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
 
     const kpis = [
-      { label: 'Income', value: `$${dailyIncome.toFixed(2)}`, sublabel: 'Daily' as const, icon: DollarSign },
+      { label: 'Ingresos', value: `$${dailyIncome.toFixed(2)}`, sublabel: 'Hoy' as const, icon: DollarSign },
       {
-        label: 'Weekly Income',
+        label: 'Ingresos semanales',
         value: `$${weeklyIncome.toFixed(2)}`,
         sublabel: 'Total' as const,
         icon: DollarSign,
       },
       {
-        label: 'Monthly Income',
+        label: 'Ingresos mensuales',
         value: `$${monthlyIncome.toFixed(2)}`,
         sublabel: null,
         icon: DollarSign,
       },
       {
-        label: 'Total Revenue',
+        label: 'Ingresos totales',
         value: `$${totalRevenue.toFixed(2)}`,
         sublabel: null,
         icon: DollarSign,
@@ -176,8 +176,8 @@ export function IncomePage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Revenue - DIGITALSERVER TECHNICAL SERVICE"
-        breadcrumb={[{ label: 'Catalog & Finance', icon: Home }, { label: 'Income' }]}
+        title="Ingresos — Servicio técnico DIGITALSERVER"
+        breadcrumb={[{ label: 'Catálogo y finanzas', icon: Home }, { label: 'Ingresos' }]}
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -185,7 +185,7 @@ export function IncomePage() {
           <KpiCard
             key={label}
             label={label}
-            value={loading && value !== '$0.00' ? 'Loading…' : value}
+            value={loading && value !== '$0.00' ? 'Cargando…' : value}
             sublabel={sublabel}
             icon={icon}
           />
@@ -195,14 +195,14 @@ export function IncomePage() {
       <Card className="overflow-hidden">
         <div className="px-5 py-3 border-b border-slate-200 dark:border-slate-700">
           <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-            Daily Income
+            Ingresos diarios
           </h2>
         </div>
         <DataTableWithToolbar<DailyIncomeEntry>
           data={dailyIncomeRows}
           columns={incomeColumns}
           searchFields={['date', 'user', 'customer', 'order', 'amount']}
-          searchPlaceholder="Look for:"
+          searchPlaceholder="Buscar:"
           dateColumnId="date"
           defaultStartDate={todayFilter}
           defaultEndDate={todayFilter}
@@ -216,18 +216,18 @@ export function IncomePage() {
                 size="sm"
                 leftIcon={FileSpreadsheet}
                 onClick={exportExcel}
-                title="Export Excel"
+                title="Exportar Excel"
                 className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
-                aria-label="Export Excel"
+                aria-label="Exportar Excel"
               />
               <Button
                 variant="secondary"
                 size="sm"
                 leftIcon={FileText}
                 onClick={exportPDF}
-                title="Export PDF"
+                title="Exportar PDF"
                 className="p-2 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20"
-                aria-label="Export PDF"
+                aria-label="Exportar PDF"
               />
             </ButtonGroup>
           }

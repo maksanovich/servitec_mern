@@ -20,13 +20,13 @@ type StageForm = {
 };
 
 const LEGACY_AREA_OPTIONS: Array<{ value: OrderArea; label: string }> = [
-  { value: 'entrance', label: 'Entrance' },
-  { value: 'maintenance', label: 'Maintenance' },
-  { value: 'waiting-parts', label: 'Waiting for spare parts' },
-  { value: 'warehouse', label: 'Warehouse' },
-  { value: 'delivery', label: 'Delivery' },
-  { value: 'quarantine', label: 'Quarantine' },
-  { value: 'abandonment', label: 'Abandonment' },
+  { value: 'entrance', label: 'Ingreso' },
+  { value: 'maintenance', label: 'Mantenimiento' },
+  { value: 'waiting-parts', label: 'Espera de repuestos' },
+  { value: 'warehouse', label: 'Almacén' },
+  { value: 'delivery', label: 'Entrega' },
+  { value: 'quarantine', label: 'Cuarentena' },
+  { value: 'abandonment', label: 'Abandono' },
 ];
 
 function legacyAreaLabel(area: OrderArea): string {
@@ -231,7 +231,7 @@ export function OrderStagesPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <PageHeader title="Order Stages - DIGITALSERVER TECHNICAL SERVICE" breadcrumb={[{ label: 'Operations', icon: Home }, { label: 'Order Stages' }]} />
+        <PageHeader title="Etapas del pedido — Servicio técnico DIGITALSERVER" breadcrumb={[{ label: 'Operaciones', icon: Home }, { label: 'Etapas' }]} />
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <ButtonGroup>
             <Button
@@ -248,11 +248,11 @@ export function OrderStagesPage() {
               size="md"
               onClick={() => setWorkflowView('warranty')}
             >
-              Warranty
+              Garantía
             </Button>
           </ButtonGroup>
           <Button variant="secondary" size="md" onClick={openNewStageModal} leftIcon={Plus}>
-            Add stage
+            Añadir etapa
           </Button>
         </div>
       </div>
@@ -272,18 +272,18 @@ export function OrderStagesPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300">
-                  <th className="text-left py-3 px-4 font-semibold">Order</th>
-                  <th className="text-left py-3 px-4 font-semibold">Label</th>
-                  <th className="text-left py-3 px-4 font-semibold">Key</th>
-                  <th className="text-left py-3 px-4 font-semibold">Description</th>
-                  <th className="w-[220px] py-3 px-4 font-semibold">Actions</th>
+                  <th className="text-left py-3 px-4 font-semibold">Orden</th>
+                  <th className="text-left py-3 px-4 font-semibold">Etiqueta</th>
+                  <th className="text-left py-3 px-4 font-semibold">Clave</th>
+                  <th className="text-left py-3 px-4 font-semibold">Descripción</th>
+                  <th className="w-[220px] py-3 px-4 font-semibold">Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {tableRows.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="py-12 text-center text-slate-500 dark:text-slate-400">
-                      No stages configured.
+                      No hay etapas configuradas.
                     </td>
                   </tr>
                 ) : (
@@ -308,7 +308,7 @@ export function OrderStagesPage() {
                             onClick={() => swapSortOrder(index, index - 1)}
                             disabled={index === 0}
                           >
-                            Up
+                            Subir
                           </Button>
                           <Button
                             type="button"
@@ -318,7 +318,7 @@ export function OrderStagesPage() {
                             onClick={() => swapSortOrder(index, index + 1)}
                             disabled={index === tableRows.length - 1}
                           >
-                            Down
+                            Bajar
                           </Button>
                           <Button
                             type="button"
@@ -327,7 +327,7 @@ export function OrderStagesPage() {
                             leftIcon={Pencil}
                             onClick={() => openEditStage(s)}
                           >
-                            Edit
+                            Editar
                           </Button>
                           <Button
                             type="button"
@@ -336,7 +336,7 @@ export function OrderStagesPage() {
                             leftIcon={Trash2}
                             onClick={() => handleDeleteClick(s)}
                           >
-                            Delete
+                            Eliminar
                           </Button>
                         </div>
                       </td>
@@ -349,7 +349,7 @@ export function OrderStagesPage() {
         )}
       </Card>
 
-      <Modal open={formOpen} onClose={closeNewStageModal} title="Add order stage" size="lg">
+      <Modal open={formOpen} onClose={closeNewStageModal} title="Añadir etapa del pedido" size="lg">
         {formError && (
           <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300">
             {formError}
@@ -357,15 +357,15 @@ export function OrderStagesPage() {
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Label *</label>
-            <Input value={form.label} onChange={(e) => setForm((prev) => ({ ...prev, label: e.target.value }))} placeholder="e.g. Diagnosis" />
+            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Etiqueta *</label>
+            <Input value={form.label} onChange={(e) => setForm((prev) => ({ ...prev, label: e.target.value }))} placeholder="p. ej. Diagnóstico" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Key *</label>
-            <Input value={form.key} onChange={(e) => setForm((prev) => ({ ...prev, key: e.target.value }))} placeholder="e.g. diagnosis" />
+            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Clave *</label>
+            <Input value={form.key} onChange={(e) => setForm((prev) => ({ ...prev, key: e.target.value }))} placeholder="p. ej. diagnosis" />
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Workflow area *</label>
+            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Área del flujo *</label>
             <Select
               value={form.legacyArea}
               options={LEGACY_AREA_OPTIONS}
@@ -373,7 +373,7 @@ export function OrderStagesPage() {
             />
           </div>
           <div className="sm:col-span-2">
-            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Description</label>
+            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Descripción</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
@@ -384,10 +384,10 @@ export function OrderStagesPage() {
         </div>
         <div className="mt-6 flex justify-end gap-3">
           <Button type="button" variant="red" size="md" onClick={closeNewStageModal} disabled={formSaving}>
-            Cancel
+            Cancelar
           </Button>
           <Button type="button" variant="primary" size="md" onClick={handleAddStage} isLoading={formSaving}>
-            Add
+            Añadir
           </Button>
         </div>
       </Modal>
@@ -399,25 +399,25 @@ export function OrderStagesPage() {
           </div>
         )}
         <div>
-          <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Stage name *</label>
+          <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Nombre de la etapa *</label>
           <Input
             value={editLabel}
             onChange={(e) => setEditLabel(e.target.value)}
-            placeholder="e.g. Diagnosis"
+            placeholder="p. ej. Diagnóstico"
             autoFocus
           />
           {editingStage && (
             <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-              Key <span className="font-mono">{editingStage.key}</span> is unchanged; only the display name updates.
+              La clave <span className="font-mono">{editingStage.key}</span> no cambia; solo se actualiza el nombre mostrado.
             </p>
           )}
         </div>
         <div className="mt-6 flex justify-end gap-3">
           <Button type="button" variant="red" size="md" onClick={closeEditStage} disabled={editSaving}>
-            Cancel
+            Cancelar
           </Button>
           <Button type="button" variant="primary" size="md" onClick={handleSaveStageName} isLoading={editSaving}>
-            Save
+            Guardar
           </Button>
         </div>
       </Modal>
@@ -426,14 +426,14 @@ export function OrderStagesPage() {
         open={!!deleteConfirm}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
-        title="Delete order stage"
+        title="Eliminar etapa del pedido"
         message={
           deleteConfirm
-            ? `Delete "${deleteConfirm.label}"? Orders will be moved to the previous stage automatically.`
+            ? `¿Eliminar "${deleteConfirm.label}"? Los pedidos pasarán automáticamente a la etapa anterior.`
             : ''
         }
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
         variant="danger"
         isLoading={deleteLoading}
         error={deleteError}

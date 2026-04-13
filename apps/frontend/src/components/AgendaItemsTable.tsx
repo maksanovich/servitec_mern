@@ -166,7 +166,7 @@ export function AgendaItemsTable() {
         data={data}
         columns={columns}
         searchFields={['customer', 'service', 'stage', 'state']}
-        searchPlaceholder="Search..."
+        searchPlaceholder="Buscar…"
         dateColumnId="date"
         defaultStartDate={defaultStartDate}
         defaultEndDate={defaultEndDate}

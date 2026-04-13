@@ -117,8 +117,8 @@ export function RolePage() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
-          title="Roles - DIGITALSERVER TECHNICAL SERVICE"
-          breadcrumb={[{ label: 'System', icon: Home }, { label: 'Role' }]}
+          title="Roles — Servicio técnico DIGITALSERVER"
+          breadcrumb={[{ label: 'Sistema', icon: Home }, { label: 'Roles' }]}
         />
         <Button
           variant="emerald"
@@ -136,7 +136,7 @@ export function RolePage() {
           data={roles}
           columns={columns}
           searchFields={['name', 'slug', 'description']}
-          searchPlaceholder="Look for:"
+          searchPlaceholder="Buscar:"
           pageSizeOptions={[10, 25, 50, 100]}
           defaultPageSize={10}
           onFilteredDataChange={onFilteredDataChange}
@@ -167,14 +167,14 @@ export function RolePage() {
         open={!!deleteConfirm}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
-        title="Delete role"
+        title="Eliminar rol"
         message={
           deleteConfirm
             ? `Are you sure you want to delete "${deleteConfirm.name}"? This action cannot be undone.`
             : ''
         }
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
         variant="danger"
         isLoading={deleteLoading}
         error={deleteError}

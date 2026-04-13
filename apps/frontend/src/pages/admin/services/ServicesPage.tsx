@@ -13,7 +13,7 @@ import { getServicesColumns } from './servicesColumns';
 import { ServiceSparePartFormModal } from './ServiceSparePartFormModal';
 import type { ServiceSparePartItem } from '../../../api/servicesSpareParts';
 
-const exportOptions = { title: 'Services', filename: 'services' };
+const exportOptions = { title: 'Servicios', filename: 'servicios' };
 
 /** Set to true to show "New Service" and row Edit/Delete actions again. */
 const ENABLE_SERVICE_ADMIN_ACTIONS = false;
@@ -60,7 +60,7 @@ export function ServicesPage() {
           includeType: false,
           includeActions: false,
           includeAmount: false,
-          nameColumnLabel: 'Code',
+          nameColumnLabel: 'Código',
           nameColumnMinWidth: '140px',
           detailsColumnMinWidth: '360px',
         }
@@ -131,7 +131,7 @@ export function ServicesPage() {
         includeType: false,
         includeActions: ENABLE_SERVICE_ADMIN_ACTIONS,
         includeAmount: false,
-        nameColumnLabel: 'Code',
+        nameColumnLabel: 'Código',
         nameColumnMinWidth: '140px',
         detailsColumnMinWidth: '360px',
       }),
@@ -142,8 +142,8 @@ export function ServicesPage() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
-          title="Services - DIGITALSERVER TECHNICAL SERVICE"
-          breadcrumb={[{ label: 'Catalog & Finance', icon: Home }, { label: 'Services' }]}
+          title="Servicios — Servicio técnico DIGITALSERVER"
+          breadcrumb={[{ label: 'Catálogo y finanzas', icon: Home }, { label: 'Servicios' }]}
         />
         {ENABLE_SERVICE_ADMIN_ACTIONS && (
           <Button
@@ -153,7 +153,7 @@ export function ServicesPage() {
             onClick={openNewModal}
             className="sm:ml-auto"
           >
-            New Service
+            Nuevo servicio
           </Button>
         )}
       </div>
@@ -163,7 +163,7 @@ export function ServicesPage() {
           data={serviceRows}
           columns={columns}
           searchFields={['name', 'details']}
-          searchPlaceholder="Look for:"
+          searchPlaceholder="Buscar:"
           pageSizeOptions={[10, 25, 50, 100]}
           defaultPageSize={10}
           onFilteredDataChange={onFilteredDataChange}
@@ -174,18 +174,18 @@ export function ServicesPage() {
                 size="sm"
                 leftIcon={FileSpreadsheet}
                 onClick={exportExcel}
-                title="Export Excel"
+                title="Exportar Excel"
                 className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
-                aria-label="Export Excel"
+                aria-label="Exportar Excel"
               />
               <Button
                 variant="secondary"
                 size="sm"
                 leftIcon={FileText}
                 onClick={exportPDF}
-                title="Export PDF"
+                title="Exportar PDF"
                 className="p-2 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20"
-                aria-label="Export PDF"
+                aria-label="Exportar PDF"
               />
             </ButtonGroup>
           }
@@ -197,7 +197,7 @@ export function ServicesPage() {
               </div>
             ) : (
               <div className="py-12 text-center text-slate-500 dark:text-slate-400">
-                No data available in this table.
+                No hay datos en esta tabla.
               </div>
             )
           }
@@ -217,14 +217,14 @@ export function ServicesPage() {
         open={!!deleteConfirm}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
-        title="Delete service"
+        title="Eliminar servicio"
         message={
           deleteConfirm
-            ? `Are you sure you want to delete "${deleteConfirm.name}"? This action cannot be undone.`
+            ? `¿Seguro que desea eliminar "${deleteConfirm.name}"? Esta acción no se puede deshacer.`
             : ''
         }
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
         variant="danger"
         isLoading={deleteLoading}
         error={deleteError}

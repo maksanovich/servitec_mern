@@ -65,8 +65,8 @@ function ActionDropdown({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={actionBtnClass}
-        title="Actions"
-        aria-label="Actions"
+        title="Acciones"
+        aria-label="Acciones"
         aria-expanded={open}
       >
         <ChevronDown className="w-4 h-4" />
@@ -83,14 +83,14 @@ function ActionDropdown({
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
             onClick={() => { onEdit(item); setOpen(false); }}
           >
-            <Pencil className="w-4 h-4" /> Edit
+            <Pencil className="w-4 h-4" /> Editar
           </button>
           <button
             type="button"
             className="flex w-full items-center gap-2 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-slate-100 dark:hover:bg-slate-700"
             onClick={() => { onDelete(item); setOpen(false); }}
           >
-            <Trash2 className="w-4 h-4" /> Delete
+            <Trash2 className="w-4 h-4" /> Eliminar
           </button>
         </div>,
         document.body
@@ -105,19 +105,19 @@ const typeVariant: Record<ServiceSparePartItem['type'], 'info' | 'warning'> = {
 };
 
 const typeLabel: Record<ServiceSparePartItem['type'], string> = {
-  service: 'Service',
-  replacement: 'Replacement',
+  service: 'Servicio',
+  replacement: 'Reemplazo',
 };
 
 function formatSyncedAt(iso: string | null | undefined): string {
   if (!iso) return '—';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';
-  return new Intl.DateTimeFormat(undefined, { dateStyle: 'short', timeStyle: 'short' }).format(d);
+  return new Intl.DateTimeFormat('es', { dateStyle: 'short', timeStyle: 'short' }).format(d);
 }
 
 function formatPrice(price: number) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(price);
+  return new Intl.NumberFormat('es', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(price);
 }
 
 export interface GetServicesColumnsOptions {
@@ -143,7 +143,7 @@ export function getServicesColumns(
     includeType = true,
     includeActions = true,
     includeAmount = true,
-    nameColumnLabel = 'Service / Spare Parts',
+    nameColumnLabel = 'Servicio / repuesto',
     nameColumnMinWidth = '180px',
     detailsColumnMinWidth = '220px',
   } = options ?? {};
@@ -153,7 +153,7 @@ export function getServicesColumns(
   if (includeType) {
     cols.push({
       id: 'type',
-      name: 'Type',
+      name: 'Tipo',
       selector: (row) => row.type,
       sortable: true,
       width: '160px',
@@ -178,7 +178,7 @@ export function getServicesColumns(
       ? [
           {
             id: 'amount',
-            name: 'Amount',
+            name: 'Cantidad',
             selector: (row: ServiceSparePartItem) => row.amount,
             sortable: true,
             width: '100px',
@@ -190,7 +190,7 @@ export function getServicesColumns(
       : []),
     {
       id: 'price',
-      name: 'Price',
+      name: 'Precio',
       selector: (row) => row.price,
       sortable: true,
       width: '100px',
@@ -200,7 +200,7 @@ export function getServicesColumns(
     },
     {
       id: 'details',
-      name: 'Details',
+      name: 'Detalles',
       selector: (row) => row.details,
       sortable: true,
       minWidth: detailsColumnMinWidth,
@@ -212,7 +212,7 @@ export function getServicesColumns(
     },
     {
       id: 'syncedAt',
-      name: 'Synced time',
+      name: 'Última sincronización',
       selector: (row) => row.syncedAt ?? '',
       sortable: true,
       width: '160px',
@@ -230,7 +230,7 @@ export function getServicesColumns(
   if (includeActions) {
     cols.push({
       id: 'action',
-      name: 'Action',
+      name: 'Acciones',
       sortable: false,
       width: '80px',
       cell: (row) => <ActionDropdown item={row} onEdit={actions.onEdit} onDelete={actions.onDelete} />,

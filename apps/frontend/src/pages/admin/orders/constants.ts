@@ -1,6 +1,13 @@
 import { DoorOpen, Wrench, Package, Truck, Clock, ShieldAlert, Archive } from 'lucide-react';
 import type { Order, OrderArea } from './types';
 
+export const priorityLabel: Record<Order['priority'], string> = {
+  low: 'Baja',
+  normal: 'Normal',
+  high: 'Alta',
+  urgent: 'Urgente',
+};
+
 export const priorityVariant: Record<Order['priority'], 'neutral' | 'success' | 'warning' | 'error'> = {
   low: 'neutral',
   normal: 'success',

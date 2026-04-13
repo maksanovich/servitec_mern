@@ -142,7 +142,7 @@ export function CustomersPage() {
       } catch (err) {
         const message = (err as Error).message;
         setDeleteError(message);
-        toast.error('Delete failed', { description: message });
+        toast.error('No se pudo eliminar', { description: message });
       } finally {
         setDeleteLoading(false);
       }
@@ -161,8 +161,8 @@ export function CustomersPage() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
-          title="Clients - DIGITALSERVER TECHNICAL SERVICE"
-          breadcrumb={[{ label: 'Workshop', icon: Home }, { label: 'Clients' }]}
+          title="Clientes — Servicio técnico DIGITALSERVER"
+          breadcrumb={[{ label: 'Taller', icon: Home }, { label: 'Clientes' }]}
         />
         <Button
           variant="emerald"
@@ -171,7 +171,7 @@ export function CustomersPage() {
           onClick={() => setCreateModalOpen(true)}
           className="sm:ml-auto"
         >
-          New Customer
+          Nuevo cliente
         </Button>
       </div>
 
@@ -182,7 +182,7 @@ export function CustomersPage() {
           pageSizeOptions={PAGE_SIZE_OPTIONS}
           searchValue={searchInput}
           onSearchChange={setSearchInput}
-          searchPlaceholder="Search by name, ID, email, phone..."
+          searchPlaceholder="Buscar por nombre, ID, correo, teléfono…"
         />
         {error && (
           <div className="px-5 py-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20">
@@ -201,7 +201,7 @@ export function CustomersPage() {
           >
             <div className="flex flex-col items-center gap-3">
               <Loader size="lg" />
-              <span className="text-sm text-slate-500 dark:text-slate-400 animate-pulse">Loading…</span>
+              <span className="text-sm text-slate-500 dark:text-slate-400 animate-pulse">Cargando…</span>
             </div>
           </div>
           <DataTable
@@ -222,7 +222,7 @@ export function CustomersPage() {
             }}
             noDataComponent={
               <div className="py-12 text-center text-slate-500 dark:text-slate-400">
-                {loading ? 'Loading...' : 'No clients found. Clients are synced from Perseo hourly.'}
+                {loading ? 'Cargando…' : 'No hay clientes. Se sincronizan desde Perseo cada hora.'}
               </div>
             }
           />
@@ -245,14 +245,14 @@ export function CustomersPage() {
         open={!!deleteConfirm}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
-        title="Delete client"
+        title="Eliminar cliente"
         message={
           deleteConfirm
-            ? `Are you sure you want to delete "${deleteConfirm.razonsocial || deleteConfirm.nombrecomercial || deleteConfirm.clientescodigo}"? This will remove the client from this system and from Perseo. This action cannot be undone.`
+            ? `¿Seguro que desea eliminar "${deleteConfirm.razonsocial || deleteConfirm.nombrecomercial || deleteConfirm.clientescodigo}"? Se eliminará el cliente de este sistema y de Perseo. Esta acción no se puede deshacer.`
             : ''
         }
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
         variant="danger"
         isLoading={deleteLoading}
         error={deleteError}
