@@ -140,7 +140,7 @@ export const getModelsColumns = (actions: ModelColumnActions): TableColumn<Model
     id: 'action',
     name: 'Acciones',
     sortable: false,
-    width: '80px',
+    width: '120px',
     cell: (row) => <ActionDropdown model={row} actions={actions} />,
   },
 ];

@@ -347,7 +347,7 @@ export function PreDiagnosisRulesPage() {
                           leftIcon={SquarePen}
                           onClick={() => setEditingId(rule.id)}
                         >
-                          Edit
+                          Editar
                         </Button>
                         <Button
                           type="button"

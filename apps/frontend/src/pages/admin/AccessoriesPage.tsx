@@ -125,7 +125,7 @@ export function AccessoriesPage() {
           onClick={openNewModal}
           className="sm:ml-auto"
         >
-          New Accessory
+          Nuevo accesorio
         </Button>
       </div>
 

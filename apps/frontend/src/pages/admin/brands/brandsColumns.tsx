@@ -143,7 +143,7 @@ export function getBrandColumns(actions: BrandColumnActions): TableColumn<Brand>
     id: 'action',
     name: 'Acciones',
     sortable: false,
-    width: '80px',
+    width: '120px',
     cell: (row) => (
       <ActionDropdown brand={row} onEdit={actions.onEdit} onDelete={actions.onDelete} />
     ),

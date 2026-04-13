@@ -130,7 +130,7 @@ export const getAccessoriesColumns = (actions: AccessoryColumnActions): TableCol
     id: 'action',
     name: 'Acciones',
     sortable: false,
-    width: '80px',
+    width: '120px',
     cell: (row) => <ActionDropdown accessory={row} actions={actions} />,
   },
 ];

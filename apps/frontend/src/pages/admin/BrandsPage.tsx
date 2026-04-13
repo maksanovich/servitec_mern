@@ -136,7 +136,7 @@ export function BrandsPage() {
           onClick={openNewModal}
           className="sm:ml-auto"
         >
-          New Brand
+          Nueva marca
         </Button>
       </div>
 

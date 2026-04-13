@@ -136,7 +136,7 @@ export function ProductsPage() {
           breadcrumb={[{ label: 'Taller', icon: Home }, { label: 'Productos' }]}
         />
         <Button variant="emerald" size="md" leftIcon={Plus} onClick={handleOpenNewForm} className="sm:ml-auto">
-          New Product
+          Nuevo producto
         </Button>
       </div>
 

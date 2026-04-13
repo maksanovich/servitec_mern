@@ -59,13 +59,13 @@ const MAX_ORDER_PHOTO_BYTES = 150 * 1024 * 1024; // 150MB (>= 100MB)
 const ACCEPT_ORDER_IMAGES = 'image/jpeg,image/png,image/webp,image/gif';
 
 const AREA_OPTIONS: SelectOption[] = [
-  { value: 'entrance', label: 'Entrance Area' },
-  { value: 'maintenance', label: 'Maintenance Area' },
+  { value: 'entrance', label: 'Zona de entrada' },
+  { value: 'maintenance', label: 'Zona de mantenimiento' },
 ];
 
 const STATE_AREA_OPTIONS: SelectOption[] = [
-  { value: 'income', label: 'Income' },
-  { value: 'maintenance', label: 'Maintenance' },
+  { value: 'income', label: 'Ingreso' },
+  { value: 'maintenance', label: 'Mantenimiento' },
 ];
 
 function isTechnicianUser(u: ApiUser) {
@@ -76,15 +76,15 @@ function isTechnicianUser(u: ApiUser) {
 }
 
 const PRIORITY_OPTIONS: SelectOption[] = [
-  { value: 'low', label: 'Low' },
+  { value: 'low', label: 'Baja' },
   { value: 'normal', label: 'Normal' },
-  { value: 'high', label: 'High' },
-  { value: 'urgent', label: 'Urgent' },
+  { value: 'high', label: 'Alta' },
+  { value: 'urgent', label: 'Urgente' },
 ];
 
 const YES_NO_OPTIONS: SelectOption[] = [
   { value: 'no', label: 'No' },
-  { value: 'yes', label: 'Yes' },
+  { value: 'yes', label: 'Sí' },
 ];
 
 export interface BudgetLineItem {
@@ -563,7 +563,7 @@ export function NewOrderPage() {
       if (stock <= 0) return;
       const price = Number(row.precio ?? 0);
       const name =
-        row.description.trim() || row.productocodigo.trim() || `Spare (${row.productosid})`;
+        row.description.trim() || row.productocodigo.trim() || `Repuesto (${row.productosid})`;
       setBudgetLines((prev) => {
         const existing = prev.find((l) => l.serviceId === row.id);
         const currentQty = existing ? existing.amount : 0;
@@ -627,10 +627,10 @@ export function NewOrderPage() {
 
   const validateImageFile = useCallback((file: File): string | null => {
     if (!file.type.startsWith('image/')) {
-      return 'Please select an image (JPEG, PNG, WebP or GIF).';
+      return 'Seleccione una imagen (JPEG, PNG, WebP o GIF).';
     }
     if (file.size > MAX_ORDER_PHOTO_BYTES) {
-      return `Each image must be under ${(MAX_ORDER_PHOTO_BYTES / (1024 * 1024)).toFixed(0)}MB.`;
+      return `Cada imagen debe pesar menos de ${(MAX_ORDER_PHOTO_BYTES / (1024 * 1024)).toFixed(0)} MB.`;
     }
     return null;
   }, []);
@@ -643,7 +643,7 @@ export function NewOrderPage() {
       setBeforePhotos((prev) => {
         const room = MAX_ORDER_PHOTOS_PER_SIDE - prev.length;
         if (room <= 0) {
-          setPhotoBeforeError(`You can add at most ${MAX_ORDER_PHOTOS_PER_SIDE} before-repair photos.`);
+          setPhotoBeforeError(`Puede añadir como máximo ${MAX_ORDER_PHOTOS_PER_SIDE} fotos previas a la reparación.`);
           return prev;
         }
         const toAdd = list.slice(0, room);
@@ -671,7 +671,7 @@ export function NewOrderPage() {
       setAfterPhotos((prev) => {
         const room = MAX_ORDER_PHOTOS_PER_SIDE - prev.length;
         if (room <= 0) {
-          setPhotoAfterError(`You can add at most ${MAX_ORDER_PHOTOS_PER_SIDE} after-repair photos.`);
+          setPhotoAfterError(`Puede añadir como máximo ${MAX_ORDER_PHOTOS_PER_SIDE} fotos posteriores a la reparación.`);
           return prev;
         }
         const toAdd = list.slice(0, room);
@@ -714,7 +714,7 @@ export function NewOrderPage() {
     setSubmitError(null);
     try {
       if (!token) {
-        setSubmitError({ text: 'Not authenticated.' });
+        setSubmitError({ text: 'No autenticado.' });
         return;
       }
 
@@ -784,16 +784,16 @@ export function NewOrderPage() {
         photoAfterRepair: photoAfterUrls,
       };
 
-      if (!payload.clientId || Number.isNaN(payload.clientId)) throw new Error('Customer is required');
-      if (!payload.brand) throw new Error('Brand is required');
-      if (!payload.model) throw new Error('Model is required');
-      if (!payload.series) throw new Error('Series is required');
-      if (!payload.type) throw new Error('Product is required');
+      if (!payload.clientId || Number.isNaN(payload.clientId)) throw new Error('El cliente es obligatorio');
+      if (!payload.brand) throw new Error('La marca es obligatoria');
+      if (!payload.model) throw new Error('El modelo es obligatorio');
+      if (!payload.series) throw new Error('La serie es obligatoria');
+      if (!payload.type) throw new Error('El producto es obligatorio');
       if (!htmlToPlainText(equipmentCondition)) {
-        throw new Error('Equipment Malfunction and Condition is required');
+        throw new Error('La avería y el estado del equipo son obligatorios');
       }
       if (!htmlToPlainText(technicalReport)) {
-        throw new Error('Technical Report is required');
+        throw new Error('El informe técnico es obligatorio');
       }
 
       if (isEditMode && id) {
@@ -810,7 +810,7 @@ export function NewOrderPage() {
         });
         return;
       }
-      const message = err instanceof Error ? err.message : 'Failed to submit order';
+      const message = err instanceof Error ? err.message : 'No se pudo enviar el pedido';
       setSubmitError({ text: message });
     }
   };
@@ -832,7 +832,7 @@ export function NewOrderPage() {
 
   const handleQuickAddModel = useCallback(() => {
     if (!brand.trim()) {
-      setQuickAddError('Select a brand before adding a model.');
+      setQuickAddError('Seleccione una marca antes de añadir un modelo.');
       return;
     }
     openQuickAddModal('model');
@@ -847,14 +847,14 @@ export function NewOrderPage() {
     e.stopPropagation();
 
     if (!token) {
-      setQuickAddError('Not authenticated.');
+      setQuickAddError('No autenticado.');
       return;
     }
     if (!quickAddType) return;
 
     const value = quickAddValue.trim();
     if (!value) {
-      setQuickAddError('Name is required.');
+      setQuickAddError('El nombre es obligatorio.');
       return;
     }
 
@@ -903,7 +903,7 @@ export function NewOrderPage() {
       setQuickAddType(null);
       setQuickAddValue('');
     } catch (err) {
-      setQuickAddError(err instanceof Error ? err.message : 'Failed to create item');
+      setQuickAddError(err instanceof Error ? err.message : 'No se pudo crear el elemento');
     } finally {
       setQuickAddBrandLoading(false);
       setQuickAddModelLoading(false);
@@ -913,9 +913,9 @@ export function NewOrderPage() {
 
   const servicesColumns: TableColumn<ServiceSparePartItem>[] = useMemo(
     () => [
-      { id: 'name', name: 'Code', width: "140px", selector: (r) => r.name, sortable: true },
-      { id: 'details', name: 'Detail', maxWidth: "420px", selector: (r) => r.details, sortable: true },
-      { id: 'price', name: 'Price', width: '100px', selector: (r) => r.price, sortable: true, format: (r) => r.price.toFixed(2) },
+      { id: 'name', name: 'Código', width: "140px", selector: (r) => r.name, sortable: true },
+      { id: 'details', name: 'Detalle', maxWidth: "420px", selector: (r) => r.details, sortable: true },
+      { id: 'price', name: 'Precio', width: '100px', selector: (r) => r.price, sortable: true, format: (r) => r.price.toFixed(2) },
       {
         id: 'add',
         name: '',
@@ -932,7 +932,7 @@ export function NewOrderPage() {
               size="sm"
               className="min-w-0 p-1.5"
               disabled={!addable}
-              title={addable ? undefined : 'Not enough stock to add'}
+              title={addable ? undefined : 'Stock insuficiente para añadir'}
               onClick={() => addToBudget(row)}
               aria-label={addable ? `Añadir ${row.name}` : `No se puede añadir ${row.name} — stock insuficiente`}
             >
@@ -950,7 +950,7 @@ export function NewOrderPage() {
     () => [
       {
         id: 'productocodigo',
-        name: 'Code',
+        name: 'Código',
         width: '140px',
         selector: (r) => r.productocodigo,
         sortable: true,
@@ -960,7 +960,7 @@ export function NewOrderPage() {
       },
       {
         id: 'description',
-        name: 'Description',
+        name: 'Descripción',
         minWidth: '280px',
         selector: (r) => r.description,
         sortable: true,
@@ -975,7 +975,7 @@ export function NewOrderPage() {
       },
       {
         id: 'precio',
-        name: 'Price (incl. VAT)',
+        name: 'Precio (IVA incl.)',
         selector: (r) => spareUnitPriceInclVat(r, clientTarifasid),
         sortable: true,
         width: '120px',
@@ -1008,7 +1008,7 @@ export function NewOrderPage() {
           const currentQty = budgetLines.find((l) => l.serviceId === row.id)?.amount ?? 0;
           const remaining = getReplacementRemaining(row.id, currentQty, stock);
           const addable = stock > 0 && remaining > 0;
-          const label = row.description.trim() || row.productocodigo || `Spare (${row.productosid})`;
+          const label = row.description.trim() || row.productocodigo || `Repuesto (${row.productosid})`;
           return (
             <Button
               type="button"
@@ -1016,7 +1016,7 @@ export function NewOrderPage() {
               size="sm"
               className="min-w-0 p-1.5"
               disabled={!addable}
-              title={addable ? undefined : 'Not enough stock to add'}
+              title={addable ? undefined : 'Stock insuficiente para añadir'}
               onClick={() => addSpareToBudget(row)}
               aria-label={addable ? `Añadir ${label}` : `No se puede añadir ${label} — stock insuficiente`}
             >
@@ -1056,9 +1056,9 @@ export function NewOrderPage() {
       <PageHeader
         title="Pedidos — Servicio técnico DIGITALSERVER"
         breadcrumb={[
-          { label: 'Operations', icon: Home },
-          { label: 'Orders' },
-          { label: isEditMode ? 'Edit Order' : 'New Order' },
+          { label: 'Operaciones', icon: Home },
+          { label: 'Pedidos' },
+          { label: isEditMode ? 'Editar pedido' : 'Nuevo pedido' },
         ]}
       />
 
@@ -1069,36 +1069,36 @@ export function NewOrderPage() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
-                <label className={labelClass()}>Location <span className="text-red-500 dark:text-red-400">*</span></label>
+                <label className={labelClass()}>Ubicación <span className="text-red-500 dark:text-red-400">*</span></label>
                 {wrapWithIcon(
                   Building2,
-                  <Input value="Main" disabled />
+                  <Input value="Principal" disabled />
                 )}
               </div>
               <div>
-                <label className={labelClass()}>Customer <span className="text-red-500 dark:text-red-400">*</span></label>
+                <label className={labelClass()}>Cliente <span className="text-red-500 dark:text-red-400">*</span></label>
                 {wrapWithIcon(
                   User,
                   <SearchableSelect
                     options={customerOptions}
-                    placeholder="-- Select --"
+                    placeholder="-- Seleccionar --"
                     value={customer}
                     onValueChange={setCustomer}
                     onQueryChange={setCustomerQuery}
                     filterOptions={false}
-                    emptyText={customerLoading ? 'Loading…' : 'No results'}
+                    emptyText={customerLoading ? 'Cargando…' : 'Sin resultados'}
                   />
                 )}
               </div>
               <div>
-                <label className={labelClass()}>Brand <span className="text-red-500 dark:text-red-400">*</span></label>
+                <label className={labelClass()}>Marca <span className="text-red-500 dark:text-red-400">*</span></label>
                 <div className="flex items-center gap-2">
                   <div className="flex-1">
                     {wrapWithIcon(
                       Tag,
                       <SearchableSelect
                         options={brandOptions}
-                        placeholder="-- Select --"
+                        placeholder="-- Seleccionar --"
                         value={brand}
                         onValueChange={setBrand}
                       />
@@ -1113,19 +1113,19 @@ export function NewOrderPage() {
                     disabled={quickAddBrandLoading}
                     isLoading={quickAddBrandLoading}
                   >
-                    + Add
+                    + Añadir
                   </Button>
                 </div>
               </div>
               <div>
-                <label className={labelClass()}>Model <span className="text-red-500 dark:text-red-400">*</span></label>
+                <label className={labelClass()}>Modelo <span className="text-red-500 dark:text-red-400">*</span></label>
                 <div className="flex items-center gap-2">
                   <div className="flex-1">
                     {wrapWithIcon(
                       Cpu,
                       <SearchableSelect
                         options={modelOptions}
-                        placeholder="-- Select --"
+                        placeholder="-- Seleccionar --"
                         value={model}
                         onValueChange={setModel}
                       />
@@ -1140,21 +1140,21 @@ export function NewOrderPage() {
                     disabled={quickAddModelLoading || !brand.trim()}
                     isLoading={quickAddModelLoading}
                   >
-                    + Add
+                    + Añadir
                   </Button>
                 </div>
               </div>
               <div>
-                <label className={labelClass()}>Series <span className="text-red-500 dark:text-red-400">*</span></label>
+                <label className={labelClass()}>Serie <span className="text-red-500 dark:text-red-400">*</span></label>
                 <Input
                   leftIcon={Hash}
                   value={series}
                   onChange={(e) => setSeries(e.target.value.toUpperCase())}
-                  placeholder="Serie"
+                  placeholder="Número de serie"
                 />
               </div>
               <div>
-                <label className={labelClass()}>Product <span className="text-red-500 dark:text-red-400">*</span></label>
+                <label className={labelClass()}>Producto <span className="text-red-500 dark:text-red-400">*</span></label>
                 {productsLoading ? (
                   <div className="pt-2">
                     <Loader size="md" />
@@ -1167,7 +1167,7 @@ export function NewOrderPage() {
                           Package,
                           <SearchableSelect
                             options={effectiveProductOptions}
-                            placeholder="-- Select --"
+                            placeholder="-- Seleccionar --"
                             value={product}
                             onValueChange={setProduct}
                           />
@@ -1182,17 +1182,17 @@ export function NewOrderPage() {
                         disabled={quickAddProductLoading}
                         isLoading={quickAddProductLoading}
                       >
-                        + Add
+                        + Añadir
                       </Button>
                     </div>
                     {!effectiveProductOptions.length && (
-                      <p className="text-xs text-red-600 dark:text-red-400">No active products available.</p>
+                      <p className="text-xs text-red-600 dark:text-red-400">No hay productos activos disponibles.</p>
                     )}
                   </div>
                 )}
               </div>
               <div>
-                <label className={labelClass()}>Area <span className="text-red-500 dark:text-red-400">*</span></label>
+                <label className={labelClass()}>Área <span className="text-red-500 dark:text-red-400">*</span></label>
                 {wrapWithIcon(
                   Building2,
                   <Select
@@ -1204,7 +1204,7 @@ export function NewOrderPage() {
                 )}
               </div>
               <div>
-                <label className={labelClass()}>State Area <span className="text-red-500 dark:text-red-400">*</span></label>
+                <label className={labelClass()}>Zona de estado <span className="text-red-500 dark:text-red-400">*</span></label>
                 {wrapWithIcon(
                   RefreshCw,
                   <Select
@@ -1216,7 +1216,7 @@ export function NewOrderPage() {
                 )}
               </div>
               <div>
-                <label className={labelClass()}>Technician <span className="text-red-500 dark:text-red-400">*</span></label>
+                <label className={labelClass()}>Técnico <span className="text-red-500 dark:text-red-400">*</span></label>
                 {wrapWithIcon(
                   User,
                   <Select
@@ -1228,7 +1228,7 @@ export function NewOrderPage() {
                 )}
               </div>
               <div>
-                <label className={labelClass()}>Priority</label>
+                <label className={labelClass()}>Prioridad</label>
                 {wrapWithIcon(
                   BarChart3,
                   <Select
@@ -1243,7 +1243,7 @@ export function NewOrderPage() {
 
             <div>
               <label className={labelClass()} htmlFor="order-equipment-condition">
-                Equipment Malfunction and Condition <span className="text-red-500 dark:text-red-400">*</span>
+                Avería y estado del equipo <span className="text-red-500 dark:text-red-400">*</span>
               </label>
               <RichTextEditor
                 id="order-equipment-condition"
@@ -1256,9 +1256,9 @@ export function NewOrderPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
-                <label className={labelClass()}>Photos — before repair (intake)</label>
+                <label className={labelClass()}>Fotos — antes de la reparación (ingreso)</label>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
-                  Shown to the customer on the public track page. You can add several images.
+                  Visibles para el cliente en el seguimiento público. Puede añadir varias imágenes.
                 </p>
                 <div className="flex flex-col gap-3">
                   <div className="flex flex-wrap gap-2">
@@ -1312,7 +1312,7 @@ export function NewOrderPage() {
                       leftIcon={Upload}
                       onClick={() => photoBeforeInputRef.current?.click()}
                     >
-                      Add photos
+                      Añadir fotos
                     </Button>
                     {photoBeforeError && (
                       <p className="text-xs text-red-600 dark:text-red-400">{photoBeforeError}</p>
@@ -1322,9 +1322,9 @@ export function NewOrderPage() {
               </div>
               {showAfterRepairPhotoSection && (
                 <div>
-                  <label className={labelClass()}>Photos — after repair</label>
+                  <label className={labelClass()}>Fotos — después de la reparación</label>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
-                    Upload when the order is moved to warehouse (fixed/after). You can add several images.
+                    Súbalas cuando el pedido pase a almacén (reparado). Puede añadir varias imágenes.
                   </p>
                   <div className="flex flex-col gap-3">
                     <div className="flex flex-wrap gap-2">
@@ -1378,7 +1378,7 @@ export function NewOrderPage() {
                         leftIcon={Upload}
                         onClick={() => photoAfterInputRef.current?.click()}
                       >
-                        Add photos
+                        Añadir fotos
                       </Button>
                       {photoAfterError && <p className="text-xs text-red-600 dark:text-red-400">{photoAfterError}</p>}
                     </div>
@@ -1389,7 +1389,7 @@ export function NewOrderPage() {
 
             <div>
               <label className={labelClass()} htmlFor="order-technical-report">
-                Technical Report (Mandatory) <span className="text-red-500 dark:text-red-400">*</span>
+                Informe técnico (obligatorio) <span className="text-red-500 dark:text-red-400">*</span>
               </label>
               <RichTextEditor
                 id="order-technical-report"
@@ -1402,7 +1402,7 @@ export function NewOrderPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <label className={labelClass()}>Diagnosis</label>
+                <label className={labelClass()}>Diagnóstico</label>
                 {wrapWithIcon(
                   BarChart3,
                   <Select
@@ -1414,7 +1414,7 @@ export function NewOrderPage() {
                 )}
               </div>
               <div>
-                <label className={labelClass()}>Warranty</label>
+                <label className={labelClass()}>Garantía</label>
                 {wrapWithIcon(
                   FileText,
                   <Select
@@ -1426,7 +1426,7 @@ export function NewOrderPage() {
                 )}
               </div>
               <div>
-                <label className={labelClass()}>F. Fiancée</label>
+                <label className={labelClass()}>Fecha prometida</label>
                 <DatePicker
                   value={fianceeDate}
                   onChange={(e) => setFianceeDate(e.target.value)}
@@ -1434,7 +1434,7 @@ export function NewOrderPage() {
                 />
               </div>
               <div>
-                <label className={labelClass()}>Advancement</label>
+                <label className={labelClass()}>Anticipo</label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                   <Input
@@ -1450,7 +1450,7 @@ export function NewOrderPage() {
             </div>
 
             <div>
-              <label className={labelClass()}>Accessories <span className="text-red-500 dark:text-red-400">*</span></label>
+              <label className={labelClass()}>Accesorios <span className="text-red-500 dark:text-red-400">*</span></label>
               <div className="flex flex-wrap gap-4 pt-2">
                 {accessoryOptions.map(({ id, label }) => (
                   <label key={id} className="flex items-center gap-2 cursor-pointer">
@@ -1471,7 +1471,7 @@ export function NewOrderPage() {
         {/* Services, Spare parts (Perseo), and Budget Details */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card className="min-h-0 flex flex-col">
-            <CardHeader title="Services" />
+            <CardHeader title="Servicios" />
             <CardContent className="p-0 flex-1 min-h-0">
               <DataTableWithToolbar<ServiceSparePartItem>
                 data={availableServices}
@@ -1484,11 +1484,11 @@ export function NewOrderPage() {
                   catalogLoading ? (
                     <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
                       <Loader size="md" />
-                      <span className="text-sm">Loading…</span>
+                      <span className="text-sm">Cargando…</span>
                     </div>
                   ) : (
                     <div className="py-12 text-center text-slate-500 dark:text-slate-400">
-                      No services found.
+                      No se encontraron servicios.
                     </div>
                   )
                 }
@@ -1509,11 +1509,11 @@ export function NewOrderPage() {
                   catalogLoading ? (
                     <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
                       <Loader size="md" />
-                      <span className="text-sm">Loading…</span>
+                      <span className="text-sm">Cargando…</span>
                     </div>
                   ) : (
                     <div className="py-12 text-center text-slate-500 dark:text-slate-400">
-                      No spare parts found.
+                      No se encontraron repuestos.
                     </div>
                   )
                 }
@@ -1527,9 +1527,9 @@ export function NewOrderPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
-                      <th className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">Service/Spare Parts</th>
-                      <th className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">Price</th>
-                      <th className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">Amount</th>
+                      <th className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">Servicio / repuestos</th>
+                      <th className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">Precio</th>
+                      <th className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">Cantidad</th>
                       <th className="text-left py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">Total</th>
                       <th className="w-10 py-3 px-4" />
                     </tr>
@@ -1538,7 +1538,7 @@ export function NewOrderPage() {
                     {budgetLines.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="py-12 text-center text-slate-500 dark:text-slate-400">
-                          No items. Add from Services or Spare parts.
+                          Sin líneas. Añada desde Servicios o Repuestos.
                         </td>
                       </tr>
                     ) : (
@@ -1598,7 +1598,7 @@ export function NewOrderPage() {
                 rel="noopener noreferrer"
                 className="inline-block font-medium text-red-800 dark:text-red-200 underline underline-offset-2 hover:text-red-900 dark:hover:text-red-100"
               >
-                Open client page in a new tab to add phone and email
+                Abrir la ficha del cliente en una pestaña nueva para añadir teléfono y correo
               </a>
             )}
           </div>
@@ -1606,10 +1606,10 @@ export function NewOrderPage() {
 
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
           <Button type="button" variant="red" size="md" onClick={handleCancel} leftIcon={X}>
-            Cancel
+            Cancelar
           </Button>
           <Button type="submit" variant="primary" size="md">
-            {isEditMode ? 'Update' : 'Submit'}
+            {isEditMode ? 'Actualizar' : 'Guardar pedido'}
           </Button>
         </div>
       </form>
@@ -1625,32 +1625,32 @@ export function NewOrderPage() {
         }}
         title={
           quickAddType === 'brand'
-            ? 'Add brand'
+            ? 'Añadir marca'
             : quickAddType === 'model'
-              ? 'Add model'
-              : 'Add product'
+              ? 'Añadir modelo'
+              : 'Añadir producto'
         }
         size="sm"
       >
         <form onSubmit={handleQuickAddSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-              {quickAddType === 'brand' ? 'Brand name' : quickAddType === 'model' ? 'Model name' : 'Product name'}
+              {quickAddType === 'brand' ? 'Nombre de la marca' : quickAddType === 'model' ? 'Nombre del modelo' : 'Nombre del producto'}
             </label>
             <Input
               value={quickAddValue}
               onChange={(e) => setQuickAddValue(e.target.value)}
               placeholder={
                 quickAddType === 'brand'
-                  ? 'e.g. HP'
+                  ? 'ej. HP'
                   : quickAddType === 'model'
-                    ? 'e.g. LATITUDE 5420'
-                    : 'e.g. MOTHERBOARD'
+                    ? 'ej. LATITUDE 5420'
+                    : 'ej. PLACA BASE'
               }
               autoFocus
             />
             {quickAddType === 'model' && brand.trim() && (
-              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Brand: {brand}</p>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Marca: {brand}</p>
             )}
           </div>
 
@@ -1670,7 +1670,7 @@ export function NewOrderPage() {
                 setQuickAddError(null);
               }}
             >
-              Cancel
+              Cancelar
             </Button>
             <Button
               type="submit"
@@ -1678,7 +1678,7 @@ export function NewOrderPage() {
               isLoading={quickAddBrandLoading || quickAddModelLoading || quickAddProductLoading}
               disabled={quickAddBrandLoading || quickAddModelLoading || quickAddProductLoading}
             >
-              Create
+              Crear
             </Button>
           </div>
         </form>

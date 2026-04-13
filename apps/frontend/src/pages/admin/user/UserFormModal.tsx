@@ -58,8 +58,8 @@ export function UserFormModal({
   const isEdit = !!user;
 
   const stateOptions = [
-    { value: 'active', label: 'Active' },
-    { value: 'inactive', label: 'Inactive' },
+    { value: 'active', label: 'Activo' },
+    { value: 'inactive', label: 'Inactivo' },
   ];
 
   useEffect(() => {
@@ -103,11 +103,11 @@ export function UserFormModal({
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      setAvatarError('Please select an image (JPEG, PNG, WebP or GIF).');
+      setAvatarError('Por favor seleccione una imagen (JPEG, PNG, WebP o GIF).');
       return;
     }
     if (file.size > MAX_AVATAR_BYTES) {
-      setAvatarError(`Image must be under ${(MAX_AVATAR_BYTES / (1024 * 1024)).toFixed(0)}MB.`);
+      setAvatarError(`La imagen debe ser menor a ${(MAX_AVATAR_BYTES / (1024 * 1024)).toFixed(0)}MB.`);
       return;
     }
 
@@ -141,23 +141,23 @@ export function UserFormModal({
     const trimmedIdentification = identification.trim();
     const trimmedPhone = phone.trim();
     if (!trimmedEmail) {
-      setError('Email is required.');
+      setError('El correo es requerido.');
       return;
     }
     if (!isEdit && !password) {
-      setError('Password is required for new users.');
+      setError('La contraseña es requerida para nuevos usuarios.');
       return;
     }
     if (!isEdit && password !== passwordConfirm) {
-      setError('Password and confirm password do not match.');
+      setError('La contraseña y la confirmación de contraseña no coinciden.');
       return;
     }
     if (isEdit && password && password !== passwordConfirm) {
-      setError('Password and confirm password do not match.');
+      setError('La contraseña y la confirmación de contraseña no coinciden.');
       return;
     }
     if (!roleId) {
-      setError('Role is required.');
+      setError('El rol es requerido.');
       return;
     }
     setError(null);
@@ -165,7 +165,7 @@ export function UserFormModal({
     try {
       let avatarValue: string | undefined = avatar ?? undefined;
       if (avatarFile) {
-        if (!token) throw new Error('Not authenticated.');
+        if (!token) throw new Error('No autenticado.');
         const { url } = await uploadImage(token, avatarFile, 'avatar');
         avatarValue = url;
         setAvatar(url);
@@ -205,7 +205,7 @@ export function UserFormModal({
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-            Photo
+            Foto
           </label>
           <div className="flex items-center gap-4">
             <div className="relative">
@@ -244,10 +244,10 @@ export function UserFormModal({
                 leftIcon={Upload}
                 onClick={() => fileInputRef.current?.click()}
               >
-                Upload image
+                Subir imagen
               </Button>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                JPEG, PNG, WebP or GIF. Max 150MB.
+                JPEG, PNG, WebP o GIF. Máximo 150MB.
               </p>
               {avatarError && (
                 <p className="text-xs text-red-600 dark:text-red-400">{avatarError}</p>
@@ -269,13 +269,13 @@ export function UserFormModal({
           />
           {isEdit && (
             <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-              Email cannot be changed.
+              El correo no puede ser cambiado.
             </p>
           )}
         </div>
         <div>
           <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-            Identification
+            Identificación
           </label>
           <Input
             value={identification}
@@ -285,7 +285,7 @@ export function UserFormModal({
         </div>
         <div>
           <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-            Password
+            Contraseña
           </label>
           <Input
             type="password"
@@ -298,7 +298,7 @@ export function UserFormModal({
         </div>
         <div>
           <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-            Confirm password
+            Confirmar contraseña
           </label>
           <Input
             type="password"
@@ -311,7 +311,7 @@ export function UserFormModal({
         </div>
         <div>
           <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-            Name
+            Nombre
           </label>
           <Input
             value={name}
@@ -321,7 +321,7 @@ export function UserFormModal({
         </div>
         <div>
           <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-            Phone
+            Teléfono
           </label>
           <Input
             value={phone}
@@ -332,7 +332,7 @@ export function UserFormModal({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-              Role
+              Rol
             </label>
             <Select
               options={roleOptions}
@@ -343,7 +343,7 @@ export function UserFormModal({
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-              Status
+              Estado
             </label>
             <Select
               options={stateOptions}
@@ -357,7 +357,7 @@ export function UserFormModal({
         )}
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            Cancelar
           </Button>
           <Button
             type="submit"
@@ -366,7 +366,7 @@ export function UserFormModal({
             disabled={saving}
             isLoading={saving}
           >
-            {isEdit ? 'Save' : 'Create'}
+            {isEdit ? 'Guardar' : 'Crear'}
           </Button>
         </div>
       </form>

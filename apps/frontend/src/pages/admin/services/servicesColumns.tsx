@@ -215,7 +215,7 @@ export function getServicesColumns(
       name: 'Última sincronización',
       selector: (row) => row.syncedAt ?? '',
       sortable: true,
-      width: '160px',
+      width: '200px',
       cell: (row) => (
         <span
           className="text-slate-700 dark:text-slate-300 text-sm tabular-nums"

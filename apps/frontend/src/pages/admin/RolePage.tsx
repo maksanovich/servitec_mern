@@ -127,7 +127,7 @@ export function RolePage() {
           onClick={openNewModal}
           className="sm:ml-auto"
         >
-          New Role
+          Nuevo rol
         </Button>
       </div>
 
@@ -144,11 +144,11 @@ export function RolePage() {
             loading ? (
               <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
                 <Loader size="md" />
-                <span className="text-sm">Loading…</span>
+                <span className="text-sm">Cargando…</span>
               </div>
             ) : (
               <div className="py-12 text-center text-slate-500 dark:text-slate-400">
-                No data available in this table.
+                No hay datos disponibles en esta tabla.
               </div>
             )
           }
@@ -170,7 +170,7 @@ export function RolePage() {
         title="Eliminar rol"
         message={
           deleteConfirm
-            ? `Are you sure you want to delete "${deleteConfirm.name}"? This action cannot be undone.`
+            ? `¿Estás seguro de querer eliminar "${deleteConfirm.name}"? Esta acción no puede ser deshecha.`
             : ''
         }
         confirmLabel="Eliminar"

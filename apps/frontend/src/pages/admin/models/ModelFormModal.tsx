@@ -7,8 +7,8 @@ import type { Brand } from '../../../api/brands';
 import * as brandsApi from '../../../api/brands';
 
 const stateOptions = [
-  { value: 'active', label: 'Active' },
-  { value: 'inactive', label: 'Inactive' },
+  { value: 'active', label: 'Activo' },
+  { value: 'inactive', label: 'Inactivo' },
 ];
 
 interface ModelFormModalProps {
@@ -100,20 +100,20 @@ export function ModelFormModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={isEdit ? 'Edit model' : 'New model'}
+      title={isEdit ? 'Editar modelo' : 'Nuevo modelo'}
       size="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-              Brand
+              Marca
             </label>
             <SearchableSelect
               options={brands.map((b) => ({ value: b.name, label: b.name }))}
               value={brand}
               onValueChange={setBrand}
-              placeholder={brandsLoading ? 'Loading brands…' : 'Select brand'}
+              placeholder={brandsLoading ? 'Cargando marcas…' : 'Seleccionar marca'}
               disabled={brandsLoading || brands.length === 0}
             />
             {brandsError && (
@@ -124,19 +124,19 @@ export function ModelFormModal({
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-              Model
+              Modelo
             </label>
             <Input
               value={model}
               onChange={(e) => setModel(e.target.value)}
-              placeholder="e.g. INSPIRON 15"
+              placeholder="e.g. Inspiron 15"
               required
             />
           </div>
         </div>
         <div>
           <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-            Status
+            Estado
           </label>
           <Select
             options={stateOptions}
@@ -149,7 +149,7 @@ export function ModelFormModal({
         )}
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            Cancelar
           </Button>
           <Button
             type="submit"
@@ -158,7 +158,7 @@ export function ModelFormModal({
             disabled={saving}
             isLoading={saving}
           >
-            {isEdit ? 'Save' : 'Create'}
+            {isEdit ? 'Guardar' : 'Crear'}
           </Button>
         </div>
       </form>

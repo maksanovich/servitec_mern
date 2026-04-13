@@ -198,9 +198,9 @@ export function OrderMovementsPage() {
             value={workflowFilter}
             onChange={(e) => setWorkflowFilter(e.target.value as OrderWorkflow | '')}
           >
-            <option value="">All</option>
-            <option value="standard">Standard repair</option>
-            <option value="warranty">Warranty</option>
+            <option value="">Todos</option>
+            <option value="standard">Reparación estándar</option>
+            <option value="warranty">Garantía</option>
           </select>
         </div>
         <Button type="button" variant="primary" size="md" onClick={() => fetchRows()}>

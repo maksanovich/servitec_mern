@@ -161,7 +161,7 @@ export function UserPage() {
           onClick={openNewModal}
           className="sm:ml-auto"
         >
-          New User
+          Nuevo usuario
         </Button>
       </div>
 
