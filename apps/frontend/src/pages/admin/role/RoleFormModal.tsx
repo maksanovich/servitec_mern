@@ -26,8 +26,8 @@ interface RoleFormModalProps {
 }
 
 const stateOptions = [
-  { value: 'active', label: 'Active' },
-  { value: 'inactive', label: 'Inactive' },
+  { value: 'active', label: 'Activo' },
+  { value: 'inactive', label: 'Inactivo' },
 ];
 
 export function RoleFormModal({
@@ -81,7 +81,7 @@ export function RoleFormModal({
     const trimmedName = name.trim();
     const trimmedSlug = slug.trim().toLowerCase();
     if (!trimmedName || !trimmedSlug) {
-      setError('Name and slug are required.');
+      setError('El nombre y el slug son requeridos.');
       return;
     }
     setError(null);
@@ -107,18 +107,18 @@ export function RoleFormModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={isEdit ? 'Edit role' : 'New role'}
+      title={isEdit ? 'Editar rol' : 'Nuevo rol'}
       size="lg"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-            Name
+            Nombre
           </label>
           <Input
             value={name}
             onChange={(e) => handleNameChange(e.target.value)}
-            placeholder="e.g. Administrator"
+            placeholder="e.g. Administrador"
             required
           />
         </div>
@@ -129,22 +129,22 @@ export function RoleFormModal({
           <Input
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
-            placeholder="e.g. administrator"
+            placeholder="e.g. administrador"
           />
         </div>
         <div>
           <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-            Description
+            Descripción
           </label>
           <Input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Optional description"
+            placeholder="Descripción opcional"
           />
         </div>
         <div>
           <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-            State
+            Estado
           </label>
           <Select
             options={stateOptions}
@@ -155,11 +155,11 @@ export function RoleFormModal({
         </div>
         <div>
           <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
-            Page access
+            Acceso a páginas
           </label>
           <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
-            Users with this role can only open the admin sections below. Super administrator always has access to
-            everything; stored pages are ignored for that role.
+            Los usuarios con este rol solo pueden abrir las secciones de administración debajo. El administrador super siempre tiene acceso a
+            todo; las páginas almacenadas se ignoran para ese rol.
           </p>
           <div
             className={`max-h-48 overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-600 p-2 space-y-1.5 ${isSuperAdmin ? 'opacity-60 pointer-events-none' : ''}`}
@@ -193,7 +193,7 @@ export function RoleFormModal({
         )}
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            Cancelar
           </Button>
           <Button
             type="submit"
@@ -202,7 +202,7 @@ export function RoleFormModal({
             disabled={saving}
             isLoading={saving}
           >
-            {isEdit ? 'Save' : 'Create'}
+            {isEdit ? 'Guardar' : 'Crear'}
           </Button>
         </div>
       </form>

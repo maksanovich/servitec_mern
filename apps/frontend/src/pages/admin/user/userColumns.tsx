@@ -241,7 +241,7 @@ export function getUserColumns(actions: UserColumnActions): TableColumn<User>[] 
     id: 'action',
     name: 'Acciones',
     sortable: false,
-    width: '80px',
+    width: '120px',
     cell: getActionDropdown(actions),
   },
   ];

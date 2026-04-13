@@ -136,7 +136,7 @@ export function getProductsColumns({
       id: 'action',
       name: 'Acciones',
       sortable: false,
-      width: '80px',
+      width: '120px',
       cell: (row) => <ActionDropdown product={row} onEdit={onEdit} onDelete={onDelete} />,
     },
   ];

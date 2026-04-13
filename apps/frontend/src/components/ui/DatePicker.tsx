@@ -14,6 +14,7 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(
         <input
           ref={ref}
           type="date"
+          lang="es"
           className={`
             w-full min-w-[140px] pl-10 pr-3 py-2 rounded-lg border
             bg-slate-50 dark:bg-slate-700/50 text-slate-900 dark:text-slate-200

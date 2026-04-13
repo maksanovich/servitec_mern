@@ -179,7 +179,7 @@ export function getRoleColumns(actions: RoleColumnActions): TableColumn<Role>[] 
       id: 'action',
       name: 'Acciones',
       sortable: false,
-      width: '80px',
+      width: '120px',
       cell: (row) => (
         <ActionDropdown role={row} onEdit={actions.onEdit} onDelete={actions.onDelete} />
       ),

@@ -188,7 +188,7 @@ export const sparePartsColumns: TableColumn<SpareServerRow>[] = [
     name: 'Stock',
     selector: (row) => row.stock ?? -Infinity,
     sortable: true,
-    width: '88px',
+    width: '120px',
     right: true,
     cell: (row) => (
       <span className="tabular-nums text-slate-700 dark:text-slate-300">{row.stock != null ? String(row.stock) : '—'}</span>

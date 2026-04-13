@@ -85,7 +85,7 @@ export function DateRangePicker({
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                  Start date
+                  Fecha de inicio
                 </label>
                 <DatePicker
                   value={pendingStart}
@@ -95,7 +95,7 @@ export function DateRangePicker({
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
-                  End date
+                  Fecha de fin
                 </label>
                 <DatePicker
                   value={pendingEnd}
@@ -108,7 +108,7 @@ export function DateRangePicker({
                 onClick={handleApply}
                 className="w-full py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors"
               >
-                Apply
+                Aplicar
               </button>
             </div>
           </div>

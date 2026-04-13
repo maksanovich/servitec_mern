@@ -131,7 +131,7 @@ export function ModelsPage() {
           onClick={openNewModal}
           className="sm:ml-auto"
         >
-          New Model
+          Nuevo modelo
         </Button>
       </div>
 

@@ -18,6 +18,30 @@ const WORKFLOW_OPTIONS: Array<{ value: OrderWorkflow; label: string }> = [
   { value: 'warranty', label: 'Garantía' },
 ];
 
+const PLACEHOLDER_LABELS_ES: Record<string, string> = {
+  customer_name: 'Nombre del cliente',
+  customer_email: 'Correo del cliente',
+  customer_phone: 'Teléfono del cliente',
+  order_id: 'ID del pedido',
+  order_number: 'Número de pedido',
+  stage_key: 'Clave de etapa',
+  stage_label: 'Nombre de etapa',
+  tracking_code: 'Código de seguimiento',
+  company_name: 'Nombre de la empresa',
+};
+
+const PLACEHOLDER_DESCRIPTIONS_ES: Record<string, string> = {
+  customer_name: 'Nombre del cliente.',
+  customer_email: 'Correo electrónico del cliente.',
+  customer_phone: 'Número de teléfono del cliente.',
+  order_id: 'Identificador interno del pedido.',
+  order_number: 'Número visible del pedido.',
+  stage_key: 'Clave técnica de la etapa.',
+  stage_label: 'Nombre visible de la etapa.',
+  tracking_code: 'Código de seguimiento para el cliente.',
+  company_name: 'Nombre de la empresa.',
+};
+
 export function MailConfigurationPage() {
   const { token } = useAuth();
   const [workflow, setWorkflow] = useState<OrderWorkflow>('standard');
@@ -110,6 +134,10 @@ export function MailConfigurationPage() {
     const tokenStr = `{${key}}`;
     setBody((prev) => (prev ? `${prev}\n${tokenStr}` : tokenStr));
   };
+
+  const getPlaceholderLabel = (p: OrderEmailPlaceholder) => PLACEHOLDER_LABELS_ES[p.key] ?? p.key;
+  const getPlaceholderDescription = (p: OrderEmailPlaceholder) =>
+    PLACEHOLDER_DESCRIPTIONS_ES[p.key] ?? p.description;
 
   const handleSave = async () => {
     if (!token || !stageKey) return;
@@ -236,10 +264,11 @@ export function MailConfigurationPage() {
                       key={p.key}
                       type="button"
                       onClick={() => insertTag(p.key)}
-                      title={p.description}
+                      title={getPlaceholderDescription(p)}
                       className="text-xs px-2 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600"
                     >
-                      {`{${p.key}}`}
+                      <span className="font-medium">{getPlaceholderLabel(p)}</span>
+                      <span className="ml-1 text-slate-500 dark:text-slate-400">{`{${p.key}}`}</span>
                     </button>
                   ))}
                 </div>

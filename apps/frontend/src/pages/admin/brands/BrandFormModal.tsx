@@ -4,8 +4,8 @@ import { Modal, Input, Button, Select } from '../../../components/ui';
 import type { Brand } from './types';
 
 const stateOptions = [
-  { value: 'active', label: 'Active' },
-  { value: 'inactive', label: 'Inactive' },
+  { value: 'active', label: 'Activo' },
+  { value: 'inactive', label: 'Inactivo' },
 ];
 
 interface BrandFormModalProps {
@@ -70,13 +70,13 @@ export function BrandFormModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={isEdit ? 'Edit brand' : 'New brand'}
+      title={isEdit ? 'Editar marca' : 'Nueva marca'}
       size="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-            Brand name
+            Nombre de la marca
           </label>
           <Input
             value={name}
@@ -87,7 +87,7 @@ export function BrandFormModal({
         </div>
         <div>
           <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-            Status
+            Estado
           </label>
           <Select
             options={stateOptions}
@@ -100,7 +100,7 @@ export function BrandFormModal({
         )}
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            Cancelar
           </Button>
           <Button
             type="submit"
@@ -109,7 +109,7 @@ export function BrandFormModal({
             disabled={saving}
             isLoading={saving}
           >
-            {isEdit ? 'Save' : 'Create'}
+            {isEdit ? 'Guardar' : 'Crear'}
           </Button>
         </div>
       </form>

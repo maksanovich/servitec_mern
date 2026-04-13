@@ -4,8 +4,8 @@ import { Modal, Input, Button, Select } from '../../../components/ui';
 import type { Product } from './types';
 
 const stateOptions = [
-  { value: 'active', label: 'Active' },
-  { value: 'inactive', label: 'Inactive' },
+  { value: 'active', label: 'Activo' },
+  { value: 'inactive', label: 'Inactivo' },
 ];
 
 interface ProductFormModalProps {
@@ -69,19 +69,19 @@ export function ProductFormModal({ open, onClose, product, onSuccess, onSubmit }
     <Modal
       open={open}
       onClose={onClose}
-      title={isEdit ? 'Edit product' : 'New product'}
+      title={isEdit ? 'Editar producto' : 'Nuevo producto'}
       size="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-              Product
+              Producto
             </label>
             <Input
               value={productName}
               onChange={(e) => setProductName(e.target.value)}
-              placeholder="e.g. MAINBOARD"
+              placeholder="e.g. Placa madre"
               required
             />
           </div>
@@ -89,7 +89,7 @@ export function ProductFormModal({ open, onClose, product, onSuccess, onSubmit }
 
         <div>
           <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-            Status
+            Estado
           </label>
           <Select options={stateOptions} value={state} onChange={(e) => setState(e.target.value as any)} />
         </div>
@@ -98,7 +98,7 @@ export function ProductFormModal({ open, onClose, product, onSuccess, onSubmit }
 
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            Cancelar
           </Button>
           <Button
             type="submit"
@@ -107,7 +107,7 @@ export function ProductFormModal({ open, onClose, product, onSuccess, onSubmit }
             disabled={saving}
             isLoading={saving}
           >
-            {isEdit ? 'Save' : 'Create'}
+            {isEdit ? 'Guardar' : 'Crear'}
           </Button>
         </div>
       </form>

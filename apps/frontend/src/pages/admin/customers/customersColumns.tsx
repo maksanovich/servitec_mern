@@ -231,7 +231,7 @@ export function getClientsColumns(
     id: 'action',
     name: 'Acciones',
     sortable: false,
-    width: '80px',
+    width: '120px',
     cell: (row) => <ActionDropdown client={row} onEdit={onEdit} onDelete={onDelete} />,
   },
 ];

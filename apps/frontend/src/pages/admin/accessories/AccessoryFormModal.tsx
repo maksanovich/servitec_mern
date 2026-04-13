@@ -4,8 +4,8 @@ import { Modal, Input, Button, Select } from '../../../components/ui';
 import type { Accessory } from './types';
 
 const stateOptions = [
-  { value: 'active', label: 'Active' },
-  { value: 'inactive', label: 'Inactive' },
+  { value: 'active', label: 'Activo' },
+  { value: 'inactive', label: 'Inactivo' },
 ];
 
 interface AccessoryFormModalProps {
@@ -66,17 +66,17 @@ export function AccessoryFormModal({
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={isEdit ? 'Edit accessory' : 'New accessory'} size="md">
+    <Modal open={open} onClose={onClose} title={isEdit ? 'Editar accesorio' : 'Nuevo accesorio'} size="md">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-              Artifact
+              Artículo
             </label>
             <Input
               value={artifact}
               onChange={(e) => setArtifact(e.target.value)}
-              placeholder="e.g. CHARGER"
+              placeholder="e.g. Cargador"
               required
             />
           </div>
@@ -84,7 +84,7 @@ export function AccessoryFormModal({
 
         <div>
           <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-            Status
+            Estado
           </label>
           <Select options={stateOptions} value={state} onChange={(e) => setState(e.target.value as any)} />
         </div>
@@ -93,10 +93,10 @@ export function AccessoryFormModal({
 
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="secondary" onClick={onClose}>
-            Cancel
+            Cancelar
           </Button>
           <Button type="submit" variant="emerald" leftIcon={Save} disabled={saving} isLoading={saving}>
-            {isEdit ? 'Save' : 'Create'}
+            {isEdit ? 'Guardar' : 'Crear'}
           </Button>
         </div>
       </form>
