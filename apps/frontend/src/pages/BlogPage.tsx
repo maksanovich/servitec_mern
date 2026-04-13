@@ -6,6 +6,7 @@ import noImageUrl from '../assets/images/noimage.png';
 import { htmlToPlainText } from '../utils/htmlPlainText';
 import { normalizeOrderPhotoListFromApi } from '../utils/orderPhotos';
 import { OrderPhotoSlider } from '../components/OrderPhotoSlider';
+import { buildBlogPostSlug } from '../utils/blogSlug';
 
 function formatDate(date?: string) {
   if (!date) return '—';
@@ -80,11 +81,12 @@ export function BlogPage() {
             const condition = htmlToPlainText(order.equipmentCondition ?? '');
             const report = htmlToPlainText(order.technicalReport ?? '');
             const snippet = condition ? (report ? `${condition} ${report}` : condition) : report;
+            const blogSlug = buildBlogPostSlug(order);
 
             return (
               <Link
                 key={order.code}
-                to={`/blog/${encodeURIComponent(order.code)}`}
+                to={`/blog/${encodeURIComponent(blogSlug)}`}
                 className="group block rounded-2xl border border-slate-200 bg-white shadow-sm hover:shadow-md hover:border-slate-300 transition-shadow overflow-hidden text-left"
               >
                 <div className="p-5 flex flex-col gap-4 h-full">

@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { trackOrderByCode } from '../api/orders';
 import type { OrderTrackPublic } from '../api/orders';
 import { BlogShowcaseArticle } from '../components/BlogShowcaseArticle';
+import { buildBlogPostSlug, extractOrderCodeFromBlogSlug } from '../utils/blogSlug';
 
 export function BlogPostPage() {
-  const { code } = useParams<{ code: string }>();
+  const { code: slug } = useParams<{ code: string }>();
+  const navigate = useNavigate();
   const [order, setOrder] = useState<OrderTrackPublic | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
+  const code = extractOrderCodeFromBlogSlug(slug ?? '');
 
   useEffect(() => {
     if (!code) {
@@ -32,6 +35,14 @@ export function BlogPostPage() {
       cancelled = true;
     };
   }, [code]);
+
+  useEffect(() => {
+    if (!order || !slug) return;
+    const canonicalSlug = buildBlogPostSlug(order);
+    if (slug !== canonicalSlug) {
+      navigate(`/blog/${encodeURIComponent(canonicalSlug)}`, { replace: true });
+    }
+  }, [navigate, order, slug]);
 
   if (order === undefined) {
     return (

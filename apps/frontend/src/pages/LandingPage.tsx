@@ -8,6 +8,7 @@ import type { OrderShowcaseItem } from '../api/orders';
 import noImageUrl from '../assets/images/noimage.png';
 import { normalizeOrderPhotoListFromApi } from '../utils/orderPhotos';
 import { OrderPhotoSlider } from '../components/OrderPhotoSlider';
+import { buildBlogPostSlug } from '../utils/blogSlug';
 
 const SLIDER_ITEMS = [
   {
@@ -192,7 +193,7 @@ function OrderShowcaseSection() {
         {orders.map((order) => (
           <Link
             key={order.code}
-            to={`/blog/${encodeURIComponent(order.code)}`}
+            to={`/blog/${encodeURIComponent(buildBlogPostSlug(order))}`}
             className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow block text-left"
           >
             <div className="grid grid-cols-2 gap-0 border-b border-slate-100">

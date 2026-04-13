@@ -18,8 +18,8 @@ export const ORDER_EMAIL_PLACEHOLDERS = [
   { key: 'pickup_date', description: 'Promised / pickup date field' },
   { key: 'stage_label', description: 'Current repair stage label' },
   { key: 'previous_stage_label', description: 'Previous stage label (if any)' },
-  { key: 'new_state_label', description: 'Legacy state label after update' },
-  { key: 'previous_state_label', description: 'Legacy state label before update' },
+  { key: 'new_state_label', description: 'Status shown to the customer after update (prefers pipeline stage label)' },
+  { key: 'previous_state_label', description: 'Status before update (prefers pipeline stage label)' },
   { key: 'company_name', description: 'Company name from settings' },
 ] as const;
 
@@ -41,12 +41,61 @@ export type OrderProgressEmailContext = {
   companyName: string;
   stageLabelAfter: string;
   stageLabelBefore: string;
+  /** Used with stage labels to detect “same key, only legacy state changed” edge cases. */
+  fromStageKey: string;
+  toStageKey: string;
   fromState: OrderState | null;
   toState: OrderState;
 };
 
 function formatOrderState(state: OrderState): string {
   return ORDER_STATE_LABELS[state] ?? state;
+}
+
+/**
+ * Prefer pipeline stage labels when keys differ; legacy state alone cannot distinguish
+ * multiple stages under the same area (e.g. diagnosis vs repair → both `maintenance`).
+ */
+export function resolveOrderNotificationLabels(ctx: OrderProgressEmailContext): {
+  toDisplay: string;
+  /** Plain “from” text for placeholders / WhatsApp (no “Estado/Etapa anterior” prefix). */
+  fromDisplay: string;
+  /** Full previous line for the default email body. */
+  previousStatusLine: string;
+} {
+  const fk = String(ctx.fromStageKey ?? '').trim();
+  const tk = String(ctx.toStageKey ?? '').trim();
+  const sameKeyNonEmpty = fk !== '' && fk === tk;
+
+  if (sameKeyNonEmpty && ctx.fromState != null && ctx.fromState !== ctx.toState) {
+    return {
+      toDisplay: formatOrderState(ctx.toState),
+      fromDisplay: ctx.fromState ? formatOrderState(ctx.fromState) : '',
+      previousStatusLine: ctx.fromState
+        ? EMAIL_MESSAGES.progressPreviousStateLine(formatOrderState(ctx.fromState))
+        : EMAIL_MESSAGES.progressCreatedLine,
+    };
+  }
+
+  const toDisplay = (ctx.stageLabelAfter.trim() || formatOrderState(ctx.toState));
+
+  let fromDisplay = '';
+  if (ctx.stageLabelBefore.trim()) {
+    fromDisplay = ctx.stageLabelBefore.trim();
+  } else if (ctx.fromState) {
+    fromDisplay = formatOrderState(ctx.fromState);
+  }
+
+  let previousStatusLine: string;
+  if (ctx.stageLabelBefore.trim()) {
+    previousStatusLine = EMAIL_MESSAGES.progressPreviousStageLine(ctx.stageLabelBefore);
+  } else if (ctx.fromState) {
+    previousStatusLine = EMAIL_MESSAGES.progressPreviousStateLine(formatOrderState(ctx.fromState));
+  } else {
+    previousStatusLine = EMAIL_MESSAGES.progressCreatedLine;
+  }
+
+  return { toDisplay, fromDisplay, previousStatusLine };
 }
 
 function formatMoneyEs(n: number): string {
@@ -64,6 +113,7 @@ export function buildOrderEmailPlaceholderMap(ctx: OrderProgressEmailContext): R
   const problemDescription = htmlToPlainText(
     [ctx.equipmentCondition, ctx.technicalReport].filter(Boolean).join('\n').trim()
   );
+  const resolved = resolveOrderNotificationLabels(ctx);
   return {
     customer_name: ctx.customerName,
     order_number: ctx.orderNo,
@@ -74,10 +124,10 @@ export function buildOrderEmailPlaceholderMap(ctx: OrderProgressEmailContext): R
     estimated_cost: formatMoneyEs(ctx.total),
     technician_name: ctx.technicianName,
     pickup_date: ctx.fianceeDate,
-    stage_label: ctx.stageLabelAfter,
-    previous_stage_label: ctx.stageLabelBefore,
-    new_state_label: formatOrderState(ctx.toState),
-    previous_state_label: ctx.fromState ? formatOrderState(ctx.fromState) : '',
+    stage_label: resolved.toDisplay,
+    previous_stage_label: resolved.fromDisplay,
+    new_state_label: resolved.toDisplay,
+    previous_state_label: resolved.fromDisplay,
     company_name: ctx.companyName,
   };
 }
@@ -91,15 +141,13 @@ export function applyEmailPlaceholders(template: string, vars: Record<string, st
 }
 
 export function defaultOrderProgressEmail(ctx: OrderProgressEmailContext): { subject: string; text: string } {
-  const fromLine = ctx.fromState
-    ? EMAIL_MESSAGES.progressPreviousStateLine(formatOrderState(ctx.fromState))
-    : EMAIL_MESSAGES.progressCreatedLine;
-  const subject = EMAIL_MESSAGES.progressSubject(ctx.orderNo, formatOrderState(ctx.toState));
+  const r = resolveOrderNotificationLabels(ctx);
+  const subject = EMAIL_MESSAGES.progressSubject(ctx.orderNo, r.toDisplay);
   const text = EMAIL_MESSAGES.progressBody({
     customerName: ctx.customerName,
     orderNo: ctx.orderNo,
-    toStateLabel: formatOrderState(ctx.toState),
-    fromLine,
+    toStateLabel: r.toDisplay,
+    fromLine: r.previousStatusLine,
     trackingCode: ctx.trackingCode,
   });
   return { subject, text };
@@ -204,7 +252,58 @@ export async function buildOrderProgressEmailContext(
     companyName,
     stageLabelAfter,
     stageLabelBefore,
+    fromStageKey: fk,
+    toStageKey: tk,
     fromState,
     toState,
   };
+}
+
+/** Labels for Twilio WhatsApp variables (non-empty; Twilio rejects empty content variables). */
+export async function resolveLabelsForWhatsAppOrderUpdate(
+  fromStageKey: string,
+  toStageKey: string,
+  fromState: OrderState | null,
+  toState: OrderState
+): Promise<{ fromLabel: string; toLabel: string }> {
+  const fk = String(fromStageKey ?? '').trim();
+  const tk = String(toStageKey ?? '').trim();
+  let stageLabelBefore = '';
+  let stageLabelAfter = '';
+  if (fk) {
+    const s = await OrderProgressStage.findOne({ key: fk }).select('label').lean();
+    stageLabelBefore = String((s as { label?: string } | null)?.label ?? '').trim();
+  }
+  if (tk) {
+    const s = await OrderProgressStage.findOne({ key: tk }).select('label').lean();
+    stageLabelAfter = String((s as { label?: string } | null)?.label ?? '').trim();
+  }
+  const ctx: OrderProgressEmailContext = {
+    customerName: '',
+    orderNo: '',
+    trackingCode: '',
+    brand: '',
+    model: '',
+    series: '',
+    type: '',
+    technicalReport: '',
+    equipmentCondition: '',
+    total: 0,
+    fianceeDate: '',
+    technicianName: '',
+    companyName: '',
+    stageLabelBefore,
+    stageLabelAfter,
+    fromStageKey: fk,
+    toStageKey: tk,
+    fromState,
+    toState,
+  };
+  const r = resolveOrderNotificationLabels(ctx);
+  const toLabel = r.toDisplay.trim() || formatOrderState(toState) || 'Actualizado';
+  const fromLabel =
+    r.fromDisplay.trim() ||
+    (fromState ? formatOrderState(fromState) : '') ||
+    'Inicio';
+  return { fromLabel, toLabel };
 }

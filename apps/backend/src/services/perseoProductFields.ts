@@ -28,12 +28,26 @@ const DESC_KEYS = [
   'descripcion',
   'productodescripcion',
   'productosdescripcion',
+  'descripcion_larga',
+  'descripcioncompleta',
+  'descripcion_extendida',
+  'descripcionproducto',
+  'producto_descripcion',
   'nombre',
   'denominacion',
   'referencia',
   'productonombre',
   'productosnombre',
+  'detalle',
+  'texto',
+  'titulo',
+  'observaciones',
+  'notas',
+  'comentario',
+  'contenido',
 ];
+
+const NESTED_DESC_CONTAINERS = ['producto', 'datos', 'articulo', 'data', 'item', 'registro'] as const;
 
 const PRICE_KEYS = [
   'precio',
@@ -92,8 +106,45 @@ export function stockFromPayload(payload: Record<string, unknown>): number | nul
   return numFromPayload(payload, STOCK_KEYS);
 }
 
+function joinCaracteristicas(caracteristicas: unknown): string {
+  if (!Array.isArray(caracteristicas) || caracteristicas.length === 0) return '';
+  const parts: string[] = [];
+  for (const c of caracteristicas) {
+    if (!isRecord(c)) continue;
+    const nombre = strFromPayload(c, ['nombre', 'clave', 'atributo', 'campo', 'label']);
+    const valor = strFromPayload(c, ['valor', 'descripcion', 'texto', 'contenido', 'dato']);
+    if (nombre && valor) parts.push(`${nombre}: ${valor}`);
+    else if (valor) parts.push(valor);
+    else {
+      const line = strFromPayload(c, DESC_KEYS);
+      if (line) parts.push(line);
+    }
+  }
+  return parts.filter(Boolean).join(' / ');
+}
+
+/**
+ * Best-effort product description for Perseo `productos_consulta` rows (flat + nested + attribute lists).
+ */
 export function descriptionFromPayload(payload: Record<string, unknown>): string {
-  return strFromPayload(payload, DESC_KEYS);
+  const direct = strFromPayload(payload, DESC_KEYS);
+  if (direct) return direct;
+
+  for (const key of NESTED_DESC_CONTAINERS) {
+    const child = payload[key];
+    if (!isRecord(child)) continue;
+    const fromChild = strFromPayload(child, DESC_KEYS);
+    if (fromChild) return fromChild;
+  }
+
+  const fromCar = joinCaracteristicas(payload.caracteristicas);
+  if (fromCar) return fromCar;
+
+  const attrs = payload.atributos ?? payload.attributes;
+  const fromAttrs = joinCaracteristicas(attrs);
+  if (fromAttrs) return fromAttrs;
+
+  return '';
 }
 
 /** True when the catalog description should be treated as a service line (Perseo sync → ServiceSparePart). */

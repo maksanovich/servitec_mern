@@ -19,6 +19,7 @@ import { Company } from '../models/Company.js';
 import { ServiceSparePart } from '../models/ServiceSparePart.js';
 import { SpareServer } from '../models/SpareServer.js';
 import { sendOrderProgressEmail } from '../services/smtpService.js';
+import { resolveLabelsForWhatsAppOrderUpdate } from '../services/orderProgressEmailTemplate.js';
 import { sendWhatsAppTemplateMessage } from '../services/twilioWhatsAppService.js';
 import { applyBudgetLinesReplacementStockDelta } from '../services/replacementStockService.js';
 import { getProductImage } from '../services/perseoService.js';
@@ -330,7 +331,8 @@ function normalizePublicBudgetLines(raw: unknown): Array<{
 }
 
 async function enrichPublicBudgetLines(
-  raw: unknown
+  raw: unknown,
+  options: { loadSpareImages?: boolean } = {}
 ): Promise<
   Array<{
     serviceId: string;
@@ -342,6 +344,7 @@ async function enrichPublicBudgetLines(
     spareImage?: string | null;
   }>
 > {
+  const loadSpareImages = options.loadSpareImages !== false;
   const lines = normalizePublicBudgetLines(raw).filter((l) => l.serviceId);
   if (lines.length === 0) return [];
 
@@ -370,26 +373,46 @@ async function enrichPublicBudgetLines(
   }
 
   const spareImageByProductId = new Map<number, string | null>();
-  await Promise.all(
-    Array.from(spareById.values())
-      .map((s) => s.productosid)
-      .filter((pid) => pid > 0)
-      .map(async (pid) => {
-        const image = await getProductImage(pid);
-        spareImageByProductId.set(pid, image.ok ? image.src : null);
-      })
-  );
+  if (loadSpareImages) {
+    await Promise.all(
+      Array.from(spareById.values())
+        .map((s) => s.productosid)
+        .filter((pid) => pid > 0)
+        .map(async (pid) => {
+          const image = await getProductImage(pid);
+          spareImageByProductId.set(pid, image.ok ? image.src : null);
+        })
+    );
+  }
 
   return lines.map((line) => {
     const service = serviceById.get(line.serviceId);
     const spare = spareById.get(line.serviceId);
     const serviceDetails = service?.details?.trim() ?? '';
-    const spareDetails = spare?.description?.trim() || spare?.code?.trim() || '';
+    const serviceName = service?.name?.trim() ?? '';
+    const spareDesc = spare?.description?.trim() ?? '';
+    const spareCode = spare?.code?.trim() ?? '';
+    // Prefer human description; use Perseo code only if we have nothing else (inventory / legacy rows).
+    const spareDetails = spareDesc || spareCode;
     const details = serviceDetails || spareDetails;
     const baseName = line.name.trim();
-    // Backward compatibility: old orders may store `serviceId` in `name`.
-    const normalizedName = !baseName || baseName === line.serviceId ? details || line.serviceId : baseName;
-    const spareImage = spare && spare.productosid > 0 ? (spareImageByProductId.get(spare.productosid) ?? null) : undefined;
+    // Prefer detail text, then catalog name, then spare text — never fall back to raw id while we have a label.
+    const catalogDisplay = details || serviceName;
+    const spareCodeNorm = spareCode.toUpperCase();
+    const baseLooksLikePerseoSku = /^P\d{6,}$/i.test(baseName);
+    // UI often saves Perseo `productocodigo` (e.g. P000000013) as the line name when description was empty.
+    const storedNameMatchesSpareCode = !!spare && !!spareCode && baseName.toUpperCase() === spareCodeNorm;
+    // Backward compatibility: old orders may store Mongo `serviceId` in `name`.
+    const shouldPreferCatalog =
+      !baseName ||
+      baseName === line.serviceId ||
+      storedNameMatchesSpareCode ||
+      (baseLooksLikePerseoSku && !!catalogDisplay && catalogDisplay.toUpperCase() !== spareCodeNorm);
+    const normalizedName = shouldPreferCatalog ? catalogDisplay || baseName || line.serviceId : baseName;
+    const spareImage =
+      loadSpareImages && spare && spare.productosid > 0
+        ? (spareImageByProductId.get(spare.productosid) ?? null)
+        : undefined;
     return {
       ...line,
       name: normalizedName,
@@ -418,6 +441,7 @@ function toPublicTrackResponse(o: any, ctx: StageInferenceContext = emptyStageIn
     photoAfterRepair: normalizeStoredOrderPhotos(o.photoAfterRepair),
     equipmentCondition: String(o.equipmentCondition ?? ''),
     technicalReport: String(o.technicalReport ?? ''),
+    diagnosis: Boolean(o.diagnosis),
     warranty: Boolean(o.warranty),
     budgetLines,
     total: Number.isFinite(Number(o.total)) ? Number(o.total) : 0,
@@ -727,12 +751,22 @@ export async function getOrderTechnicalReportByCode(req: Request, res: Response)
   }
 }
 
+function showcaseSparePartNames(budgetLines: unknown): string[] {
+  if (!Array.isArray(budgetLines)) return [];
+  const names = (budgetLines as { name?: string }[])
+    .map((l) => String(l?.name ?? '').trim())
+    .filter(Boolean);
+  return [...new Set(names)].slice(0, 5);
+}
+
 /** Public: delivered/finished orders for landing showcase (before/after photos + technical notes). */
 export async function getOrdersShowcase(req: Request, res: Response): Promise<Response | void> {
   try {
     const limit = Math.min(24, Math.max(1, parseInt(String(req.query.limit), 10) || 6));
     const orders = await Order.find({ state: { $in: ['delivery', 'finished'] } })
-      .select('code type brand model series photoBeforeRepair photoAfterRepair equipmentCondition technicalReport createdAt')
+      .select(
+        'code type brand model series photoBeforeRepair photoAfterRepair equipmentCondition technicalReport createdAt diagnosis budgetLines'
+      )
       .sort({ createdAt: -1 })
       .limit(limit)
       .lean();
@@ -742,6 +776,8 @@ export async function getOrdersShowcase(req: Request, res: Response): Promise<Re
       brand: o.brand,
       model: o.model,
       series: o.series,
+      diagnosis: Boolean(o.diagnosis),
+      sparePartNames: showcaseSparePartNames(o.budgetLines),
       photoBeforeRepair: normalizeStoredOrderPhotos(o.photoBeforeRepair),
       photoAfterRepair: normalizeStoredOrderPhotos(o.photoAfterRepair),
       equipmentCondition: String(o.equipmentCondition ?? ''),
@@ -766,7 +802,9 @@ export async function getOrderShowcaseByCode(req: Request, res: Response): Promi
       code: raw,
       state: { $in: ['delivery', 'finished'] },
     })
-      .select('code type brand model series photoBeforeRepair photoAfterRepair equipmentCondition technicalReport createdAt')
+      .select(
+        'code type brand model series photoBeforeRepair photoAfterRepair equipmentCondition technicalReport createdAt diagnosis budgetLines'
+      )
       .lean();
     if (!order) {
       return res.status(404).json({ error: 'Not found' });
@@ -782,6 +820,8 @@ export async function getOrderShowcaseByCode(req: Request, res: Response): Promi
       equipmentCondition?: string;
       technicalReport?: string;
       createdAt?: Date;
+      diagnosis?: boolean;
+      budgetLines?: unknown;
     };
     return res.json({
       order: {
@@ -790,6 +830,8 @@ export async function getOrderShowcaseByCode(req: Request, res: Response): Promi
         brand: o.brand,
         model: o.model,
         series: o.series,
+        diagnosis: Boolean(o.diagnosis),
+        sparePartNames: showcaseSparePartNames(o.budgetLines),
         photoBeforeRepair: normalizeStoredOrderPhotos(o.photoBeforeRepair),
         photoAfterRepair: normalizeStoredOrderPhotos(o.photoAfterRepair),
         equipmentCondition: String(o.equipmentCondition ?? ''),
@@ -1202,13 +1244,19 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
           console.error('Order progress email (patch) error:', mailErr);
         }
       }
+      const { fromLabel: waFromLabel, toLabel: waToLabel } = await resolveLabelsForWhatsAppOrderUpdate(
+        progressStageKeyBefore,
+        progressStageKeyAfter,
+        stateBefore,
+        stateAfter
+      );
       const wa = await sendWhatsAppTemplateMessage({
         toRawPhone: phone,
         variables: {
           1: String(doc.clientName ?? ''),
           2: String(doc.no ?? ''),
-          3: ORDER_STATE_LABELS[stateBefore] ?? String(stateBefore ?? ''),
-          4: ORDER_STATE_LABELS[stateAfter] ?? String(stateAfter ?? ''),
+          3: waFromLabel,
+          4: waToLabel,
           5: String(doc.code ?? ''),
         },
       });
@@ -1379,6 +1427,9 @@ export async function printOrderPdf(req: AuthRequest, res: Response): Promise<Re
 
     const ctx = await loadStageInferenceContext();
     const detail = toDetailResponse(orderDoc, usersById, '', ctx);
+    const budgetLinesForPrint = await enrichPublicBudgetLines((orderDoc as any).budgetLines ?? [], {
+      loadSpareImages: false,
+    });
 
     const company = await Company.findOne().lean();
 
@@ -1391,14 +1442,15 @@ export async function printOrderPdf(req: AuthRequest, res: Response): Promise<Re
     const createdAt = detail.createdAt ? new Date(detail.createdAt) : now;
 
     const fmtDate = (d: Date) => {
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
       const day = String(d.getDate()).padStart(2, '0');
       const month = months[d.getMonth()] ?? '';
       const year = d.getFullYear();
       return `${day}-${month}-${year}`;
     };
 
-    const fmtDateTime = (d: Date) => `${fmtDate(d)} ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
+    const fmtDateTime = (d: Date) =>
+      `${fmtDate(d)} ${d.toLocaleTimeString('es-EC', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
 
     const total = Number.isFinite(detail.total) ? detail.total : 0;
     const adv = Number.isFinite(detail.advancement) ? detail.advancement : 0;
@@ -1448,7 +1500,7 @@ export async function printOrderPdf(req: AuthRequest, res: Response): Promise<Re
       ? `${company.companyName ?? ''} | Tel.: ${company.phone ?? ''} | ${company.email ?? ''} | ${
           company.address ?? ''
         }`
-      : 'SERVICE TECHNICAL DIGITALSERVER | Tel.: 0991684191 | info@digitalserver.com.ec | CDLA BRISAS DEL RIO MZ N1 V10';
+      : 'SERVICIO TÉCNICO DIGITALSERVER | Tel.: 0991684191 | info@digitalserver.com.ec | CDLA BRISAS DEL RIO MZ N1 V10';
 
     const M = 40;
     const pageW = doc.page.width;
@@ -1519,7 +1571,7 @@ export async function printOrderPdf(req: AuthRequest, res: Response): Promise<Re
         align: 'center',
       });
 
-      const orderBadge = `ORDER ${detail.no}`;
+      const orderBadge = `ORDEN ${detail.no}`;
       doc.fontSize(11).font('Helvetica-Bold');
       const badgeW = Math.min(doc.widthOfString(orderBadge) + 20, contentW * 0.4);
       const badgeX = pageW - M - badgeW - 8;
@@ -1531,8 +1583,8 @@ export async function printOrderPdf(req: AuthRequest, res: Response): Promise<Re
       y += 62;
 
       doc.fontSize(8).font('Helvetica').fillColor('#4b5563');
-      doc.text(`Print date: ${fmtDate(now)}`, M, y, { width: contentW * 0.5 });
-      doc.text(`Check-in: ${fmtDateTime(createdAt)}`, M, y, { width: contentW, align: 'right' });
+      doc.text(`Fecha de impresión: ${fmtDate(now)}`, M, y, { width: contentW * 0.5 });
+      doc.text(`Ingreso: ${fmtDateTime(createdAt)}`, M, y, { width: contentW, align: 'right' });
       y = doc.y + 6;
 
       doc.fontSize(7.5).font('Helvetica').fillColor('#6b7280');
@@ -1544,23 +1596,23 @@ export async function printOrderPdf(req: AuthRequest, res: Response): Promise<Re
       const colW = (contentW - colGap) / 2;
       const boxY = y;
 
-      y = drawSectionBar('CUSTOMER', M, y, colW);
+      y = drawSectionBar('CLIENTE', M, y, colW);
       const custStart = y;
       doc.fontSize(8).font('Helvetica');
       let custY = custStart;
-      custY = drawLabeledBlock('Name', `${detail.customer} (${detail.customerId})`, M + 4, custY, colW - 8, 1) + 4;
-      custY = drawLabeledBlock('Phone', String(client?.telefono1 ?? ''), M + 4, custY, colW - 8, 1) + 4;
-      custY = drawLabeledBlock('Email', String(client?.email ?? ''), M + 4, custY, colW - 8, 1);
+      custY = drawLabeledBlock('Nombre', `${detail.customer} (${detail.customerId})`, M + 4, custY, colW - 8, 1) + 4;
+      custY = drawLabeledBlock('Teléfono', String(client?.telefono1 ?? ''), M + 4, custY, colW - 8, 1) + 4;
+      custY = drawLabeledBlock('Correo', String(client?.email ?? ''), M + 4, custY, colW - 8, 1);
 
       const rightX = M + colW + colGap;
       let eqY = boxY;
-      eqY = drawSectionBar('EQUIPMENT', rightX, eqY, colW);
+      eqY = drawSectionBar('EQUIPO', rightX, eqY, colW);
       eqY += 2;
-      eqY = drawLabeledBlock('Product', String(detail.type), rightX + 4, eqY, colW - 8, 1) + 4;
-      eqY = drawLabeledBlock('Brand / Model', `${detail.brand} (${detail.model})`, rightX + 4, eqY, colW - 8, 1) + 4;
-      eqY = drawLabeledBlock('Serial / IMEI', String(detail.series), rightX + 4, eqY, colW - 8, 1) + 4;
+      eqY = drawLabeledBlock('Producto', String(detail.type), rightX + 4, eqY, colW - 8, 1) + 4;
+      eqY = drawLabeledBlock('Marca / modelo', `${detail.brand} (${detail.model})`, rightX + 4, eqY, colW - 8, 1) + 4;
+      eqY = drawLabeledBlock('Serie / IMEI', String(detail.series), rightX + 4, eqY, colW - 8, 1) + 4;
       eqY = drawLabeledBlock(
-        'Promised date',
+        'Fecha prometida',
         detail.fianceeDate?.trim() || '—',
         rightX + 4,
         eqY,
@@ -1575,7 +1627,7 @@ export async function printOrderPdf(req: AuthRequest, res: Response): Promise<Re
       doc.rect(M, y, contentW, 22).fill('#eff6ff').stroke('#bfdbfe');
       doc.fillColor('#1e3a8a').fontSize(9).font('Helvetica-Bold');
       doc.text(
-        `Total: $${total.toFixed(2)}   •   Advance: $${adv.toFixed(2)}   •   Balance: $${saldo.toFixed(2)}`,
+        `Total: $${total.toFixed(2)}   •   Anticipo: $${adv.toFixed(2)}   •   Saldo: $${saldo.toFixed(2)}`,
         M + 8,
         y + 6,
         { width: contentW - 16, align: 'center' }
@@ -1583,8 +1635,8 @@ export async function printOrderPdf(req: AuthRequest, res: Response): Promise<Re
       doc.restore();
       y += 28;
 
-      // --- Budget table ---
-      const budgetLines = Array.isArray(detail.budgetLines) ? detail.budgetLines : [];
+      // --- Budget table (enriched names/details from catalog; avoids raw Mongo ids in print) ---
+      const budgetLines = budgetLinesForPrint;
       const hasBudgetLines = budgetLines.length > 0;
 
       const qtyW = 36;
@@ -1597,7 +1649,7 @@ export async function printOrderPdf(req: AuthRequest, res: Response): Promise<Re
       const xUnit = xDesc + descW + 6;
       const xLineTot = xUnit + unitW + 6;
 
-      y = drawSectionBar('BUDGET LINES', M, y, contentW);
+      y = drawSectionBar('DETALLE DEL PRESUPUESTO', M, y, contentW);
       y += 4;
 
       const headerH = 18;
@@ -1605,10 +1657,10 @@ export async function printOrderPdf(req: AuthRequest, res: Response): Promise<Re
       doc.save();
       doc.rect(tableLeft, y, contentW, headerH).fill('#1f2937');
       doc.fillColor('#ffffff').fontSize(8).font('Helvetica-Bold');
-      doc.text('Qty', xQty + 4, y + 5, { width: qtyW });
-      doc.text('Description', xDesc, y + 5, { width: descW });
-      doc.text('Unit', xUnit, y + 5, { width: unitW, align: 'right' });
-      doc.text('Line total', xLineTot, y + 5, { width: lineTotW, align: 'right' });
+      doc.text('Cant.', xQty + 4, y + 5, { width: qtyW });
+      doc.text('Descripción', xDesc, y + 5, { width: descW });
+      doc.text('P. unit.', xUnit, y + 5, { width: unitW, align: 'right' });
+      doc.text('Subtotal', xLineTot, y + 5, { width: lineTotW, align: 'right' });
       doc.restore();
       y += headerH;
 
@@ -1656,7 +1708,7 @@ export async function printOrderPdf(req: AuthRequest, res: Response): Promise<Re
         drawRow(
           {
             qty: '1',
-            desc: 'SERVICE',
+            desc: 'SERVICIO',
             unit: fallbackLineTotal ? `$${fallbackLineTotal.toFixed(2)}` : '—',
             line: fallbackLineTotal ? `$${fallbackLineTotal.toFixed(2)}` : '—',
           },
@@ -1680,7 +1732,7 @@ export async function printOrderPdf(req: AuthRequest, res: Response): Promise<Re
       y += 8;
 
       y = ensureSpace(y, 80);
-      y = drawSectionBar('EQUIPMENT DESCRIPTION / TECHNICAL', M, y, contentW);
+      y = drawSectionBar('DESCRIPCIÓN DEL EQUIPO / TÉCNICO', M, y, contentW);
       y = drawHtmlToPdfKit(doc, detail.technicalReport ?? '', M + 4, y, contentW - 8, {
         fontSize: 8,
         lineGap: 2,
@@ -1689,14 +1741,14 @@ export async function printOrderPdf(req: AuthRequest, res: Response): Promise<Re
       y += 8;
 
       doc.fontSize(8).font('Helvetica');
-      doc.text(`Accessories: ${accessoriesText ? `${accessoriesText}.` : '—'}`, M, y, { width: contentW, lineGap: 2 });
+      doc.text(`Accesorios: ${accessoriesText ? `${accessoriesText}.` : '—'}`, M, y, { width: contentW, lineGap: 2 });
       y = doc.y + 6;
-      doc.font('Helvetica-Bold').text(`Technician: ${detail.technical || '—'}`, M, y, { width: contentW });
+      doc.font('Helvetica-Bold').text(`Técnico: ${detail.technical || '—'}`, M, y, { width: contentW });
       y = doc.y + 12;
 
       // Tracking + barcode
       y = ensureSpace(y, 100);
-      y = drawSectionBar('TRACKING', M, y, contentW);
+      y = drawSectionBar('SEGUIMIENTO', M, y, contentW);
       doc.fontSize(8).font('Helvetica-Bold').fillColor('#111827');
       doc.text(PRINT_ORDER_MESSAGES.trackingHeading, M + 4, y, { width: contentW - 8 });
       y = doc.y + 2;
@@ -1730,9 +1782,9 @@ export async function printOrderPdf(req: AuthRequest, res: Response): Promise<Re
       return doc.y + 8;
     }
 
-    drawCopy('WORK ORDER — CUSTOMER COPY', M);
+    drawCopy('ORDEN DE TRABAJO — COPIA CLIENTE', M);
     doc.addPage();
-    drawCopy('WORK ORDER — WORKSHOP COPY', M);
+    drawCopy('ORDEN DE TRABAJO — COPIA TALLER', M);
 
     doc.end();
   } catch (err) {
