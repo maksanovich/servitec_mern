@@ -11,24 +11,26 @@ export const ORDER_STATE_LABELS: Record<OrderState, string> = {
 };
 
 export const PRINT_ORDER_MESSAGES = {
-  trackingHeading: 'CHECK THE STATUS OF THIS WORK ORDER FROM OUR WEBSITE',
+  trackingHeading: 'CONSULTE EL ESTADO DE ESTA ORDEN DE TRABAJO EN NUESTRO SITIO WEB',
   trackingInstruction: (trackingCode: string) =>
-    `Go to the website serviciotecnico.xyz and enter the following code. CODE: ${trackingCode}`,
-  termsTitle: 'Terms and conditions:',
+    `Ingrese a serviciotecnico.xyz e introduzca el siguiente código. CÓDIGO: ${trackingCode}`,
+  termsTitle: 'Términos y condiciones:',
   termsText:
-    '1) To collect the equipment, it is mandatory to present this work order. Please keep it safe. ' +
-    '2) The equipment must be collected within a maximum period of 3 months; after this time the customer will lose all rights over it. ' +
-    '3) By leaving the equipment for repair, the customer accepts these conditions, which may also be sent virtually. ' +
-    '4) Payment will be made via bank deposit/transfer; the customer is responsible for providing correct payment details.',
-  customerInfoNote: 'This service was received with information provided by the customer.',
+    '1) Para retirar el equipo es obligatorio presentar esta orden de trabajo. Consérvela en lugar seguro. ' +
+    '2) El equipo debe retirarse en un plazo máximo de 3 meses; transcurrido ese tiempo el cliente perderá todo derecho sobre el mismo. ' +
+    '3) Al dejar el equipo para reparación, el cliente acepta estas condiciones, las cuales también pueden enviarse de forma virtual. ' +
+    '4) El pago se realizará mediante depósito o transferencia bancaria; el cliente es responsable de proporcionar los datos de pago correctos.',
+  customerInfoNote: 'Este servicio fue recibido con la información proporcionada por el cliente.',
   confidentialityNote:
-    'This document contains information that is the exclusive property of SERVICIO TECNICO DIGITALSERVER. This information is personal and may not be shared.',
+    'Este documento contiene información de propiedad exclusiva de SERVICIO TÉCNICO DIGITALSERVER. Esta información es personal y no debe ser compartida.',
 };
 
 export const EMAIL_MESSAGES = {
   automaticFooter: 'Este es un correo automático del sistema Servitec.',
   progressSubject: (orderNo: string, toStateLabel: string) => `Actualización de su orden ${orderNo}: ${toStateLabel}`,
   progressPreviousStateLine: (fromStateLabel: string) => `Estado anterior: ${fromStateLabel}`,
+  /** When a fine-grained pipeline stage is known (not only legacy state). */
+  progressPreviousStageLine: (fromStageLabel: string) => `Etapa anterior: ${fromStageLabel}`,
   progressCreatedLine: 'Estado anterior: (creada)',
   progressBody: (params: {
     customerName: string;

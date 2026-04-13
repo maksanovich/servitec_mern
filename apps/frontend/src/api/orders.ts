@@ -181,6 +181,8 @@ export interface OrderTrackPublic {
   photoAfterRepair: string[];
   equipmentCondition?: string;
   technicalReport?: string;
+  /** Pre-repair diagnosis was performed (order intake). */
+  diagnosis?: boolean;
   warranty?: boolean;
   /** Spare parts / services billed for this repair (from order budget lines). */
   budgetLines?: OrderBudgetLine[];
@@ -202,6 +204,9 @@ export interface OrderShowcaseItem {
   brand: string;
   model: string;
   series: string;
+  diagnosis?: boolean;
+  /** Unique spare / service line names (for SEO-friendly blog URLs). */
+  sparePartNames?: string[];
   photoBeforeRepair: string[];
   photoAfterRepair: string[];
   equipmentCondition: string;

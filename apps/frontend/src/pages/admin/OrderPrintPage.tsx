@@ -40,7 +40,7 @@ export function OrderPrintPage() {
 
   return (
     <div className="order-print-root">
-      <p style={{ padding: 16 }}>Loading PDF…</p>
+      <p style={{ padding: 16 }}>Cargando PDF…</p>
     </div>
   );
 }
