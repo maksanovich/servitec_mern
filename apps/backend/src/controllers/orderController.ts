@@ -16,9 +16,13 @@ import { Client } from '../models/Client.js';
 import { Product } from '../models/Product.js';
 import { User } from '../models/User.js';
 import { Company } from '../models/Company.js';
+import { ServiceSparePart } from '../models/ServiceSparePart.js';
+import { SpareServer } from '../models/SpareServer.js';
 import { sendOrderProgressEmail } from '../services/smtpService.js';
 import { sendWhatsAppTemplateMessage } from '../services/twilioWhatsAppService.js';
 import { applyBudgetLinesReplacementStockDelta } from '../services/replacementStockService.js';
+import { getProductImage } from '../services/perseoService.js';
+import { descriptionFromPayload } from '../services/perseoProductFields.js';
 import type { AuthRequest } from '../middleware/auth.js';
 import { ORDER_STATE_LABELS, PRINT_ORDER_MESSAGES, STATUS_UPDATE_MESSAGES } from '../constants/messages.js';
 import { ensureWarrantyStages, seedDefaultStagesIfEmpty } from './orderProgressStageController.js';
@@ -312,6 +316,8 @@ function normalizePublicBudgetLines(raw: unknown): Array<{
   price: number;
   amount: number;
   total: number;
+  details?: string;
+  spareImage?: string | null;
 }> {
   if (!Array.isArray(raw)) return [];
   return (raw as unknown[]).map((l: any) => ({
@@ -321,6 +327,76 @@ function normalizePublicBudgetLines(raw: unknown): Array<{
     amount: Number.isFinite(Number(l?.amount)) ? Number(l.amount) : 0,
     total: Number.isFinite(Number(l?.total)) ? Number(l.total) : 0,
   }));
+}
+
+async function enrichPublicBudgetLines(
+  raw: unknown
+): Promise<
+  Array<{
+    serviceId: string;
+    name: string;
+    price: number;
+    amount: number;
+    total: number;
+    details?: string;
+    spareImage?: string | null;
+  }>
+> {
+  const lines = normalizePublicBudgetLines(raw).filter((l) => l.serviceId);
+  if (lines.length === 0) return [];
+
+  const ids = Array.from(new Set(lines.map((l) => l.serviceId)));
+  const [services, spares] = await Promise.all([
+    ServiceSparePart.find({ _id: { $in: ids } }).select('_id name details').lean(),
+    SpareServer.find({ _id: { $in: ids } }).select('_id productosid productocodigo payload').lean(),
+  ]);
+
+  const serviceById = new Map<string, { name: string; details: string }>();
+  for (const s of services as any[]) {
+    serviceById.set(String(s._id), {
+      name: String(s.name ?? '').trim(),
+      details: String(s.details ?? '').trim(),
+    });
+  }
+
+  const spareById = new Map<string, { productosid: number; description: string; code: string }>();
+  for (const s of spares as any[]) {
+    const productosid = Number(s.productosid ?? 0);
+    spareById.set(String(s._id), {
+      productosid: Number.isFinite(productosid) ? productosid : 0,
+      description: descriptionFromPayload((s.payload ?? {}) as Record<string, unknown>).trim(),
+      code: String(s.productocodigo ?? '').trim(),
+    });
+  }
+
+  const spareImageByProductId = new Map<number, string | null>();
+  await Promise.all(
+    Array.from(spareById.values())
+      .map((s) => s.productosid)
+      .filter((pid) => pid > 0)
+      .map(async (pid) => {
+        const image = await getProductImage(pid);
+        spareImageByProductId.set(pid, image.ok ? image.src : null);
+      })
+  );
+
+  return lines.map((line) => {
+    const service = serviceById.get(line.serviceId);
+    const spare = spareById.get(line.serviceId);
+    const serviceDetails = service?.details?.trim() ?? '';
+    const spareDetails = spare?.description?.trim() || spare?.code?.trim() || '';
+    const details = serviceDetails || spareDetails;
+    const baseName = line.name.trim();
+    // Backward compatibility: old orders may store `serviceId` in `name`.
+    const normalizedName = !baseName || baseName === line.serviceId ? details || line.serviceId : baseName;
+    const spareImage = spare && spare.productosid > 0 ? (spareImageByProductId.get(spare.productosid) ?? null) : undefined;
+    return {
+      ...line,
+      name: normalizedName,
+      ...(details ? { details } : {}),
+      ...(spareImage !== undefined ? { spareImage } : {}),
+    };
+  });
 }
 
 function toPublicTrackResponse(o: any, ctx: StageInferenceContext = emptyStageInferenceContext()) {
@@ -529,9 +605,11 @@ export async function getOrderTrackByCode(req: Request, res: Response): Promise<
         : undefined;
     await syncLegacyOrderWorkflowFields();
     const ctx = await loadStageInferenceContext();
+    const budgetLines = await enrichPublicBudgetLines((order as any).budgetLines);
     return res.json({
       order: {
         ...toPublicTrackResponse(order, ctx),
+        budgetLines,
         ...(salesContact ? { salesContact } : {}),
         whatsappLink: buildTrackWhatsAppLink({
           phone,
