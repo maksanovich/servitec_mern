@@ -77,7 +77,7 @@ export function ClientEditModal({
   if (!client) return null;
 
   return (
-    <Modal open={open} onClose={onClose} title="Edit client" size="md">
+    <Modal open={open} onClose={onClose} title="Editar cliente" size="md">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
@@ -86,7 +86,7 @@ export function ClientEditModal({
           <Input
             value={razonsocial}
             onChange={(e) => setRazonsocial(e.target.value)}
-            placeholder="Business name"
+            placeholder="Razón social"
           />
         </div>
         <div>
@@ -96,7 +96,7 @@ export function ClientEditModal({
           <Input
             value={nombrecomercial}
             onChange={(e) => setNombrecomercial(e.target.value)}
-            placeholder="Trade name"
+            placeholder="Nombre comercial"
           />
         </div>
         <div>
@@ -107,7 +107,7 @@ export function ClientEditModal({
             inputMode="numeric"
             value={identificacion}
             onChange={(e) => setIdentificacion(onlyDigits(e.target.value))}
-            placeholder="Digits only"
+            placeholder="Solo dígitos"
           />
         </div>
         <div>
@@ -118,7 +118,7 @@ export function ClientEditModal({
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="email@example.com"
+            placeholder="correo@ejemplo.com"
           />
         </div>
         <div>
@@ -129,7 +129,7 @@ export function ClientEditModal({
             inputMode="numeric"
             value={telefono1}
             onChange={(e) => setTelefono1(onlyDigits(e.target.value))}
-            placeholder="Digits only"
+            placeholder="Solo dígitos"
           />
         </div>
         {error && (

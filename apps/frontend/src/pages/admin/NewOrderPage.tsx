@@ -934,7 +934,7 @@ export function NewOrderPage() {
               disabled={!addable}
               title={addable ? undefined : 'Not enough stock to add'}
               onClick={() => addToBudget(row)}
-              aria-label={addable ? `Add ${row.name}` : `Cannot add ${row.name} — not enough stock`}
+              aria-label={addable ? `Añadir ${row.name}` : `No se puede añadir ${row.name} — stock insuficiente`}
             >
               <Plus className="w-5 h-5 font-bold" />
             </Button>
@@ -1018,7 +1018,7 @@ export function NewOrderPage() {
               disabled={!addable}
               title={addable ? undefined : 'Not enough stock to add'}
               onClick={() => addSpareToBudget(row)}
-              aria-label={addable ? `Add ${label}` : `Cannot add ${label} — not enough stock`}
+              aria-label={addable ? `Añadir ${label}` : `No se puede añadir ${label} — stock insuficiente`}
             >
               <Plus className="w-5 h-5 font-bold" />
             </Button>
@@ -1054,7 +1054,7 @@ export function NewOrderPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Orders - DIGITALSERVER TECHNICAL SERVICE"
+        title="Pedidos — Servicio técnico DIGITALSERVER"
         breadcrumb={[
           { label: 'Operations', icon: Home },
           { label: 'Orders' },
@@ -1065,7 +1065,7 @@ export function NewOrderPage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Order details - full width */}
         <Card>
-          <CardHeader title="Order Details" />
+          <CardHeader title="Detalles del pedido" />
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
@@ -1150,7 +1150,7 @@ export function NewOrderPage() {
                   leftIcon={Hash}
                   value={series}
                   onChange={(e) => setSeries(e.target.value.toUpperCase())}
-                  placeholder="Serial / Series"
+                  placeholder="Serie"
                 />
               </div>
               <div>
@@ -1247,10 +1247,10 @@ export function NewOrderPage() {
               </label>
               <RichTextEditor
                 id="order-equipment-condition"
-                aria-label="Equipment malfunction and condition"
+                aria-label="Avería y estado del equipo"
                 value={equipmentCondition}
                 onChange={setEquipmentCondition}
-                placeholder="Describe equipment malfunction and condition..."
+                placeholder="Describa la avería y el estado del equipo…"
               />
             </div>
 
@@ -1275,8 +1275,8 @@ export function NewOrderPage() {
                           type="button"
                           onClick={() => removeBeforePhoto(p.id)}
                           className="absolute -top-1 -right-1 p-1 rounded-full bg-red-500 text-white hover:bg-red-600 shadow"
-                          title="Remove photo"
-                          aria-label="Remove before-repair photo"
+                          title="Quitar foto"
+                          aria-label="Quitar foto anterior a la reparación"
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
@@ -1341,8 +1341,8 @@ export function NewOrderPage() {
                             type="button"
                             onClick={() => removeAfterPhoto(p.id)}
                             className="absolute -top-1 -right-1 p-1 rounded-full bg-red-500 text-white hover:bg-red-600 shadow"
-                            title="Remove photo"
-                            aria-label="Remove after-repair photo"
+                            title="Quitar foto"
+                            aria-label="Quitar foto posterior a la reparación"
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
@@ -1393,10 +1393,10 @@ export function NewOrderPage() {
               </label>
               <RichTextEditor
                 id="order-technical-report"
-                aria-label="Technical report"
+                aria-label="Informe técnico"
                 value={technicalReport}
                 onChange={setTechnicalReport}
-                placeholder="Technical report..."
+                placeholder="Informe técnico…"
               />
             </div>
 
@@ -1477,7 +1477,7 @@ export function NewOrderPage() {
                 data={availableServices}
                 columns={servicesColumns}
                 searchFields={['name']}
-                searchPlaceholder="Search:"
+                searchPlaceholder="Buscar:"
                 pageSizeOptions={[10, 25, 50]}
                 defaultPageSize={10}
                 noDataComponent={
@@ -1496,13 +1496,13 @@ export function NewOrderPage() {
             </CardContent>
           </Card>
           <Card className="min-h-0 flex flex-col">
-            <CardHeader title="Spare parts" />
+            <CardHeader title="Repuestos" />
             <CardContent className="p-0 flex-1 min-h-0">
               <DataTableWithToolbar<SpareServerRow>
                 data={spareCatalogData}
                 columns={spareColumns}
                 searchFields={['description', 'productocodigo']}
-                searchPlaceholder="Search:"
+                searchPlaceholder="Buscar:"
                 pageSizeOptions={[10, 25, 50]}
                 defaultPageSize={10}
                 noDataComponent={
@@ -1521,7 +1521,7 @@ export function NewOrderPage() {
             </CardContent>
           </Card>
           <Card className="min-h-0 flex flex-col">
-            <CardHeader title="Budget Details" />
+            <CardHeader title="Detalle del presupuesto" />
             <CardContent className="flex-1 min-h-0 flex flex-col">
               <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-600 flex-1 min-h-0">
                 <table className="w-full text-sm">
@@ -1565,7 +1565,7 @@ export function NewOrderPage() {
                               type="button"
                               onClick={() => removeBudgetLine(line.id)}
                               className="p-1 text-slate-400 hover:text-red-500 dark:hover:text-red-400"
-                              aria-label="Remove"
+                              aria-label="Quitar"
                             >
                               <X className="w-4 h-4" />
                             </button>

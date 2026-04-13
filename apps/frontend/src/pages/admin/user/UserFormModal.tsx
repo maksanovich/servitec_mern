@@ -199,7 +199,7 @@ export function UserFormModal({
     <Modal
       open={open}
       onClose={onClose}
-      title={isEdit ? 'Edit user' : 'New user'}
+      title={isEdit ? 'Editar usuario' : 'Nuevo usuario'}
       size="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -221,8 +221,8 @@ export function UserFormModal({
                   type="button"
                   onClick={clearAvatar}
                   className="absolute -top-1 -right-1 p-1 rounded-full bg-red-500 text-white hover:bg-red-600 shadow"
-                  title="Remove photo"
-                  aria-label="Remove photo"
+                  title="Quitar foto"
+                  aria-label="Quitar foto"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -235,7 +235,7 @@ export function UserFormModal({
                 accept={ACCEPT_IMAGES}
                 onChange={handleFileChange}
                 className="hidden"
-                aria-label="Upload photo"
+                aria-label="Subir foto"
               />
               <Button
                 type="button"
@@ -263,7 +263,7 @@ export function UserFormModal({
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="user@example.com"
+            placeholder="usuario@ejemplo.com"
             required
             disabled={isEdit}
           />
@@ -280,7 +280,7 @@ export function UserFormModal({
           <Input
             value={identification}
             onChange={(e) => setIdentification(e.target.value)}
-            placeholder="e.g. ID number"
+            placeholder="p. ej. cédula o ID"
           />
         </div>
         <div>
@@ -291,7 +291,7 @@ export function UserFormModal({
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder={isEdit ? 'Leave blank to keep current' : 'Min 6 characters'}
+            placeholder={isEdit ? 'Vacío para no cambiar' : 'Mín. 6 caracteres'}
             minLength={isEdit ? undefined : 6}
             required={!isEdit}
           />
@@ -304,7 +304,7 @@ export function UserFormModal({
             type="password"
             value={passwordConfirm}
             onChange={(e) => setPasswordConfirm(e.target.value)}
-            placeholder={isEdit ? 'Leave blank to keep current' : 'Confirm password'}
+            placeholder={isEdit ? 'Vacío para no cambiar' : 'Confirmar contraseña'}
             minLength={isEdit ? undefined : 6}
             required={!isEdit}
           />
@@ -316,7 +316,7 @@ export function UserFormModal({
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Full name"
+            placeholder="Nombre completo"
           />
         </div>
         <div>
@@ -326,7 +326,7 @@ export function UserFormModal({
           <Input
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="Phone number"
+            placeholder="Teléfono"
           />
         </div>
         <div className="grid grid-cols-2 gap-4">
@@ -338,7 +338,7 @@ export function UserFormModal({
               options={roleOptions}
               value={roleId}
               onChange={(e) => setRoleId(e.target.value)}
-              placeholder="Select role"
+              placeholder="Seleccionar rol"
             />
           </div>
           <div>

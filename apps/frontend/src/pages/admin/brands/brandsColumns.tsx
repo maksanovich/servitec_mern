@@ -65,8 +65,8 @@ function ActionDropdown({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={actionBtnClass}
-        title="Actions"
-        aria-label="Actions"
+        title="Acciones"
+        aria-label="Acciones"
         aria-expanded={open}
       >
         <ChevronDown className="w-4 h-4" />
@@ -88,7 +88,7 @@ function ActionDropdown({
                 setOpen(false);
               }}
             >
-              <Pencil className="w-4 h-4" /> Edit
+              <Pencil className="w-4 h-4" /> Editar
             </button>
             <button
               type="button"
@@ -98,7 +98,7 @@ function ActionDropdown({
                 setOpen(false);
               }}
             >
-              <Trash2 className="w-4 h-4" /> Delete
+              <Trash2 className="w-4 h-4" /> Eliminar
             </button>
           </div>,
           document.body
@@ -113,15 +113,15 @@ const stateVariant: Record<string, 'success' | 'error'> = {
 };
 
 const stateLabel: Record<string, string> = {
-  active: 'Active',
-  inactive: 'Inactive',
+  active: 'Activo',
+  inactive: 'Inactivo',
 };
 
 export function getBrandColumns(actions: BrandColumnActions): TableColumn<Brand>[] {
   return [
   {
     id: 'name',
-    name: 'Brand',
+    name: 'Marca',
     selector: (row) => row.name,
     sortable: true,
     minWidth: '200px',
@@ -131,7 +131,7 @@ export function getBrandColumns(actions: BrandColumnActions): TableColumn<Brand>
   },
   {
     id: 'state',
-    name: 'State',
+    name: 'Estado',
     selector: (row) => row.state,
     sortable: true,
     width: '120px',
@@ -141,7 +141,7 @@ export function getBrandColumns(actions: BrandColumnActions): TableColumn<Brand>
   },
   {
     id: 'action',
-    name: 'Action',
+    name: 'Acciones',
     sortable: false,
     width: '80px',
     cell: (row) => (

@@ -21,7 +21,7 @@ function DetailRow({ label, children }: { label: string; children: ReactNode }) 
   );
 }
 
-const exportOptions = { title: 'Spare Parts (Perseo)', filename: 'spare-server-catalog' };
+const exportOptions = { title: 'Repuestos (Perseo)', filename: 'catalogo-repuestos' };
 
 export function SparePartsPage() {
   const { token } = useAuth();
@@ -68,13 +68,13 @@ export function SparePartsPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Spare Parts - DIGITALSERVER TECHNICAL SERVICE"
-        breadcrumb={[{ label: 'Catalog & Finance', icon: Home }, { label: 'Spare Parts' }]}
+        title="Repuestos — Servicio técnico DIGITALSERVER"
+        breadcrumb={[{ label: 'Catálogo y finanzas', icon: Home }, { label: 'Repuestos' }]}
       />
 
       <p className="text-sm text-slate-600 dark:text-slate-400">
-        Catalog synced from Perseo (<code className="text-xs bg-slate-100 dark:bg-slate-800 px-1 rounded">SpareServer</code>
-        ). Updated on the hourly sync job.
+        Catálogo sincronizado desde Perseo (<code className="text-xs bg-slate-100 dark:bg-slate-800 px-1 rounded">SpareServer</code>
+        ). Se actualiza con la sincronización horaria.
       </p>
 
       <Card className="overflow-hidden">
@@ -82,7 +82,7 @@ export function SparePartsPage() {
           data={items}
           columns={sparePartsColumns}
           searchFields={['productocodigo', 'description', 'productosid']}
-          searchPlaceholder="Look for:"
+          searchPlaceholder="Buscar:"
           pageSizeOptions={[10, 25, 50, 100]}
           defaultPageSize={10}
           onFilteredDataChange={onFilteredDataChange}
@@ -96,18 +96,18 @@ export function SparePartsPage() {
                 size="sm"
                 leftIcon={FileSpreadsheet}
                 onClick={exportExcel}
-                title="Export Excel"
+                title="Exportar Excel"
                 className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
-                aria-label="Export Excel"
+                aria-label="Exportar Excel"
               />
               <Button
                 variant="secondary"
                 size="sm"
                 leftIcon={FileText}
                 onClick={exportPDF}
-                title="Export PDF"
+                title="Exportar PDF"
                 className="p-2 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20"
-                aria-label="Export PDF"
+                aria-label="Exportar PDF"
               />
             </ButtonGroup>
           }
@@ -119,25 +119,25 @@ export function SparePartsPage() {
               </div>
             ) : (
               <div className="py-12 text-center text-slate-500 dark:text-slate-400">
-                No spare server rows yet. Run the Perseo hourly sync or check the API connection.
+                Aún no hay datos. Ejecute la sincronización horaria de Perseo o compruebe la conexión con la API.
               </div>
             )
           }
         />
       </Card>
 
-      <Modal open={detailOpen} onClose={closeDetail} title="Spare part" size="md">
+      <Modal open={detailOpen} onClose={closeDetail} title="Repuesto" size="md">
         {selectedRow && (
           <div className="space-y-4">
             <div>
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">Image</p>
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">Imagen</p>
               <SparePartThumbnail productosid={selectedRow.productosid} variant="modal" />
             </div>
             <div>
-              <DetailRow label="Code">{selectedRow.productocodigo || '—'}</DetailRow>
-              <DetailRow label="Product ID">{selectedRow.productosid}</DetailRow>
-              <DetailRow label="Description">{selectedRow.description || '—'}</DetailRow>
-              <DetailRow label="Tariff prices">
+              <DetailRow label="Código">{selectedRow.productocodigo || '—'}</DetailRow>
+              <DetailRow label="ID producto">{selectedRow.productosid}</DetailRow>
+              <DetailRow label="Descripción">{selectedRow.description || '—'}</DetailRow>
+              <DetailRow label="Precios por tarifa">
                 {(() => {
                   const list = spareAllTariffPrices(selectedRow);
                   if (list.length === 0) return '—';
@@ -145,7 +145,7 @@ export function SparePartsPage() {
                     <div className="flex flex-row flex-wrap gap-x-3 gap-y-1 tabular-nums">
                       {list.map((e, i) => (
                         <span key={`${e.tarifasid ?? 'x'}-${i}`}>
-                          {e.tarifasid != null ? `Tariff ${e.tarifasid}` : 'Tariff'}: {formatPrice(e.base)}
+                          {e.tarifasid != null ? `Tarifa ${e.tarifasid}` : 'Tarifa'}: {formatPrice(e.base)}
                         </span>
                       ))}
                     </div>
@@ -153,7 +153,7 @@ export function SparePartsPage() {
                 })()}
               </DetailRow>
               <DetailRow label="Stock">{selectedRow.stock != null ? String(selectedRow.stock) : '—'}</DetailRow>
-              <DetailRow label="Synced">{formatDate(selectedRow.updatedAt)}</DetailRow>
+              <DetailRow label="Sincronizado">{formatDate(selectedRow.updatedAt)}</DetailRow>
             </div>
           </div>
         )}

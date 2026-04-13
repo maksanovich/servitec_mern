@@ -151,8 +151,8 @@ export function UserPage() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
-          title="Users - DIGITALSERVER TECHNICAL SERVICE"
-          breadcrumb={[{ label: 'System', icon: Home }, { label: 'User' }]}
+          title="Usuarios — Servicio técnico DIGITALSERVER"
+          breadcrumb={[{ label: 'Sistema', icon: Home }, { label: 'Usuarios' }]}
         />
         <Button
           variant="emerald"
@@ -170,7 +170,7 @@ export function UserPage() {
           data={users}
           columns={columns}
           searchFields={['id', 'name', 'identification', 'email', 'phone']}
-          searchPlaceholder="Look for:"
+          searchPlaceholder="Buscar:"
           pageSizeOptions={[10, 25, 50, 100]}
           defaultPageSize={10}
           onFilteredDataChange={onFilteredDataChange}
@@ -181,18 +181,18 @@ export function UserPage() {
                 size="sm"
                 leftIcon={FileSpreadsheet}
                 onClick={exportExcel}
-                title="Export Excel"
+                title="Exportar Excel"
                 className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
-                aria-label="Export Excel"
+                aria-label="Exportar Excel"
               />
               <Button
                 variant="secondary"
                 size="sm"
                 leftIcon={FileText}
                 onClick={exportPDF}
-                title="Export PDF"
+                title="Exportar PDF"
                 className="p-2 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20"
-                aria-label="Export PDF"
+                aria-label="Exportar PDF"
               />
             </ButtonGroup>
           }
@@ -224,14 +224,14 @@ export function UserPage() {
         open={!!deleteConfirm}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
-        title="Delete user"
+        title="Eliminar usuario"
         message={
           deleteConfirm
             ? `Are you sure you want to delete "${deleteConfirm.name || deleteConfirm.email}"? This action cannot be undone.`
             : ''
         }
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
         variant="danger"
         isLoading={deleteLoading}
         error={deleteError}

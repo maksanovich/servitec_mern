@@ -121,8 +121,8 @@ export function ModelsPage() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
-          title="Models - DIGITALSERVER TECHNICAL SERVICE"
-          breadcrumb={[{ label: 'Workshop', icon: Home }, { label: 'Models' }]}
+          title="Modelos — Servicio técnico DIGITALSERVER"
+          breadcrumb={[{ label: 'Taller', icon: Home }, { label: 'Modelos' }]}
         />
         <Button
           variant="emerald"
@@ -140,7 +140,7 @@ export function ModelsPage() {
           data={models}
           columns={columns}
           searchFields={['brand', 'model']}
-          searchPlaceholder="Look for:"
+          searchPlaceholder="Buscar:"
           pageSizeOptions={[10, 25, 50, 100]}
           defaultPageSize={10}
           onFilteredDataChange={onFilteredDataChange}
@@ -151,18 +151,18 @@ export function ModelsPage() {
                 size="sm"
                 leftIcon={FileText}
                 onClick={exportPDF}
-                title="Export PDF"
+                title="Exportar PDF"
                 className="p-2 bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-500/20"
-                aria-label="Export PDF"
+                aria-label="Exportar PDF"
               />
               <Button
                 variant="secondary"
                 size="sm"
                 leftIcon={FileSpreadsheet}
                 onClick={exportExcel}
-                title="Export Excel"
+                title="Exportar Excel"
                 className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20"
-                aria-label="Export Excel"
+                aria-label="Exportar Excel"
               />
             </ButtonGroup>
           }
@@ -193,14 +193,14 @@ export function ModelsPage() {
         open={!!deleteConfirm}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
-        title="Delete model"
+        title="Eliminar modelo"
         message={
           deleteConfirm
             ? `Are you sure you want to delete "${deleteConfirm.brand} - ${deleteConfirm.model}"? This action cannot be undone.`
             : ''
         }
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
         variant="danger"
         isLoading={deleteLoading}
         error={deleteError}

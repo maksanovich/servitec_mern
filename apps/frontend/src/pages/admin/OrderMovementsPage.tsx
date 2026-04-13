@@ -16,7 +16,7 @@ function formatDateTime(iso: string | null): string {
   if (!iso) return '—';
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleString(undefined, {
+  return d.toLocaleString('es', {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
@@ -26,10 +26,10 @@ function formatDateTime(iso: string | null): string {
 }
 
 function workflowLabel(w: OrderWorkflow): string {
-  return w === 'warranty' ? 'Warranty' : 'Standard repair';
+  return w === 'warranty' ? 'Garantía' : 'Reparación estándar';
 }
 
-const exportOptions = { title: 'Order stage movements', filename: 'order-stage-movements' };
+const exportOptions = { title: 'Movimientos de etapas', filename: 'movimientos-etapas' };
 
 export function OrderMovementsPage() {
   const { token } = useAuth();
@@ -44,7 +44,7 @@ export function OrderMovementsPage() {
     () => [
       {
         id: 'createdAt',
-        name: 'Date & time',
+        name: 'Fecha y hora',
         selector: (r) => r.createdAt ?? '',
         sortable: true,
         grow: 1.2,
@@ -56,21 +56,21 @@ export function OrderMovementsPage() {
       },
       {
         id: 'orderNo',
-        name: 'Order #',
+        name: 'Pedido n.º',
         selector: (r) => r.orderNo,
         sortable: true,
         width: '100px',
       },
       {
         id: 'orderCode',
-        name: 'Code',
+        name: 'Código',
         selector: (r) => r.orderCode,
         sortable: true,
         width: '100px',
       },
       {
         id: 'orderedByName',
-        name: 'By',
+        name: 'Por',
         selector: (r) => r.orderedByName,
         sortable: true,
         grow: 1,
@@ -85,7 +85,7 @@ export function OrderMovementsPage() {
       },
       {
         id: 'workflow',
-        name: 'Pipeline',
+        name: 'Flujo',
         selector: (r) => r.workflow,
         sortable: true,
         width: '130px',
@@ -103,7 +103,7 @@ export function OrderMovementsPage() {
       },
       {
         id: 'beforeStageLabel',
-        name: 'Before',
+        name: 'Anterior',
         selector: (r) => r.beforeStageLabel,
         sortable: true,
         grow: 1.1,
@@ -115,7 +115,7 @@ export function OrderMovementsPage() {
       },
       {
         id: 'afterStageLabel',
-        name: 'Current',
+        name: 'Actual',
         selector: (r) => r.afterStageLabel,
         sortable: true,
         grow: 1.1,
@@ -164,35 +164,35 @@ export function OrderMovementsPage() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
-          title="Order stage movements"
-          breadcrumb={[{ label: 'Operations', icon: Home }, { label: 'Orders' }, { label: 'Movements' }]}
+          title="Movimientos entre etapas"
+          breadcrumb={[{ label: 'Operaciones', icon: Home }, { label: 'Pedidos' }, { label: 'Movimientos' }]}
         />
         <Link to="/admin/order">
           <Button variant="secondary" size="md" leftIcon={ArrowLeft}>
-            Back to orders
+            Volver a pedidos
           </Button>
         </Link>
       </div>
 
       <p className="text-sm text-slate-600 dark:text-slate-400 max-w-3xl">
-        Every time an order moves along the repair or warranty pipeline, we record who changed it, the previous stage, and
-        the new stage. Use the filters to narrow by tracking code or pipeline.
+        Cada vez que un pedido avanza en el flujo de reparación o garantía, se registra quién lo cambió, la etapa anterior y
+        la nueva. Use los filtros por código de seguimiento o tipo de flujo.
       </p>
 
       <Card className="p-4 flex flex-col sm:flex-row flex-wrap gap-3 sm:items-end">
         <div className="flex-1 min-w-[180px]">
-          <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Order code</label>
+          <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Código de pedido</label>
           <Input
             value={orderCodeFilter}
             onChange={(e) => setOrderCodeFilter(e.target.value)}
-            placeholder="Filter by code"
+            placeholder="Filtrar por código"
             onKeyDown={(e) => {
               if (e.key === 'Enter') fetchRows();
             }}
           />
         </div>
         <div className="min-w-[160px]">
-          <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Pipeline</label>
+          <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Flujo</label>
           <select
             className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 px-3 py-2 text-sm text-slate-900 dark:text-slate-100"
             value={workflowFilter}
@@ -204,14 +204,14 @@ export function OrderMovementsPage() {
           </select>
         </div>
         <Button type="button" variant="primary" size="md" onClick={() => fetchRows()}>
-          Apply filters
+          Aplicar filtros
         </Button>
       </Card>
 
       <Card className="overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-slate-100 dark:border-slate-700">
           <div className="text-sm text-slate-600 dark:text-slate-400">
-            {loading ? 'Loading…' : `${total} movement${total === 1 ? '' : 's'} recorded`}
+            {loading ? 'Cargando…' : `${total} movimiento${total === 1 ? '' : 's'} registrado${total === 1 ? '' : 's'}`}
           </div>
           <ButtonGroup>
             <Button type="button" variant="secondary" size="sm" leftIcon={FileText} onClick={exportPDF}>
@@ -231,7 +231,7 @@ export function OrderMovementsPage() {
             columns={columns}
             data={rows}
             searchFields={['orderNo', 'orderCode', 'orderedByName', 'beforeStageLabel', 'afterStageLabel']}
-            searchPlaceholder="Search table…"
+            searchPlaceholder="Buscar en la tabla…"
             dateColumnId="createdAt"
             onFilteredDataChange={onFilteredDataChange}
           />

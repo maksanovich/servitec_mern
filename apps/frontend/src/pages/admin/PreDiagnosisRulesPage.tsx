@@ -99,7 +99,7 @@ export function PreDiagnosisRulesPage() {
       setForm(EMPTY_FORM);
       await loadRules();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save rule');
+      setError(err instanceof Error ? err.message : 'No se pudo guardar la regla');
     } finally {
       setSaving(false);
     }
@@ -107,7 +107,7 @@ export function PreDiagnosisRulesPage() {
 
   async function onDelete(id: string) {
     if (!token) return;
-    const confirmed = window.confirm('Delete this rule?');
+    const confirmed = window.confirm('¿Eliminar esta regla?');
     if (!confirmed) return;
     setError(null);
     try {
@@ -118,7 +118,7 @@ export function PreDiagnosisRulesPage() {
       }
       await loadRules();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete rule');
+      setError(err instanceof Error ? err.message : 'No se pudo eliminar la regla');
     }
   }
 
@@ -126,67 +126,67 @@ export function PreDiagnosisRulesPage() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <PageHeader
-          title="Pre-Diagnosis Rules - DIGITALSERVER TECHNICAL SERVICE"
-          breadcrumb={[{ label: 'Workshop', icon: Home }, { label: 'Pre-Diagnosis' }]}
+          title="Reglas de pre-diagnóstico — Servicio técnico DIGITALSERVER"
+          breadcrumb={[{ label: 'Taller', icon: Home }, { label: 'Pre-diagnóstico' }]}
         />
         <div className="flex gap-2 sm:ml-auto">
           <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-right">
-            <p className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">Active rules</p>
+            <p className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">Reglas activas</p>
             <p className="text-base font-semibold text-slate-900 dark:text-white">{activeRulesCount}</p>
           </div>
           <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-right">
-            <p className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">Total rules</p>
+            <p className="text-[11px] uppercase tracking-wide text-slate-500 dark:text-slate-400">Total de reglas</p>
             <p className="text-base font-semibold text-slate-900 dark:text-white">{rules.length}</p>
           </div>
         </div>
       </div>
 
       <Card>
-        <CardHeader title={editingId ? 'Edit Rule' : 'Create Rule'} />
+        <CardHeader title={editingId ? 'Editar regla' : 'Nueva regla'} />
         <CardContent className="space-y-4">
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Manage diagnosis rules used on the public Smart Pre-Diagnosis page.
+            Gestione las reglas de diagnóstico usadas en la página pública de pre-diagnóstico.
           </p>
           <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                Device
+                Dispositivo
               </label>
               <input
                 value={form.device}
                 onChange={(e) => setForm((prev) => ({ ...prev, device: e.target.value }))}
-                placeholder="e.g. phone"
+                placeholder="p. ej. teléfono"
                 className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2.5 text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                 required
               />
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                Symptom
+                Síntoma
               </label>
               <input
                 value={form.symptom}
                 onChange={(e) => setForm((prev) => ({ ...prev, symptom: e.target.value }))}
-                placeholder="e.g. screen"
+                placeholder="p. ej. pantalla"
                 className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2.5 text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                 required
               />
             </div>
             <div className="space-y-1.5 md:col-span-2">
               <label className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                Probable Issue
+                Problema probable
               </label>
               <input
                 value={form.probableIssue}
                 onChange={(e) => setForm((prev) => ({ ...prev, probableIssue: e.target.value }))}
-                placeholder="Describe the probable issue"
+                placeholder="Describa el problema probable"
                 className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2.5 text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
                 required
               />
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                Min Estimate
+                Estimación mín.
               </label>
               <input
                 type="number"
@@ -199,7 +199,7 @@ export function PreDiagnosisRulesPage() {
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                Max Estimate
+                Estimación máx.
               </label>
               <input
                 type="number"
@@ -212,7 +212,7 @@ export function PreDiagnosisRulesPage() {
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                ETA (Hours)
+                Tiempo estimado (h)
               </label>
               <input
                 type="number"
@@ -225,15 +225,15 @@ export function PreDiagnosisRulesPage() {
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
-                State
+                Estado
               </label>
               <select
                 value={form.state}
                 onChange={(e) => setForm((prev) => ({ ...prev, state: e.target.value as 'active' | 'inactive' }))}
                 className="w-full rounded-lg border border-slate-300 dark:border-slate-600 px-3 py-2.5 text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
               >
-                <option value="active">active</option>
-                <option value="inactive">inactive</option>
+                <option value="active">activo</option>
+                <option value="inactive">inactivo</option>
               </select>
             </div>
 
@@ -244,7 +244,7 @@ export function PreDiagnosisRulesPage() {
                 variant={editingId ? 'amber' : 'emerald'}
                 leftIcon={editingId ? Save : Plus}
               >
-                {saving ? 'Saving...' : editingId ? 'Update Rule' : 'Create Rule'}
+                {saving ? 'Guardando…' : editingId ? 'Actualizar regla' : 'Crear regla'}
               </Button>
               {editingId && (
                 <Button
@@ -255,7 +255,7 @@ export function PreDiagnosisRulesPage() {
                     setForm(EMPTY_FORM);
                   }}
                 >
-                  Cancel Edit
+                  Cancelar edición
                 </Button>
               )}
             </div>
@@ -273,31 +273,31 @@ export function PreDiagnosisRulesPage() {
       )}
 
       <Card className="overflow-hidden">
-        <CardHeader title="Configured Rules" />
+        <CardHeader title="Reglas configuradas" />
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-slate-50 dark:bg-slate-900/40">
               <tr>
                 <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-300">
-                  Device
+                  Dispositivo
                 </th>
                 <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-300">
-                  Symptom
+                  Síntoma
                 </th>
                 <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-300">
-                  Issue
+                  Problema
                 </th>
                 <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-300">
-                  Estimate
+                  Estimación
                 </th>
                 <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-300">
-                  ETA
+                  Tiempo est.
                 </th>
                 <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-300">
-                  State
+                  Estado
                 </th>
                 <th className="text-left px-4 py-3 font-semibold text-slate-600 dark:text-slate-300">
-                  Actions
+                  Acciones
                 </th>
               </tr>
             </thead>
@@ -305,13 +305,13 @@ export function PreDiagnosisRulesPage() {
               {loading ? (
                 <tr>
                   <td className="px-4 py-8 text-center text-slate-500 dark:text-slate-400" colSpan={7}>
-                    Loading rules...
+                    Cargando reglas…
                   </td>
                 </tr>
               ) : rules.length === 0 ? (
                 <tr>
                   <td className="px-4 py-8 text-center text-slate-500 dark:text-slate-400" colSpan={7}>
-                    No rules configured.
+                    No hay reglas configuradas.
                   </td>
                 </tr>
               ) : (
@@ -335,7 +335,7 @@ export function PreDiagnosisRulesPage() {
                             : 'bg-slate-500/15 text-slate-700 dark:text-slate-300'
                         }`}
                       >
-                        {rule.state}
+                        {rule.state === 'active' ? 'activo' : 'inactivo'}
                       </span>
                     </td>
                     <td className="px-4 py-3">
@@ -356,7 +356,7 @@ export function PreDiagnosisRulesPage() {
                           leftIcon={Trash2}
                           onClick={() => onDelete(rule.id)}
                         >
-                          Delete
+                          Eliminar
                         </Button>
                       </div>
                     </td>

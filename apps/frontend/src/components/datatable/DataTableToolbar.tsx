@@ -41,7 +41,7 @@ export function DataTableToolbar({
   onDateRangeChange,
   searchValue,
   onSearchChange,
-  searchPlaceholder = 'Search...',
+  searchPlaceholder = 'Buscar…',
   rightContent,
   className = '',
 }: DataTableToolbarProps) {

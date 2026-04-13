@@ -158,7 +158,7 @@ export function DashboardPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Panel - DIGITALSERVER TECHNICAL SERVICE"
+        title="Panel — Servicio técnico DIGITALSERVER"
         breadcrumb={[{ label: 'Panel', icon: Home }]}
       />
 

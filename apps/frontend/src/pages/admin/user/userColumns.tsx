@@ -85,8 +85,8 @@ function ActionDropdown({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={actionBtnClass}
-        title="Actions"
-        aria-label="Actions"
+        title="Acciones"
+        aria-label="Acciones"
         aria-expanded={open}
       >
         <ChevronDown className="w-4 h-4" />
@@ -108,7 +108,7 @@ function ActionDropdown({
                 setOpen(false);
               }}
             >
-              <Pencil className="w-4 h-4" /> Edit
+              <Pencil className="w-4 h-4" /> Editar
             </button>
             <button
               type="button"
@@ -120,7 +120,7 @@ function ActionDropdown({
                 setOpen(false);
               }}
             >
-              <Trash2 className="w-4 h-4" /> Delete
+              <Trash2 className="w-4 h-4" /> Eliminar
             </button>
           </div>,
           document.body
@@ -163,7 +163,7 @@ export function getUserColumns(actions: UserColumnActions): TableColumn<User>[] 
   return [
   {
     id: 'image',
-    name: 'Image',
+    name: 'Imagen',
     selector: () => '',
     sortable: false,
     width: '80px',
@@ -175,7 +175,7 @@ export function getUserColumns(actions: UserColumnActions): TableColumn<User>[] 
   },
   {
     id: 'name',
-    name: 'Name',
+    name: 'Nombre',
     selector: (row) => row.name,
     sortable: true,
     minWidth: '80px',
@@ -185,7 +185,7 @@ export function getUserColumns(actions: UserColumnActions): TableColumn<User>[] 
   },
   {
     id: 'identification',
-    name: 'Identification',
+    name: 'Identificación',
     selector: (row) => row.identification ?? '',
     sortable: true,
     minWidth: '150px',
@@ -197,7 +197,7 @@ export function getUserColumns(actions: UserColumnActions): TableColumn<User>[] 
   },
   {
     id: 'email',
-    name: 'E-mail',
+    name: 'Correo',
     selector: (row) => row.email,
     sortable: true,
     minWidth: '150px',
@@ -207,7 +207,7 @@ export function getUserColumns(actions: UserColumnActions): TableColumn<User>[] 
   },
   {
     id: 'phone',
-    name: 'Phone',
+    name: 'Teléfono',
     selector: (row) => row.phone,
     sortable: true,
     minWidth: '250px',
@@ -217,7 +217,7 @@ export function getUserColumns(actions: UserColumnActions): TableColumn<User>[] 
   },
   {
     id: 'role',
-    name: 'Role',
+    name: 'Rol',
     selector: (row) => row.role?.name ?? '',
     sortable: true,
     minWidth: '250px',
@@ -227,19 +227,19 @@ export function getUserColumns(actions: UserColumnActions): TableColumn<User>[] 
   },
   {
     id: 'state',
-    name: 'Status',
+    name: 'Estado',
     selector: (row) => row.state,
     sortable: true,
     width: '100px',
     cell: (row) => (
       <Badge variant={row.state === 'active' ? 'success' : 'error'}>
-        {row.state === 'active' ? 'Active' : 'Inactive'}
+        {row.state === 'active' ? 'Activo' : 'Inactivo'}
       </Badge>
     ),
   },
   {
     id: 'action',
-    name: 'Action',
+    name: 'Acciones',
     sortable: false,
     width: '80px',
     cell: getActionDropdown(actions),

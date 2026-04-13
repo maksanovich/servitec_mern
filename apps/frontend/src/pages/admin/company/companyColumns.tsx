@@ -18,7 +18,7 @@ function CompanyLogo({ src }: { src?: string }) {
       <div
         className={logoClass}
         style={{ width: logoSize, height: logoSize }}
-        title="No logo"
+        title="Sin logo"
       />
     );
   }
@@ -104,8 +104,8 @@ function ActionDropdown({
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={actionBtnClass}
-        title="Actions"
-        aria-label="Actions"
+        title="Acciones"
+        aria-label="Acciones"
         aria-expanded={open}
       >
         <ChevronDown className="w-4 h-4" />
@@ -127,7 +127,7 @@ function ActionDropdown({
                 setOpen(false);
               }}
             >
-              <Pencil className="w-4 h-4" /> Edit
+              <Pencil className="w-4 h-4" /> Editar
             </button>
           </div>,
           document.body
@@ -142,8 +142,8 @@ const stateVariant: Record<string, 'success' | 'error'> = {
 };
 
 const stateLabel: Record<string, string> = {
-  active: 'Active',
-  inactive: 'Inactive',
+  active: 'Activo',
+  inactive: 'Inactivo',
 };
 
 const companyColumnDefs = (
@@ -163,7 +163,7 @@ const companyColumnDefs = (
   },
   {
     id: 'companyName',
-    name: 'Company Name',
+    name: 'Razón social',
     selector: (row) => row.companyName,
     sortable: true,
     minWidth: '220px',
@@ -173,7 +173,7 @@ const companyColumnDefs = (
   },
   {
     id: 'email',
-    name: 'Email',
+    name: 'Correo',
     selector: (row) => row.email,
     sortable: true,
     minWidth: '200px',
@@ -183,7 +183,7 @@ const companyColumnDefs = (
   },
   {
     id: 'phone',
-    name: 'Phone',
+    name: 'Teléfono',
     selector: (row) => row.phone,
     sortable: true,
     width: '120px',
@@ -193,7 +193,7 @@ const companyColumnDefs = (
   },
   {
     id: 'address',
-    name: 'Address',
+    name: 'Dirección',
     selector: (row) => row.address,
     sortable: true,
     minWidth: '220px',
@@ -211,7 +211,7 @@ const companyColumnDefs = (
   },
   {
     id: 'state',
-    name: 'State',
+    name: 'Estado',
     selector: (row) => row.state,
     sortable: true,
     width: '100px',
@@ -221,7 +221,7 @@ const companyColumnDefs = (
   },
   {
     id: 'action',
-    name: 'Action',
+    name: 'Acciones',
     sortable: false,
     width: '80px',
     cell: (row) => <ActionDropdown company={row} onEdit={actions.onEdit} />,
