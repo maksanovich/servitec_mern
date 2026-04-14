@@ -25,7 +25,7 @@ export const incomeColumns: TableColumn<DailyIncomeEntry>[] = [
   },
   {
     id: 'order',
-    name: 'Pedido',
+    name: 'Orden',
     selector: (row) => row.order,
     sortable: true,
     minWidth: '140px',

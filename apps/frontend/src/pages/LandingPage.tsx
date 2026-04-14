@@ -24,7 +24,7 @@ const SLIDER_ITEMS = [
   {
     image: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=1200',
     title: 'Rápido y confiable',
-    subtitle: 'Consulte el estado de su pedido en cualquier momento y lugar',
+    subtitle: 'Consulte el estado de su orden en cualquier momento y lugar',
   },
 ];
 
@@ -287,7 +287,7 @@ export function LandingPage() {
         </h1>
         <p className="text-lg text-slate-500 mb-8 leading-relaxed max-w-2xl mx-auto">
           Reparación profesional y gestión de garantías para su equipo. Consulte el estado de su
-          pedido en cualquier momento.
+          orden en cualquier momento.
         </p>
         <div className="flex gap-3 justify-center flex-wrap">
           <Link
@@ -300,7 +300,7 @@ export function LandingPage() {
             to="/track"
             className="inline-block px-6 py-3 bg-[var(--color-accent)] text-white font-semibold rounded-lg hover:bg-[var(--color-accent-hover)] transition-colors"
           >
-            Seguir pedido
+            Seguir orden
           </Link>
           <Link
             to="/blog"

@@ -125,10 +125,10 @@ const navGroups: NavGroup[] = [
   {
     label: 'Operaciones',
     items: [
-      { path: '/admin/order', label: 'Pedidos', icon: Wrench },
+      { path: '/admin/order', label: 'Ordenes', icon: Wrench },
       {
         path: '/admin/order/movements',
-        label: 'Movimientos de pedidos',
+        label: 'Movimientos de ordenes',
         icon: History,
         accessPath: '/admin/order',
         visibleOnlyFor: [SUPER_ADMIN_SLUG, ADMIN_SLUG],

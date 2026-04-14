@@ -646,7 +646,7 @@ function StageActionDropdown({
           onClick={async () => {
             const code = codeTrimmed;
             if (!code) {
-              toast.error('El pedido no tiene código de seguimiento para el informe.');
+              toast.error('La orden no tiene código de seguimiento para el informe.');
               return;
             }
             setReportLoading(true);

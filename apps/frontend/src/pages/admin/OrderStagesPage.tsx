@@ -231,7 +231,7 @@ export function OrderStagesPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <PageHeader title="Etapas del pedido — Servicio técnico DIGITALSERVER" breadcrumb={[{ label: 'Operaciones', icon: Home }, { label: 'Etapas' }]} />
+        <PageHeader title="Etapas de la orden — Servicio técnico DIGITALSERVER" breadcrumb={[{ label: 'Operaciones', icon: Home }, { label: 'Etapas' }]} />
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <ButtonGroup>
             <Button
@@ -240,7 +240,7 @@ export function OrderStagesPage() {
               size="md"
               onClick={() => setWorkflowView('standard')}
             >
-              Standard repair
+              Reparación estándar
             </Button>
             <Button
               type="button"
@@ -349,7 +349,7 @@ export function OrderStagesPage() {
         )}
       </Card>
 
-      <Modal open={formOpen} onClose={closeNewStageModal} title="Añadir etapa del pedido" size="lg">
+      <Modal open={formOpen} onClose={closeNewStageModal} title="Añadir etapa de la orden" size="lg">
         {formError && (
           <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/20 dark:text-red-300">
             {formError}
@@ -426,10 +426,10 @@ export function OrderStagesPage() {
         open={!!deleteConfirm}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
-        title="Eliminar etapa del pedido"
+        title="Eliminar etapa de la orden"
         message={
           deleteConfirm
-            ? `¿Eliminar "${deleteConfirm.label}"? Los pedidos pasarán automáticamente a la etapa anterior.`
+            ? `¿Eliminar "${deleteConfirm.label}"? Las ordenes pasarán automáticamente a la etapa anterior.`
             : ''
         }
         confirmLabel="Eliminar"

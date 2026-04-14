@@ -76,7 +76,7 @@ export function DashboardPage() {
       return {
         kpiData: [
           { label: 'Ingresos', value: '$0.00', sublabel: 'Total' as const, icon: DollarSign },
-          { label: 'Pedidos', value: '0', sublabel: 'Total' as const, icon: Wrench },
+          { label: 'Ordenes', value: '0', sublabel: 'Total' as const, icon: Wrench },
           { label: 'En mantenimiento', value: '0', sublabel: null, icon: Wrench },
           { label: 'En entrega', value: '0', sublabel: null, icon: Wrench },
         ],
@@ -97,7 +97,7 @@ export function DashboardPage() {
 
     const kpiDataComputed = [
       { label: 'Ingresos', value: `$${totalIncome.toFixed(2)}`, sublabel: 'Total' as const, icon: DollarSign },
-      { label: 'Pedidos', value: String(totalOrders), sublabel: 'Total' as const, icon: Wrench },
+      { label: 'Ordenes', value: String(totalOrders), sublabel: 'Total' as const, icon: Wrench },
       { label: 'En mantenimiento', value: String(maintenanceOrders), sublabel: null, icon: Wrench },
       { label: 'En entrega', value: String(deliveredOrders), sublabel: null, icon: Wrench },
     ];
@@ -206,10 +206,10 @@ export function DashboardPage() {
         </Card>
 
         <Card className="overflow-hidden">
-          <CardHeader title="Cliente con más pedidos" />
+          <CardHeader title="Cliente con más ordenes" />
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader columns={['Fecha', 'Cliente', 'Pedidos']} />
+              <TableHeader columns={['Fecha', 'Cliente', 'Ordenes']} />
               <TableBody>
                 {mostOrdersData.length === 0 ? (
                   <TableRow>

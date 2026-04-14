@@ -1723,7 +1723,7 @@ export async function printOrderPdf(req: AuthRequest, res: Response): Promise<Re
 
       // --- Notes ---
       y = ensureSpace(y, 120);
-      y = drawSectionBar('REPORTED ISSUE', M, y, contentW);
+      y = drawSectionBar('PROBLEMA REPORTADO', M, y, contentW);
       y = drawHtmlToPdfKit(doc, detail.equipmentCondition ?? '', M + 4, y, contentW - 8, {
         fontSize: 8,
         lineGap: 2,

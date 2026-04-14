@@ -59,7 +59,7 @@ const MAX_ORDER_PHOTO_BYTES = 150 * 1024 * 1024; // 150MB (>= 100MB)
 const ACCEPT_ORDER_IMAGES = 'image/jpeg,image/png,image/webp,image/gif';
 
 const AREA_OPTIONS: SelectOption[] = [
-  { value: 'entrance', label: 'Zona de entrada' },
+  { value: 'entrance', label: 'Zona de ingreso' },
   { value: 'maintenance', label: 'Zona de mantenimiento' },
 ];
 
@@ -810,7 +810,7 @@ export function NewOrderPage() {
         });
         return;
       }
-      const message = err instanceof Error ? err.message : 'No se pudo enviar el pedido';
+      const message = err instanceof Error ? err.message : 'No se pudo enviar la orden';
       setSubmitError({ text: message });
     }
   };
@@ -1054,18 +1054,18 @@ export function NewOrderPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Pedidos — Servicio técnico DIGITALSERVER"
+        title="Ordenes — Servicio técnico DIGITALSERVER"
         breadcrumb={[
           { label: 'Operaciones', icon: Home },
-          { label: 'Pedidos' },
-          { label: isEditMode ? 'Editar pedido' : 'Nuevo pedido' },
+          { label: 'Ordenes' },
+          { label: isEditMode ? 'Editar orden' : 'Nueva orden' },
         ]}
       />
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Order details - full width */}
         <Card>
-          <CardHeader title="Detalles del pedido" />
+          <CardHeader title="Detalles de la orden" />
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
@@ -1324,7 +1324,7 @@ export function NewOrderPage() {
                 <div>
                   <label className={labelClass()}>Fotos — después de la reparación</label>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">
-                    Súbalas cuando el pedido pase a almacén (reparado). Puede añadir varias imágenes.
+                    Súbalas cuando la orden pase a almacén (reparado). Puede añadir varias imágenes.
                   </p>
                   <div className="flex flex-col gap-3">
                     <div className="flex flex-wrap gap-2">
@@ -1609,7 +1609,7 @@ export function NewOrderPage() {
             Cancelar
           </Button>
           <Button type="submit" variant="primary" size="md">
-            {isEditMode ? 'Actualizar' : 'Guardar pedido'}
+            {isEditMode ? 'Actualizar' : 'Guardar orden'}
           </Button>
         </div>
       </form>

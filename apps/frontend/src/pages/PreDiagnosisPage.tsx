@@ -75,7 +75,7 @@ export function PreDiagnosisPage() {
     <div className="max-w-[720px]">
       <h1 className="text-[1.9rem] font-bold tracking-tight mb-2 text-slate-900">Pre-diagnóstico inteligente</h1>
       <p className="text-base text-slate-500 mb-6">
-        Seleccione su equipo y el síntoma para obtener una estimación de reparación antes de crear un pedido.
+        Seleccione su equipo y el síntoma para obtener una estimación de reparación antes de crear una orden.
       </p>
 
       <form onSubmit={onSubmit} className="border border-slate-200 rounded-xl p-6 bg-white shadow-sm space-y-4">

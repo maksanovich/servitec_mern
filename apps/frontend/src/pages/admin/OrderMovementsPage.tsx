@@ -56,7 +56,7 @@ export function OrderMovementsPage() {
       },
       {
         id: 'orderNo',
-        name: 'Pedido n.º',
+        name: 'Orden n.º',
         selector: (r) => r.orderNo,
         sortable: true,
         width: '100px',
@@ -165,23 +165,23 @@ export function OrderMovementsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
           title="Movimientos entre etapas"
-          breadcrumb={[{ label: 'Operaciones', icon: Home }, { label: 'Pedidos' }, { label: 'Movimientos' }]}
+          breadcrumb={[{ label: 'Operaciones', icon: Home }, { label: 'Ordenes' }, { label: 'Movimientos' }]}
         />
         <Link to="/admin/order">
           <Button variant="secondary" size="md" leftIcon={ArrowLeft}>
-            Volver a pedidos
+            Volver a órdenes
           </Button>
         </Link>
       </div>
 
       <p className="text-sm text-slate-600 dark:text-slate-400 max-w-3xl">
-        Cada vez que un pedido avanza en el flujo de reparación o garantía, se registra quién lo cambió, la etapa anterior y
+        Cada vez que una orden avanza en el flujo de reparación o garantía, se registra quién la cambió, la etapa anterior y
         la nueva. Use los filtros por código de seguimiento o tipo de flujo.
       </p>
 
       <Card className="p-4 flex flex-col sm:flex-row flex-wrap gap-3 sm:items-end">
         <div className="flex-1 min-w-[180px]">
-          <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Código de pedido</label>
+          <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Código de orden</label>
           <Input
             value={orderCodeFilter}
             onChange={(e) => setOrderCodeFilter(e.target.value)}
