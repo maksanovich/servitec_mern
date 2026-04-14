@@ -8,7 +8,7 @@ export function Layout() {
     { path: '/', label: 'Inicio' },
     { path: '/blog', label: 'Blog' },
     { path: '/diagnosis', label: 'Pre-diagnóstico' },
-    { path: '/track', label: 'Seguir pedido' },
+    { path: '/track', label: 'Seguir orden' },
   ];
 
   return (

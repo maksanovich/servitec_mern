@@ -191,7 +191,7 @@ export function TrackPage() {
       const { order: o } = await trackOrderByCode(code);
       setOrder(o);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Pedido no encontrado');
+      setError(err instanceof Error ? err.message : 'Orden no encontrada');
     } finally {
       setLoading(false);
     }
@@ -200,7 +200,7 @@ export function TrackPage() {
   return (
     <div className="max-w-[640px]">
       <h1 className="text-[1.75rem] font-bold tracking-tight mb-2 text-slate-900">
-        Seguimiento de su pedido
+        Seguimiento de su orden
       </h1>
       <p className="text-base text-slate-500 mb-6">
         Ingrese su código de seguimiento (el mismo que le dimos al recibir el equipo) para ver el estado y las fotos.

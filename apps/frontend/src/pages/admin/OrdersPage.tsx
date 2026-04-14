@@ -66,7 +66,7 @@ import {
 
 export type { Order };
 
-const exportOptions = { title: 'Pedidos', filename: 'pedidos' };
+const exportOptions = { title: 'Ordenes', filename: 'ordenes' };
 
 /** One icon per tab index so stages that share a legacy area still look distinct. */
 const STAGE_TAB_ICONS: LucideIcon[] = [
@@ -210,7 +210,7 @@ export function OrdersPage() {
       return;
     }
     if (status.reason === 'no_phone') {
-      toast.warning('Pedido actualizado. No hay teléfono del cliente para WhatsApp.');
+      toast.warning('Orden actualizada. No hay teléfono del cliente para WhatsApp.');
       return;
     }
     if (status.reason === 'not_configured') {
@@ -233,7 +233,7 @@ export function OrdersPage() {
       setDeleteConfirm(null);
       await refetchOrders();
     } catch (e) {
-      setDeleteError(e instanceof Error ? e.message : 'No se pudo eliminar el pedido');
+      setDeleteError(e instanceof Error ? e.message : 'No se pudo eliminar la orden');
     } finally {
       setDeleteLoading(false);
     }
@@ -551,7 +551,7 @@ export function OrdersPage() {
       setDeliveryAdvance(0);
       setDeliveryTargetStageKey('');
     } catch (e) {
-      setDeliveryError(e instanceof Error ? e.message : 'No se pudo mover el pedido');
+      setDeliveryError(e instanceof Error ? e.message : 'No se pudo mover la orden');
     } finally {
       setDeliverySaving(false);
     }
@@ -575,7 +575,7 @@ export function OrdersPage() {
       await refetchOrders();
       setMoveConfirm(null);
     } catch (e) {
-      setMoveError(e instanceof Error ? e.message : 'No se pudo mover el pedido');
+      setMoveError(e instanceof Error ? e.message : 'No se pudo mover la orden');
     } finally {
       setMoveLoading(false);
     }
@@ -706,7 +706,7 @@ export function OrdersPage() {
       setWarehousePhotoError(null);
       if (warehousePhotoInputRef.current) warehousePhotoInputRef.current.value = '';
     } catch (e) {
-      setWarehousePhotoError(e instanceof Error ? e.message : 'No se pudo mover el pedido');
+      setWarehousePhotoError(e instanceof Error ? e.message : 'No se pudo mover la orden');
     } finally {
       setWarehouseSaving(false);
     }
@@ -864,8 +864,8 @@ export function OrdersPage() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <PageHeader
-          title="Pedidos — Servicio técnico DIGITALSERVER"
-          breadcrumb={[{ label: 'Operaciones', icon: Home }, { label: 'Pedidos' }]}
+          title="Ordenes — Servicio técnico DIGITALSERVER"
+          breadcrumb={[{ label: 'Operaciones', icon: Home }, { label: 'Ordenes' }]}
         />
         <div className="flex flex-col items-stretch sm:flex-row sm:items-center gap-2">
           <ButtonGroup className="sm:mr-auto">
@@ -893,7 +893,7 @@ export function OrdersPage() {
               leftIcon={Wrench}
               className="sm:ml-auto"
             >
-              Nuevo pedido
+              Nueva orden
             </Button>
           </Link>
           {user?.role?.slug === SUPER_ADMIN_SLUG && (
@@ -1062,7 +1062,7 @@ export function OrdersPage() {
         <div className="space-y-4">
           <div>
             <p className="text-sm text-slate-600">
-              Suba una o más fotos posteriores a la reparación antes de mover este pedido al almacén.
+              Suba una o más fotos posteriores a la reparación antes de mover esta orden al almacén.
             </p>
           </div>
 
@@ -1301,7 +1301,7 @@ export function OrdersPage() {
         open={!!deleteConfirm}
         onClose={handleDeleteCancel}
         onConfirm={handleDeleteConfirm}
-        title="Eliminar pedido"
+        title="Eliminar orden"
         message={
           deleteConfirm
             ? `¿Seguro que desea eliminar "${deleteConfirm.no}"? Esta acción no se puede deshacer.`
@@ -1317,10 +1317,10 @@ export function OrdersPage() {
         open={!!moveConfirm}
         onClose={handleMoveCancel}
         onConfirm={handleMoveConfirm}
-        title="Mover pedido"
+        title="Mover orden"
         message={
           moveConfirm
-            ? `¿Mover el pedido "${moveConfirm.order.no}" a "${stages.find((s) => s.key === moveConfirm.toStageKey)?.label ?? moveConfirm.toStageKey
+            ? `¿Mover la orden "${moveConfirm.order.no}" a "${stages.find((s) => s.key === moveConfirm.toStageKey)?.label ?? moveConfirm.toStageKey
             }"?`
             : ''
         }
