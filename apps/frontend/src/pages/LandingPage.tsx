@@ -10,19 +10,23 @@ import { normalizeOrderPhotoListFromApi } from '../utils/orderPhotos';
 import { OrderPhotoSlider } from '../components/OrderPhotoSlider';
 import { buildBlogPostSlug } from '../utils/blogSlug';
 
+import image1 from '../assets/images/slider/1.png';
+import image2 from '../assets/images/slider/2.png';
+import image3 from '../assets/images/slider/3.png';
+
 const SLIDER_ITEMS = [
   {
-    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=1200',
+    image: image1,
     title: 'Servicio de reparación profesional',
     subtitle: 'Técnicos expertos para todas sus necesidades de equipos',
   },
   {
-    image: 'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=1200',
+    image: image2,
     title: 'Calidad en la que puede confiar',
     subtitle: 'Garantía integral y soporte posterior al servicio',
   },
   {
-    image: 'https://images.unsplash.com/photo-1581092160562-40aa08e78837?w=1200',
+    image: image3,
     title: 'Rápido y confiable',
     subtitle: 'Consulte el estado de su orden en cualquier momento y lugar',
   },
@@ -38,28 +42,25 @@ function HeroSlider() {
     return () => clearInterval(t);
   }, []);
 
+  const item = SLIDER_ITEMS[index];
+
   return (
-    <section className="relative rounded-2xl overflow-hidden aspect-[21/9] min-h-[240px] max-h-[420px] bg-slate-800">
-      {SLIDER_ITEMS.map((item, i) => (
-        <div
-          key={i}
-          className={`absolute inset-0 transition-opacity duration-700 ${
-            i === index ? 'opacity-100 z-10' : 'opacity-0 z-0'
-          }`}
-        >
-          <img
-            src={item.image}
-            alt=""
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-8 text-white z-20">
-            <h2 className="text-2xl md:text-3xl font-bold mb-2">{item.title}</h2>
-            <p className="text-lg text-white/90">{item.subtitle}</p>
-          </div>
-        </div>
-      ))}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-30">
+    <section className="relative w-full min-w-0 max-w-full overflow-hidden rounded-2xl bg-slate-800">
+      <img
+        key={index}
+        src={item.image}
+        alt=""
+        className="block w-full h-auto max-w-full min-w-0 align-top"
+      />
+      <div
+        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"
+        aria-hidden
+      />
+      <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-20 p-6 text-white md:p-8">
+        <h2 className="text-2xl font-bold md:text-3xl mb-2">{item.title}</h2>
+        <p className="text-lg text-white/90">{item.subtitle}</p>
+      </div>
+      <div className="absolute bottom-4 left-1/2 z-30 flex -translate-x-1/2 gap-2">
         {SLIDER_ITEMS.map((_, i) => (
           <button
             key={i}
@@ -276,7 +277,7 @@ function PreDiagnosisPreviewSection() {
 
 export function LandingPage() {
   return (
-    <div className="max-w-[1120px] mx-auto">
+    <div className="mx-auto w-full min-w-0 max-w-[1120px]">
       <div className="mb-10">
         <HeroSlider />
       </div>
