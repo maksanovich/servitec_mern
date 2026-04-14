@@ -43,6 +43,7 @@ import { ServicesPage } from './pages/admin/services';
 import { SparePartsPage } from './pages/admin/spareParts';
 import { IncomePage } from './pages/admin/IncomePage';
 import { PreDiagnosisRulesPage } from './pages/admin/PreDiagnosisRulesPage';
+import { DocumentationPage } from './pages/admin/DocumentationPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 function App() {
@@ -281,7 +282,7 @@ function App() {
               path="docs"
               element={
                 <RequirePage page="/admin/docs">
-                  <AdminPlaceholder title="Documentación" />
+                  <DocumentationPage />
                 </RequirePage>
               }
             />
