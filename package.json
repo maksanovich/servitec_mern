@@ -11,6 +11,8 @@
         "backend": "npm run dev -w @servitec/backend",
         "frontend": "npm run dev -w @servitec/frontend",
         "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+        "build": "npm run build -w @servitec/backend && npm run build -w @servitec/frontend",
+        "start": "npm run start -w @servitec/backend",
         "install:all": "npm install"
     },
     "devDependencies": {

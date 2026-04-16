@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { ImageOff } from 'lucide-react';
 import type { TableColumn } from '../../../components/datatable';
 import { Loader } from '../../../components/ui';
@@ -24,6 +24,18 @@ export function formatDate(iso: string | null) {
   } catch {
     return '—';
   }
+}
+
+/**
+ * RDT only runs `onRowClicked` when the click target has `data-tag="allowRowEvents"`.
+ * Custom cells nest spans/images; without this wrapper, `e.target` is a child and the row handler never runs.
+ */
+function RowClickWrap({ className = '', children }: { className?: string; children: ReactNode }) {
+  return (
+    <div data-tag="allowRowEvents" className={`min-w-0 w-full ${className}`.trim()}>
+      <div className="pointer-events-none min-w-0">{children}</div>
+    </div>
+  );
 }
 
 const thumbBox =
@@ -118,9 +130,9 @@ export const sparePartsColumns: TableColumn<SpareServerRow>[] = [
     width: '76px',
     center: true,
     cell: (row) => (
-      <div className="flex justify-center py-0.5">
+      <RowClickWrap className="flex justify-center py-0.5">
         <SparePartThumbnail productosid={row.productosid} />
-      </div>
+      </RowClickWrap>
     ),
   },
   {
@@ -130,7 +142,9 @@ export const sparePartsColumns: TableColumn<SpareServerRow>[] = [
     sortable: true,
     width: '120px',
     cell: (row) => (
-      <span className="font-mono text-sm text-slate-700 dark:text-slate-300">{row.productocodigo || '—'}</span>
+      <RowClickWrap>
+        <span className="font-mono text-sm text-slate-700 dark:text-slate-300">{row.productocodigo || '—'}</span>
+      </RowClickWrap>
     ),
   },
   {
@@ -141,7 +155,9 @@ export const sparePartsColumns: TableColumn<SpareServerRow>[] = [
     width: '104px',
     right: true,
     cell: (row) => (
-      <span className="tabular-nums text-slate-700 dark:text-slate-300">{row.productosid}</span>
+      <RowClickWrap className="flex justify-end">
+        <span className="tabular-nums text-slate-700 dark:text-slate-300">{row.productosid}</span>
+      </RowClickWrap>
     ),
   },
   {
@@ -151,9 +167,11 @@ export const sparePartsColumns: TableColumn<SpareServerRow>[] = [
     sortable: true,
     minWidth: '220px',
     cell: (row) => (
-      <span className="text-slate-700 dark:text-slate-300 line-clamp-2 text-left" title={row.description}>
-        {row.description || '—'}
-      </span>
+      <RowClickWrap>
+        <span className="text-slate-700 dark:text-slate-300 line-clamp-2 text-left" title={row.description}>
+          {row.description || '—'}
+        </span>
+      </RowClickWrap>
     ),
   },
   {
@@ -167,19 +185,25 @@ export const sparePartsColumns: TableColumn<SpareServerRow>[] = [
     cell: (row) => {
       const list = spareAllTariffPrices(row);
       if (list.length === 0) {
-        return <span className="tabular-nums text-slate-500">—</span>;
+        return (
+          <RowClickWrap className="flex justify-end">
+            <span className="tabular-nums text-slate-500">—</span>
+          </RowClickWrap>
+        );
       }
       return (
-        <div className="flex flex-row flex-wrap justify-end gap-x-2 gap-y-0.5 py-0.5 text-xs tabular-nums text-slate-700 dark:text-slate-300">
-          {list.map((e, i) => (
-            <span
-              key={`${e.tarifasid ?? 'x'}-${i}`}
-              title={e.tarifasid != null ? `Tarifa ${e.tarifasid}` : 'Tarifa'}
-            >
-              {e.tarifasid != null ? `T${e.tarifasid}` : 'Tarifa'}: {formatPrice(e.base)}
-            </span>
-          ))}
-        </div>
+        <RowClickWrap className="flex justify-end">
+          <div className="flex flex-row flex-wrap justify-end gap-x-2 gap-y-0.5 py-0.5 text-xs tabular-nums text-slate-700 dark:text-slate-300">
+            {list.map((e, i) => (
+              <span
+                key={`${e.tarifasid ?? 'x'}-${i}`}
+                title={e.tarifasid != null ? `Tarifa ${e.tarifasid}` : 'Tarifa'}
+              >
+                {e.tarifasid != null ? `T${e.tarifasid}` : 'Tarifa'}: {formatPrice(e.base)}
+              </span>
+            ))}
+          </div>
+        </RowClickWrap>
       );
     },
   },
@@ -191,7 +215,9 @@ export const sparePartsColumns: TableColumn<SpareServerRow>[] = [
     width: '120px',
     right: true,
     cell: (row) => (
-      <span className="tabular-nums text-slate-700 dark:text-slate-300">{row.stock != null ? String(row.stock) : '—'}</span>
+      <RowClickWrap className="flex justify-end">
+        <span className="tabular-nums text-slate-700 dark:text-slate-300">{row.stock != null ? String(row.stock) : '—'}</span>
+      </RowClickWrap>
     ),
   },
   // {
