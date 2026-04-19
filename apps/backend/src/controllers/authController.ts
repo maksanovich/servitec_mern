@@ -12,7 +12,8 @@ export async function login(req: Request, res: Response): Promise<Response | voi
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    const user = await User.findOne({ email }).select('+password').populate('role');
+    const emailNorm = String(email).trim().toLowerCase();
+    const user = await User.findOne({ email: emailNorm }).select('+password').populate('role');
     if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
