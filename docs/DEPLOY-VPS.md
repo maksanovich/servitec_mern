@@ -215,7 +215,7 @@ Certbot will adjust the server block for TLS.
 
 ## 8. After deployment
 
-1. **Change the default admin** if you used the seeded account (`admin@servitec.local` / documented in [README](../README.md)); set a strong password in **Admin → Users** or the database.
+1. **Change the default admin** if you used the seeded account (`admin@servitec` / documented in [README](../README.md)); set a strong password in **Admin → Users** or the database.
 2. **Smoke-test**: open `/`, `/track`, `/admin/login`, create a test order, upload an image, confirm `/uploads/...` loads.
 3. **Monitor**: `pm2 logs servitec-api`, Nginx error log, and disk space for `uploads/` and MongoDB.
 

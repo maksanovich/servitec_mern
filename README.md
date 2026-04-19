@@ -111,8 +111,8 @@ The Vite dev server **proxies** `/api` and `/uploads` to the backend so the brow
 After a successful seed (manual or automatic on server start):
 
 - **URL:** http://localhost:6191/admin/login  
-- **Email:** `admin@servitec.local`  
-- **Password:** `superadmin123`  
+- **Email:** `admin@servitec`
+- **Password:** `admin1234`
 
 Change this user and password in production immediately after deployment.
 
