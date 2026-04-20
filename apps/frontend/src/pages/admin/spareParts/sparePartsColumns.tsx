@@ -121,7 +121,7 @@ export function SparePartThumbnail({
   );
 }
 
-export const sparePartsColumns: TableColumn<SpareServerRow>[] = [
+const sparePartsColumnsBase: TableColumn<SpareServerRow>[] = [
   {
     id: 'image',
     name: 'Imagen',
@@ -231,3 +231,43 @@ export const sparePartsColumns: TableColumn<SpareServerRow>[] = [
   //   ),
   // },
 ];
+
+/** Default columns: all tariff prices per row. */
+export const sparePartsColumns: TableColumn<SpareServerRow>[] = sparePartsColumnsBase;
+
+/**
+ * When `tarifaId` is set, shows a single price column for that tariff and you should filter rows with
+ * `spareRowHasTarifaId` from `spareTariffPrice`; otherwise same as {@link sparePartsColumns}.
+ */
+export function getSparePartsColumns(tarifaId: number | null): TableColumn<SpareServerRow>[] {
+  const tid = tarifaId != null && tarifaId > 0 ? tarifaId : null;
+  if (tid == null) return sparePartsColumnsBase;
+
+  return sparePartsColumnsBase.map((col) => {
+    if (col.id !== 'tarifasPrecios') return col;
+    return {
+      id: 'precioTarifa',
+      name: `Precio (tarifa ${tid})`,
+      selector: (row: SpareServerRow) => {
+        const hit = spareAllTariffPrices(row).find((e) => e.tarifasid === tid);
+        return hit?.base ?? -Infinity;
+      },
+      sortable: true,
+      sortFunction: (a, b) => {
+        const pa = spareAllTariffPrices(a).find((e) => e.tarifasid === tid)?.base ?? -Infinity;
+        const pb = spareAllTariffPrices(b).find((e) => e.tarifasid === tid)?.base ?? -Infinity;
+        return pa - pb;
+      },
+      minWidth: '140px',
+      right: true,
+      cell: (row: SpareServerRow) => {
+        const hit = spareAllTariffPrices(row).find((e) => e.tarifasid === tid);
+        return (
+          <RowClickWrap className="flex justify-end">
+            <span className="tabular-nums text-slate-700 dark:text-slate-300">{formatPrice(hit?.base ?? null)}</span>
+          </RowClickWrap>
+        );
+      },
+    } as TableColumn<SpareServerRow>;
+  });
+}
