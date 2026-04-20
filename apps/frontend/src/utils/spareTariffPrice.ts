@@ -115,6 +115,28 @@ export function spareAllTariffPrices(row: Pick<SpareServerRow, 'precio' | 'tarif
   return out;
 }
 
+/** Distinct Perseo tariff ids present in the catalog (sorted ascending). */
+export function collectSpareTarifaIdsFromCatalog(
+  catalog: Pick<SpareServerRow, 'precio' | 'tarifas'>[]
+): number[] {
+  const ids = new Set<number>();
+  for (const row of catalog) {
+    for (const e of spareAllTariffPrices(row)) {
+      if (e.tarifasid != null) ids.add(e.tarifasid);
+    }
+  }
+  return Array.from(ids).sort((a, b) => a - b);
+}
+
+/** Row has an explicit price line for this tariff id (or any row when `tarifasid <= 0`). */
+export function spareRowHasTarifaId(
+  row: Pick<SpareServerRow, 'precio' | 'tarifas'>,
+  tarifasid: number
+): boolean {
+  if (tarifasid <= 0) return true;
+  return spareAllTariffPrices(row).some((e) => e.tarifasid === tarifasid);
+}
+
 /** For table sort / export: lowest ex-VAT tariff price on the row. */
 export function spareTariffPriceListSortKey(row: Pick<SpareServerRow, 'precio' | 'tarifas'>): number {
   const list = spareAllTariffPrices(row);

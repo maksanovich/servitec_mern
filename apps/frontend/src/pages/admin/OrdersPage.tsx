@@ -23,9 +23,24 @@ import {
   FlaskConical,
   Cog,
   Settings2,
+  ChevronDown,
+  ChevronUp,
   type LucideIcon,
 } from 'lucide-react';
-import { PageHeader, Card, Button, ButtonGroup, ConfirmDialog, Modal, Input, Loader } from '../../components/ui';
+import {
+  PageHeader,
+  Card,
+  CardHeader,
+  CardContent,
+  Button,
+  ButtonGroup,
+  ConfirmDialog,
+  Modal,
+  Input,
+  Loader,
+  Select,
+  type SelectOption,
+} from '../../components/ui';
 import {
   DataTableWithToolbar,
   type DataTableFilterState,
@@ -54,7 +69,12 @@ import { getOrderProgressStagesPublic, type OrderProgressStage } from '../../api
 import { getServicesSpareParts, canAddCatalogItemToBudget, type ServiceSparePartItem } from '../../api/servicesSpareParts';
 import { getSpareServerCatalog, type SpareServerRow } from '../../api/spareServer';
 import { getClientById } from '../../api/clients';
-import { recalculateSpareBudgetLines, spareUnitPriceInclVat } from '../../utils/spareTariffPrice';
+import {
+  collectSpareTarifaIdsFromCatalog,
+  recalculateSpareBudgetLines,
+  spareRowHasTarifaId,
+  spareUnitPriceInclVat,
+} from '../../utils/spareTariffPrice';
 import { uploadImage } from '../../api/uploads';
 import noImageUrl from '../../assets/images/noimage.png';
 import {
@@ -119,7 +139,9 @@ export function OrdersPage() {
   const [moveError, setMoveError] = useState<string | null>(null);
 
   const [budgetOrder, setBudgetOrder] = useState<Order | null>(null);
-  const [budgetClientTarifasid, setBudgetClientTarifasid] = useState(0);
+  /** Perseo tariff id for spare catalog filter, list prices, and spare budget line recalculation. */
+  const [spareCatalogTarifaId, setSpareCatalogTarifaId] = useState(0);
+  const [serviceSparePanelOpen, setServiceSparePanelOpen] = useState(true);
   const [budgetLines, setBudgetLines] = useState<BudgetLineItem[]>([]);
   // Tracks the budget quantities at the moment the modal was opened.
   // Used to enforce replacement stock limits while editing.
@@ -263,6 +285,22 @@ export function OrdersPage() {
     return m;
   }, [spareCatalogData]);
 
+  const spareTarifaSelectOptions = useMemo((): SelectOption[] => {
+    return collectSpareTarifaIdsFromCatalog(spareCatalogData).map((id) => ({
+      value: String(id),
+      label: `Tarifa ${id}`,
+    }));
+  }, [spareCatalogData]);
+
+  const filteredSpareCatalog = useMemo(() => {
+    return spareCatalogData.filter((r) => spareRowHasTarifaId(r, spareCatalogTarifaId));
+  }, [spareCatalogData, spareCatalogTarifaId]);
+
+  useEffect(() => {
+    if (!budgetOrder) return;
+    setBudgetLines((prev) => recalculateSpareBudgetLines(prev, spareById, spareCatalogTarifaId));
+  }, [budgetOrder, spareCatalogTarifaId, spareById, budgetLines.length]);
+
   const getInitialBudgetQty = useCallback((serviceId: string) => {
     return initialBudgetQtyRef.current.get(serviceId) ?? 0;
   }, []);
@@ -323,9 +361,9 @@ export function OrdersPage() {
     (row: SpareServerRow, amount: number = 1) => {
       const stock = row.stock ?? 0;
       if (stock <= 0) return;
-      const price = spareUnitPriceInclVat(row, budgetClientTarifasid);
+      const price = spareUnitPriceInclVat(row, spareCatalogTarifaId);
       const name =
-        row.description.trim() || row.productocodigo.trim() || `Spare (${row.productosid})`;
+        row.description.trim() || row.productocodigo.trim() || `Repuesto (${row.productosid})`;
       setBudgetLines((prev) => {
         const existing = prev.find((l) => l.serviceId === row.id);
         const currentQty = existing ? existing.amount : 0;
@@ -353,7 +391,7 @@ export function OrdersPage() {
         ];
       });
     },
-    [getReplacementRemaining, budgetClientTarifasid]
+    [getReplacementRemaining, spareCatalogTarifaId]
   );
 
   const updateBudgetAmount = useCallback((lineId: string, amount: number) => {
@@ -386,7 +424,8 @@ export function OrdersPage() {
   const closeBudgetModal = useCallback(() => {
     if (budgetSaving) return;
     setBudgetOrder(null);
-    setBudgetClientTarifasid(0);
+    setSpareCatalogTarifaId(0);
+    setServiceSparePanelOpen(true);
     setBudgetLines([]);
     setBudgetError(null);
     initialBudgetQtyRef.current = new Map();
@@ -415,9 +454,12 @@ export function OrdersPage() {
         } catch {
           clientTarifa = 0;
         }
-        setBudgetClientTarifasid(clientTarifa);
-
         const spareMap = new Map(spareResp.items.map((p) => [p.id, p]));
+        const tarifaIds = collectSpareTarifaIdsFromCatalog(spareResp.items);
+        const preferredTarifa: number =
+          clientTarifa > 0 && tarifaIds.includes(clientTarifa) ? clientTarifa : (tarifaIds[0] ?? 0);
+        setSpareCatalogTarifaId(preferredTarifa);
+
         const linesRaw: BudgetLineItem[] = (orderResp.order.budgetLines ?? []).map((l: OrderBudgetLine, idx: number) => ({
           id: `budget-${l.serviceId}-${idx}`,
           serviceId: l.serviceId,
@@ -426,7 +468,7 @@ export function OrdersPage() {
           amount: l.amount,
           total: l.total,
         }));
-        const lines = recalculateSpareBudgetLines(linesRaw, spareMap, clientTarifa);
+        const lines = recalculateSpareBudgetLines(linesRaw, spareMap, preferredTarifa);
         setBudgetLines(lines);
         initialBudgetQtyRef.current = new Map(lines.map((l) => [l.serviceId, l.amount]));
         if (!servicesData.length) setServicesData(servicesResp.items);
@@ -434,7 +476,7 @@ export function OrdersPage() {
       } catch (e) {
         setBudgetError(e instanceof Error ? e.message : 'No se pudo cargar el presupuesto');
         setBudgetLines([]);
-        setBudgetClientTarifasid(0);
+        setSpareCatalogTarifaId(0);
       } finally {
         setCatalogLoading(false);
       }
@@ -469,7 +511,8 @@ export function OrdersPage() {
         // Keep prior list if refresh fails.
       }
       setBudgetOrder(null);
-      setBudgetClientTarifasid(0);
+      setSpareCatalogTarifaId(0);
+      setServiceSparePanelOpen(true);
       setBudgetLines([]);
     } catch (e) {
       setBudgetError(e instanceof Error ? e.message : 'No se pudo guardar el presupuesto');
@@ -743,9 +786,9 @@ export function OrdersPage() {
 
   const servicesColumns: TableColumn<ServiceSparePartItem>[] = useMemo(
     () => [
-      { id: 'name', name: 'Code', width: '140px', selector: (r) => r.name, sortable: true },
-      { id: 'details', name: 'Detail', maxWidth: "420px", selector: (r) => r.details, sortable: true },
-      { id: 'price', name: 'Price', width: '100px', selector: (r) => r.price, sortable: true, format: (r) => r.price.toFixed(2) },
+      { id: 'name', name: 'Código', width: '140px', selector: (r) => r.name, sortable: true },
+      { id: 'details', name: 'Detalle', maxWidth: '420px', selector: (r) => r.details, sortable: true },
+      { id: 'price', name: 'Precio', width: '100px', selector: (r) => r.price, sortable: true, format: (r) => r.price.toFixed(2) },
       {
         id: 'add',
         name: '',
@@ -764,7 +807,7 @@ export function OrdersPage() {
               disabled={!addable}
               title={addable ? undefined : 'Stock insuficiente para añadir'}
               onClick={() => addToBudget(row)}
-              aria-label={addable ? `Add ${row.name}` : `Cannot add ${row.name} — not enough stock`}
+              aria-label={addable ? `Añadir ${row.name}` : `No se puede añadir ${row.name} — stock insuficiente`}
             >
               <Plus className="w-5 h-5 font-bold" />
             </Button>
@@ -780,7 +823,7 @@ export function OrdersPage() {
     () => [
       {
         id: 'productocodigo',
-        name: 'Code',
+        name: 'Código',
         width: '140px',
         selector: (r) => r.productocodigo,
         sortable: true,
@@ -790,7 +833,7 @@ export function OrdersPage() {
       },
       {
         id: 'description',
-        name: 'Description',
+        name: 'Descripción',
         minWidth: '280px',
         selector: (r) => r.description,
         sortable: true,
@@ -805,14 +848,14 @@ export function OrdersPage() {
       },
       {
         id: 'precio',
-        name: 'Price',
-        selector: (r) => r.precio ?? 0,
+        name: 'Precio (IVA incl.)',
+        selector: (r) => spareUnitPriceInclVat(r, spareCatalogTarifaId),
         sortable: true,
-        width: '84px',
+        width: '120px',
         right: true,
         cell: (r) => (
           <span className="tabular-nums text-sm text-slate-700 dark:text-slate-300">
-            {r.precio != null ? r.precio.toFixed(2) : '—'}
+            {spareUnitPriceInclVat(r, spareCatalogTarifaId).toFixed(2)}
           </span>
         ),
       },
@@ -838,7 +881,7 @@ export function OrdersPage() {
           const currentQty = budgetLines.find((l) => l.serviceId === row.id)?.amount ?? 0;
           const remaining = getReplacementRemaining(row.id, currentQty, stock);
           const addable = stock > 0 && remaining > 0;
-          const label = row.description.trim() || row.productocodigo || `Spare (${row.productosid})`;
+          const label = row.description.trim() || row.productocodigo || `Repuesto (${row.productosid})`;
           return (
             <Button
               type="button"
@@ -848,7 +891,7 @@ export function OrdersPage() {
               disabled={!addable}
               title={addable ? undefined : 'Stock insuficiente para añadir'}
               onClick={() => addSpareToBudget(row)}
-              aria-label={addable ? `Add ${label}` : `Cannot add ${label} — not enough stock`}
+              aria-label={addable ? `Añadir ${label}` : `No se puede añadir ${label} — stock insuficiente`}
             >
               <Plus className="w-5 h-5 font-bold" />
             </Button>
@@ -857,7 +900,7 @@ export function OrdersPage() {
         ignoreRowClick: true,
       },
     ],
-    [addSpareToBudget, budgetLines, getReplacementRemaining, budgetClientTarifasid]
+    [addSpareToBudget, budgetLines, getReplacementRemaining, spareCatalogTarifaId]
   );
 
   return (
@@ -1165,69 +1208,111 @@ export function OrdersPage() {
             {budgetError}
           </div>
         )}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <Card className="min-h-0 flex flex-col">
-            <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
-              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Servicios</h3>
-            </div>
-            <div className="p-0 flex-1 min-h-0">
-              <DataTableWithToolbar<ServiceSparePartItem>
-                data={availableServices}
-                columns={servicesColumns}
-                searchFields={['name']}
-                searchPlaceholder="Buscar:"
-                pageSizeOptions={[10, 25, 50]}
-                defaultPageSize={10}
-                noDataComponent={
-                  catalogLoading ? (
-                    <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
-                      <Loader size="md" />
-                      <span className="text-sm">Cargando…</span>
-                    </div>
-                  ) : (
-                    <div className="py-12 text-center text-slate-500 dark:text-slate-400">
-                      No se encontraron servicios.
-                    </div>
-                  )
-                }
-              />
-            </div>
+            <CardHeader
+              title="Servicios y repuestos"
+              actions={
+                <div className="flex flex-wrap items-center gap-2 justify-end">
+                  <label className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                    Tarifa
+                    {spareTarifaSelectOptions.length > 0 ? (
+                      <Select
+                        className="!w-auto min-w-[9rem] py-1.5 text-sm"
+                        options={spareTarifaSelectOptions}
+                        value={String(spareCatalogTarifaId)}
+                        onChange={(e) => setSpareCatalogTarifaId(Number(e.target.value) || 0)}
+                        aria-label="Tarifa de lista de repuestos"
+                      />
+                    ) : (
+                      <span className="text-slate-400">—</span>
+                    )}
+                  </label>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() => setServiceSparePanelOpen((v) => !v)}
+                    aria-expanded={serviceSparePanelOpen}
+                    title={serviceSparePanelOpen ? 'Ocultar catálogo' : 'Mostrar catálogo'}
+                  >
+                    {serviceSparePanelOpen ? (
+                      <ChevronUp className="w-4 h-4 mr-1 inline" aria-hidden />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 mr-1 inline" aria-hidden />
+                    )}
+                    {serviceSparePanelOpen ? 'Ocultar' : 'Mostrar'}
+                  </Button>
+                </div>
+              }
+            />
+            {serviceSparePanelOpen && (
+              <CardContent className="p-0 flex-1 min-h-0 flex flex-col gap-0 border-t border-slate-200 dark:border-slate-700">
+                <div className="flex flex-col min-h-0">
+                  <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-700/80 bg-slate-50/60 dark:bg-slate-800/40">
+                    <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Repuestos</h3>
+                  </div>
+                  <div className="flex-1 min-h-[200px] max-h-[min(360px,50vh)] flex flex-col">
+                    <DataTableWithToolbar<SpareServerRow>
+                      data={filteredSpareCatalog}
+                      columns={spareColumns}
+                      searchFields={['description', 'productocodigo']}
+                      searchPlaceholder="Buscar:"
+                      pageSizeOptions={[10, 25, 50]}
+                      defaultPageSize={10}
+                      noDataComponent={
+                        catalogLoading ? (
+                          <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
+                            <Loader size="md" />
+                            <span className="text-sm">Cargando…</span>
+                          </div>
+                        ) : (
+                          <div className="py-12 text-center text-slate-500 dark:text-slate-400 px-4">
+                            {spareCatalogData.length === 0
+                              ? 'No hay repuestos en el catálogo.'
+                              : 'Ningún repuesto para la tarifa seleccionada.'}
+                          </div>
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-col min-h-0 border-t border-slate-200 dark:border-slate-700">
+                  <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-700/80 bg-slate-50/60 dark:bg-slate-800/40">
+                    <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Servicios</h3>
+                  </div>
+                  <div className="flex-1 min-h-[200px] max-h-[min(360px,50vh)] flex flex-col">
+                    <DataTableWithToolbar<ServiceSparePartItem>
+                      data={availableServices}
+                      columns={servicesColumns}
+                      searchFields={['name']}
+                      searchPlaceholder="Buscar:"
+                      pageSizeOptions={[10, 25, 50]}
+                      defaultPageSize={10}
+                      noDataComponent={
+                        catalogLoading ? (
+                          <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
+                            <Loader size="md" />
+                            <span className="text-sm">Cargando…</span>
+                          </div>
+                        ) : (
+                          <div className="py-12 text-center text-slate-500 dark:text-slate-400">
+                            No se encontraron servicios.
+                          </div>
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            )}
           </Card>
 
           <Card className="min-h-0 flex flex-col">
-            <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
-              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Repuestos</h3>
-            </div>
-            <div className="p-0 flex-1 min-h-0">
-              <DataTableWithToolbar<SpareServerRow>
-                data={spareCatalogData}
-                columns={spareColumns}
-                searchFields={['description', 'productocodigo']}
-                searchPlaceholder="Buscar:"
-                pageSizeOptions={[10, 25, 50]}
-                defaultPageSize={10}
-                noDataComponent={
-                  catalogLoading ? (
-                    <div className="py-12 flex flex-col items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
-                      <Loader size="md" />
-                      <span className="text-sm">Cargando…</span>
-                    </div>
-                  ) : (
-                    <div className="py-12 text-center text-slate-500 dark:text-slate-400">
-                      No se encontraron repuestos.
-                    </div>
-                  )
-                }
-              />
-            </div>
-          </Card>
-
-          <Card className="min-h-0 flex flex-col">
-            <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
-              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Detalle del presupuesto</h3>
-            </div>
-            <div className="p-0 flex-1 min-h-0">
-              <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-600 flex-1 min-h-0">
+            <CardHeader title="Detalle del presupuesto" />
+            <CardContent className="p-0 flex-1 min-h-0 max-h-[min(720px,70vh)] flex flex-col overflow-hidden">
+              <div className="overflow-x-auto overflow-y-auto rounded-lg border border-slate-200 dark:border-slate-600 flex-1 min-h-0">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
@@ -1292,7 +1377,7 @@ export function OrdersPage() {
                   </tfoot>
                 </table>
               </div>
-            </div>
+            </CardContent>
           </Card>
         </div>
       </Modal>

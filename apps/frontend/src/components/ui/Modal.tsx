@@ -16,9 +16,14 @@ const sizeClasses = {
   sm: 'max-w-md',
   md: 'max-w-lg',
   lg: 'max-w-2xl',
-  xl: 'max-w-4xl max-h-[90vh] flex flex-col',
-  '2xl': 'max-w-screen-2xl max-h-[95vh] flex flex-col',
+  /** Constrained height + column flex so the body can scroll without clipping. */
+  xl: 'max-w-4xl max-h-[90vh] min-h-0 flex flex-col',
+  '2xl': 'max-w-screen-2xl max-h-[95vh] min-h-0 flex flex-col',
 };
+
+function modalBodyScrolls(size: ModalProps['size']): boolean {
+  return size === 'xl' || size === '2xl';
+}
 
 export function Modal({ open, onClose, title, children, headerActions, size = 'md' }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -52,7 +57,7 @@ export function Modal({ open, onClose, title, children, headerActions, size = 'm
       onClick={handleOverlayClick}
     >
       <div
-        className={`w-full ${sizeClasses[size]} rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-xl ${size === 'xl' ? 'flex flex-col' : ''}`}
+        className={`w-full ${sizeClasses[size]} rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 shadow-xl`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex shrink-0 items-center gap-3 px-5 py-4 border-b border-slate-200 dark:border-slate-700">
@@ -72,7 +77,13 @@ export function Modal({ open, onClose, title, children, headerActions, size = 'm
             </Button>
           </div>
         </div>
-        <div className={size === 'xl' ? 'flex-1 min-h-0 overflow-y-auto p-5' : 'p-5'}>
+        <div
+          className={
+            modalBodyScrolls(size)
+              ? 'flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain p-5'
+              : 'p-5'
+          }
+        >
           {children}
         </div>
       </div>

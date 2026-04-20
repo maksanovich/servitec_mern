@@ -1,6 +1,6 @@
-import { useRef, useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useRef, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Home, FileText, FileSpreadsheet } from 'lucide-react';
-import { PageHeader, Card, Button, ButtonGroup, Loader, Modal } from '../../../components/ui';
+import { PageHeader, Card, Button, ButtonGroup, Loader, Modal, Select, type SelectOption } from '../../../components/ui';
 import {
   DataTableWithToolbar,
   type DataTableFilterState,
@@ -9,8 +9,8 @@ import {
 } from '../../../components/datatable';
 import { useAuth } from '../../../contexts/AuthContext';
 import { getSpareServerCatalog, type SpareServerRow } from '../../../api/spareServer';
-import { spareAllTariffPrices } from '../../../utils/spareTariffPrice';
-import { formatDate, formatPrice, sparePartsColumns, SparePartThumbnail } from './sparePartsColumns';
+import { collectSpareTarifaIdsFromCatalog, spareAllTariffPrices, spareRowHasTarifaId } from '../../../utils/spareTariffPrice';
+import { formatDate, formatPrice, getSparePartsColumns, SparePartThumbnail } from './sparePartsColumns';
 
 function DetailRow({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -27,6 +27,7 @@ export function SparePartsPage() {
   const { token } = useAuth();
   const [items, setItems] = useState<SpareServerRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [catalogTarifaId, setCatalogTarifaId] = useState<number | null>(null);
   const filteredDataRef = useRef<SpareServerRow[]>([]);
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<SpareServerRow | null>(null);
@@ -41,8 +42,15 @@ export function SparePartsPage() {
     try {
       const { items: list } = await getSpareServerCatalog(token);
       setItems(list);
+      const ids = collectSpareTarifaIdsFromCatalog(list);
+      setCatalogTarifaId((prev) => {
+        if (ids.length === 0) return null;
+        if (prev != null && ids.includes(prev)) return prev;
+        return ids[0];
+      });
     } catch {
       setItems([]);
+      setCatalogTarifaId(null);
     } finally {
       setLoading(false);
     }
@@ -51,6 +59,23 @@ export function SparePartsPage() {
   useEffect(() => {
     fetchItems();
   }, [fetchItems]);
+
+  const tarifaOptions = useMemo((): SelectOption[] => {
+    return collectSpareTarifaIdsFromCatalog(items).map((id) => ({
+      value: String(id),
+      label: `Tarifa ${id}`,
+    }));
+  }, [items]);
+
+  const filteredItems = useMemo(() => {
+    if (catalogTarifaId == null || catalogTarifaId <= 0) return items;
+    return items.filter((r) => spareRowHasTarifaId(r, catalogTarifaId));
+  }, [items, catalogTarifaId]);
+
+  const tableColumns = useMemo(
+    () => getSparePartsColumns(catalogTarifaId),
+    [catalogTarifaId]
+  );
 
   const openDetail = useCallback((row: SpareServerRow) => {
     setSelectedRow(row);
@@ -62,8 +87,8 @@ export function SparePartsPage() {
     setSelectedRow(null);
   }, []);
 
-  const exportPDF = () => exportTableToPDF(sparePartsColumns, filteredDataRef.current, exportOptions);
-  const exportExcel = () => exportTableToExcel(sparePartsColumns, filteredDataRef.current, exportOptions);
+  const exportPDF = () => exportTableToPDF(tableColumns, filteredDataRef.current, exportOptions);
+  const exportExcel = () => exportTableToExcel(tableColumns, filteredDataRef.current, exportOptions);
 
   return (
     <div className="space-y-4">
@@ -79,8 +104,8 @@ export function SparePartsPage() {
 
       <Card className="overflow-hidden">
         <DataTableWithToolbar<SpareServerRow>
-          data={items}
-          columns={sparePartsColumns}
+          data={filteredItems}
+          columns={tableColumns}
           searchFields={['productocodigo', 'description', 'productosid']}
           searchPlaceholder="Buscar:"
           pageSizeOptions={[10, 25, 50, 100]}
@@ -90,6 +115,19 @@ export function SparePartsPage() {
           pointerOnHover
           highlightOnHover
           rightContent={
+            <div className="flex flex-wrap items-center gap-2 justify-end">
+              {tarifaOptions.length > 0 ? (
+                <label className="flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                  Tarifa
+                  <Select
+                    className="!w-auto min-w-[9rem] py-1.5 text-sm"
+                    options={tarifaOptions}
+                    value={catalogTarifaId != null ? String(catalogTarifaId) : (tarifaOptions[0]?.value ?? '')}
+                    onChange={(e) => setCatalogTarifaId(Number(e.target.value) || null)}
+                    aria-label="Filtrar por tarifa"
+                  />
+                </label>
+              ) : null}
             <ButtonGroup>
               <Button
                 variant="secondary"
@@ -110,6 +148,7 @@ export function SparePartsPage() {
                 aria-label="Exportar PDF"
               />
             </ButtonGroup>
+            </div>
           }
           noDataComponent={
             loading ? (
