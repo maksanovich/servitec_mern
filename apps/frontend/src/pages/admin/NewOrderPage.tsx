@@ -39,6 +39,7 @@ import {
   normalizeOrderPhotoListFromApi,
   type LocalOrderPhoto,
 } from '../../utils/orderPhotos';
+import { discountAmountForSubtotal, totalAfterDiscount, type DiscountType } from '../../utils/orderDiscount';
 import { DataTableWithToolbar } from '../../components/datatable';
 import type { TableColumn } from 'react-data-table-component';
 import type { SelectOption } from '../../components/ui';
@@ -154,6 +155,8 @@ export function NewOrderPage() {
   const [advancement, setAdvancement] = useState('');
   const [accessories, setAccessories] = useState<Record<string, boolean>>({});
   const [budgetLines, setBudgetLines] = useState<BudgetLineItem[]>([]);
+  const [discountType, setDiscountType] = useState<DiscountType>('none');
+  const [discountValue, setDiscountValue] = useState('0');
   // Tracks the budget quantities at the moment this page loaded (edit mode) so we can enforce
   // replacement stock limits while editing.
   const initialBudgetQtyRef = useRef<Map<string, number>>(new Map());
@@ -296,6 +299,8 @@ export function NewOrderPage() {
           setWarranty(o.warranty ? 'yes' : 'no');
           setFianceeDate(o.fianceeDate ?? '');
           setAdvancement(String(o.advancement ?? 0));
+          setDiscountType((o.discountType as DiscountType) ?? 'none');
+          setDiscountValue(String(o.discountValue ?? 0));
 
           const acc: Record<string, boolean> = {};
           for (const artifact of o.accessories ?? []) acc[String(artifact)] = true;
@@ -546,9 +551,21 @@ export function NewOrderPage() {
     if (!stillValid) setModel('');
   }, [brand, model, allModels]);
 
-  const totalBudget = useMemo(
+  const subtotalBudget = useMemo(
     () => budgetLines.reduce((sum, line) => sum + line.total, 0),
     [budgetLines]
+  );
+  const discountValueNum = useMemo(() => {
+    const n = Number(discountValue);
+    return Number.isFinite(n) ? n : 0;
+  }, [discountValue]);
+  const discountAmount = useMemo(
+    () => discountAmountForSubtotal(subtotalBudget, discountType, discountValueNum),
+    [subtotalBudget, discountType, discountValueNum]
+  );
+  const totalBudget = useMemo(
+    () => totalAfterDiscount(subtotalBudget, discountType, discountValueNum),
+    [subtotalBudget, discountType, discountValueNum]
   );
 
   const addToBudget = useCallback(
@@ -813,6 +830,8 @@ export function NewOrderPage() {
           amount: l.amount,
           total: l.total,
         })),
+        discountType,
+        discountValue: discountType === 'none' ? 0 : discountValueNum,
         photoBeforeRepair: photoBeforeUrls,
         photoAfterRepair: photoAfterUrls,
       };
@@ -1657,6 +1676,45 @@ export function NewOrderPage() {
                     )}
                   </tbody>
                   <tfoot>
+                    <tr className="border-t border-slate-200 dark:border-slate-700 bg-slate-50/30 dark:bg-slate-800/30">
+                      <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-300" colSpan={2}>Subtotal</td>
+                      <td className="py-3 px-4" />
+                      <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-300">$ {subtotalBudget.toFixed(2)}</td>
+                      <td className="py-3 px-4" />
+                    </tr>
+                    <tr className="border-t border-slate-200 dark:border-slate-700 bg-slate-50/30 dark:bg-slate-800/30">
+                      <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-300">Descuento</td>
+                      <td className="py-3 px-4">
+                        <Select
+                          value={discountType}
+                          onChange={(e) => setDiscountType(e.target.value as DiscountType)}
+                          options={[
+                            { value: 'none', label: 'Sin descuento' },
+                            { value: 'percentage', label: 'Porcentaje (%)' },
+                            { value: 'amount', label: 'Valor ($)' },
+                          ]}
+                          className="max-w-[180px]"
+                        />
+                      </td>
+                      <td className="py-3 px-4">
+                        {discountType !== 'none' ? (
+                          <Input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            value={discountValue}
+                            onChange={(e) => setDiscountValue(e.target.value)}
+                            className="w-24 py-1 px-2"
+                          />
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 font-medium text-red-600 dark:text-red-300">
+                        - $ {discountAmount.toFixed(2)}
+                      </td>
+                      <td className="py-3 px-4" />
+                    </tr>
                     <tr className="border-t-2 border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
                       <td className="py-3 px-4 font-semibold text-slate-700 dark:text-slate-300" colSpan={2}>Total (<span className="text-red-500 dark:text-red-400">*</span>)</td>
                       <td className="py-3 px-4" />

@@ -21,6 +21,8 @@ export interface IOrderBudgetLine {
   total: number;
 }
 
+export type OrderDiscountType = 'none' | 'percentage' | 'amount';
+
 export interface IOrder extends Omit<Document, 'model'> {
   no: string;
   code: string;
@@ -55,6 +57,8 @@ export interface IOrder extends Omit<Document, 'model'> {
 
   accessories: string[];
   budgetLines: IOrderBudgetLine[];
+  discountType: OrderDiscountType;
+  discountValue: number;
   total: number;
 
   /** Uploaded image URLs — intake / before repair (one or more). */
@@ -119,6 +123,8 @@ const orderSchema = new mongoose.Schema<IOrder>(
 
     accessories: { type: [String], default: [] },
     budgetLines: { type: [orderBudgetLineSchema], default: [] },
+    discountType: { type: String, enum: ['none', 'percentage', 'amount'], default: 'none' },
+    discountValue: { type: Number, default: 0 },
     total: { type: Number, default: 0 },
 
     photoBeforeRepair: { type: [String], default: [] },

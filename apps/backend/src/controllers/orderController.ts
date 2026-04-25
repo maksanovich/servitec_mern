@@ -7,6 +7,7 @@ import {
   Order,
   type IOrderBudgetLine,
   type OrderArea,
+  type OrderDiscountType,
   type OrderPriority,
   type OrderState,
   type OrderWorkflow,
@@ -113,6 +114,36 @@ function normalizeBudgetLines(lines: unknown): IOrderBudgetLine[] {
       };
     })
     .filter((l) => l.serviceId && l.name);
+}
+
+function normalizeDiscountType(raw: unknown): OrderDiscountType {
+  const v = String(raw ?? '').trim().toLowerCase();
+  if (v === 'percentage' || v === 'amount') return v;
+  return 'none';
+}
+
+function normalizeDiscountValue(raw: unknown): number {
+  const n = Number(raw ?? 0);
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return Math.round(n * 100) / 100;
+}
+
+function calculateOrderTotalWithDiscount(
+  budgetLines: IOrderBudgetLine[],
+  discountType: OrderDiscountType,
+  discountValue: number
+): number {
+  const subtotal = budgetLines.reduce((sum, l) => sum + (Number.isFinite(l.total) ? l.total : 0), 0);
+  if (!Number.isFinite(subtotal) || subtotal <= 0) return 0;
+  const safeDiscountValue = normalizeDiscountValue(discountValue);
+  if (discountType === 'percentage') {
+    const pct = Math.max(0, Math.min(100, safeDiscountValue));
+    return Math.round((subtotal - (subtotal * pct) / 100) * 100) / 100;
+  }
+  if (discountType === 'amount') {
+    return Math.max(0, Math.round((subtotal - safeDiscountValue) * 100) / 100);
+  }
+  return Math.round(subtotal * 100) / 100;
 }
 
 function formatTechnician(
@@ -250,6 +281,8 @@ function toListResponse(
     technical: formatTechnician(o.technician, usersById),
     equipmentCondition: String(o.equipmentCondition ?? ''),
     technicalReport: String(o.technicalReport ?? ''),
+    discountType: normalizeDiscountType(o.discountType),
+    discountValue: normalizeDiscountValue(o.discountValue),
     total: o.total,
     advancement: Number.isFinite(Number(o.advancement)) ? Number(o.advancement) : 0,
   };
@@ -304,6 +337,8 @@ function toDetailResponse(
 
     accessories,
     budgetLines,
+    discountType: normalizeDiscountType(o.discountType),
+    discountValue: normalizeDiscountValue(o.discountValue),
     total: Number.isFinite(Number(o.total)) ? Number(o.total) : 0,
 
     photoBeforeRepair: normalizeStoredOrderPhotos(o.photoBeforeRepair),
@@ -444,6 +479,8 @@ function toPublicTrackResponse(o: any, ctx: StageInferenceContext = emptyStageIn
     diagnosis: Boolean(o.diagnosis),
     warranty: Boolean(o.warranty),
     budgetLines,
+    discountType: normalizeDiscountType(o.discountType),
+    discountValue: normalizeDiscountValue(o.discountValue),
     total: Number.isFinite(Number(o.total)) ? Number(o.total) : 0,
   };
 }
@@ -925,7 +962,9 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
       ? (body.accessories as unknown[]).map((a) => String(a).trim()).filter(Boolean)
       : [];
     const advancement = Number(body.advancement ?? 0);
-    const totalFromLines = budgetLines.reduce((sum, l) => sum + (Number.isFinite(l.total) ? l.total : 0), 0);
+    const discountType = normalizeDiscountType(body.discountType);
+    const discountValue = normalizeDiscountValue(body.discountValue);
+    const totalFromLines = calculateOrderTotalWithDiscount(budgetLines, discountType, discountValue);
 
     const photoBefore = normalizeOrderPhotoListForCreate(body.photoBeforeRepair);
     if (!photoBefore.ok) return res.status(400).json({ error: photoBefore.error });
@@ -962,6 +1001,8 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
       advancement: Number.isFinite(advancement) ? advancement : 0,
       accessories,
       budgetLines,
+      discountType,
+      discountValue,
       total: Number.isFinite(totalFromLines) ? totalFromLines : 0,
 
       photoBeforeRepair: photoBefore.value,
@@ -1140,6 +1181,13 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
       doc.accessories = normalizeAccessories(body.accessories);
     }
 
+    if (body.discountType != null) {
+      (doc as any).discountType = normalizeDiscountType(body.discountType);
+    }
+    if (body.discountValue != null) {
+      (doc as any).discountValue = normalizeDiscountValue(body.discountValue);
+    }
+
     if (body.budgetLines != null) {
       const budgetLines = normalizeBudgetLines(body.budgetLines);
       const previousLines = Array.isArray((doc as any).budgetLines)
@@ -1148,7 +1196,18 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
       const stockApply = await applyBudgetLinesReplacementStockDelta(previousLines, budgetLines);
       if (!stockApply.ok) return res.status(400).json({ error: stockApply.error });
       doc.budgetLines = budgetLines;
-      doc.total = budgetLines.reduce((sum, l) => sum + (Number.isFinite(l.total) ? l.total : 0), 0);
+      doc.total = calculateOrderTotalWithDiscount(
+        budgetLines,
+        normalizeDiscountType((doc as any).discountType),
+        normalizeDiscountValue((doc as any).discountValue)
+      );
+    } else if (body.discountType != null || body.discountValue != null) {
+      const currentLines = Array.isArray((doc as any).budgetLines) ? ((doc as any).budgetLines as IOrderBudgetLine[]) : [];
+      doc.total = calculateOrderTotalWithDiscount(
+        currentLines,
+        normalizeDiscountType((doc as any).discountType),
+        normalizeDiscountValue((doc as any).discountValue)
+      );
     }
 
     if (body.photoBeforeRepair !== undefined) {

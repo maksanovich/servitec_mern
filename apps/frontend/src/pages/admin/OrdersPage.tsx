@@ -83,6 +83,7 @@ import {
   normalizeOrderPhotoListFromApi,
   type LocalOrderPhoto,
 } from '../../utils/orderPhotos';
+import { discountAmountForSubtotal, totalAfterDiscount, type DiscountType } from '../../utils/orderDiscount';
 
 export type { Order };
 
@@ -143,6 +144,8 @@ export function OrdersPage() {
   const [spareCatalogTarifaId, setSpareCatalogTarifaId] = useState(0);
   const [serviceSparePanelOpen, setServiceSparePanelOpen] = useState(true);
   const [budgetLines, setBudgetLines] = useState<BudgetLineItem[]>([]);
+  const [budgetDiscountType, setBudgetDiscountType] = useState<DiscountType>('none');
+  const [budgetDiscountValue, setBudgetDiscountValue] = useState('0');
   // Tracks the budget quantities at the moment the modal was opened.
   // Used to enforce replacement stock limits while editing.
   const initialBudgetQtyRef = useRef<Map<string, number>>(new Map());
@@ -315,9 +318,21 @@ export function OrdersPage() {
     [getInitialBudgetQty]
   );
 
-  const totalBudget = useMemo(
+  const subtotalBudget = useMemo(
     () => budgetLines.reduce((sum, line) => sum + line.total, 0),
     [budgetLines]
+  );
+  const budgetDiscountValueNum = useMemo(() => {
+    const n = Number(budgetDiscountValue);
+    return Number.isFinite(n) ? n : 0;
+  }, [budgetDiscountValue]);
+  const budgetDiscountAmount = useMemo(
+    () => discountAmountForSubtotal(subtotalBudget, budgetDiscountType, budgetDiscountValueNum),
+    [subtotalBudget, budgetDiscountType, budgetDiscountValueNum]
+  );
+  const totalBudget = useMemo(
+    () => totalAfterDiscount(subtotalBudget, budgetDiscountType, budgetDiscountValueNum),
+    [subtotalBudget, budgetDiscountType, budgetDiscountValueNum]
   );
 
   const addToBudget = useCallback(
@@ -426,6 +441,8 @@ export function OrdersPage() {
     setBudgetOrder(null);
     setSpareCatalogTarifaId(0);
     setServiceSparePanelOpen(true);
+    setBudgetDiscountType('none');
+    setBudgetDiscountValue('0');
     setBudgetLines([]);
     setBudgetError(null);
     initialBudgetQtyRef.current = new Map();
@@ -470,6 +487,8 @@ export function OrdersPage() {
         }));
         const lines = recalculateSpareBudgetLines(linesRaw, spareMap, preferredTarifa);
         setBudgetLines(lines);
+        setBudgetDiscountType((orderResp.order.discountType as DiscountType) ?? 'none');
+        setBudgetDiscountValue(String(orderResp.order.discountValue ?? 0));
         initialBudgetQtyRef.current = new Map(lines.map((l) => [l.serviceId, l.amount]));
         if (!servicesData.length) setServicesData(servicesResp.items);
         if (!spareCatalogData.length) setSpareCatalogData(spareResp.items);
@@ -477,6 +496,8 @@ export function OrdersPage() {
         setBudgetError(e instanceof Error ? e.message : 'No se pudo cargar el presupuesto');
         setBudgetLines([]);
         setSpareCatalogTarifaId(0);
+        setBudgetDiscountType('none');
+        setBudgetDiscountValue('0');
       } finally {
         setCatalogLoading(false);
       }
@@ -497,6 +518,8 @@ export function OrdersPage() {
           amount: l.amount,
           total: l.total,
         })),
+        discountType: budgetDiscountType,
+        discountValue: budgetDiscountType === 'none' ? 0 : budgetDiscountValueNum,
       });
       await refetchOrders();
       // Refresh catalog amounts (replacement stock may have changed).
@@ -513,13 +536,15 @@ export function OrdersPage() {
       setBudgetOrder(null);
       setSpareCatalogTarifaId(0);
       setServiceSparePanelOpen(true);
+      setBudgetDiscountType('none');
+      setBudgetDiscountValue('0');
       setBudgetLines([]);
     } catch (e) {
       setBudgetError(e instanceof Error ? e.message : 'No se pudo guardar el presupuesto');
     } finally {
       setBudgetSaving(false);
     }
-  }, [token, budgetOrder, budgetLines, refetchOrders]);
+  }, [token, budgetOrder, budgetLines, budgetDiscountType, budgetDiscountValueNum, refetchOrders]);
 
   const openWarehouseModal = useCallback(
     async (order: Order, toStageKey: string) => {
@@ -1364,6 +1389,49 @@ export function OrdersPage() {
                     )}
                   </tbody>
                   <tfoot>
+                    <tr className="border-t border-slate-200 dark:border-slate-700 bg-slate-50/30 dark:bg-slate-800/30">
+                      <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-300" colSpan={2}>
+                        Subtotal
+                      </td>
+                      <td className="py-3 px-4" />
+                      <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-300">
+                        $ {subtotalBudget.toFixed(2)}
+                      </td>
+                      <td className="py-3 px-4" />
+                    </tr>
+                    <tr className="border-t border-slate-200 dark:border-slate-700 bg-slate-50/30 dark:bg-slate-800/30">
+                      <td className="py-3 px-4 font-medium text-slate-700 dark:text-slate-300">Descuento</td>
+                      <td className="py-3 px-4">
+                        <Select
+                          value={budgetDiscountType}
+                          onChange={(e) => setBudgetDiscountType(e.target.value as DiscountType)}
+                          options={[
+                            { value: 'none', label: 'Sin descuento' },
+                            { value: 'percentage', label: 'Porcentaje (%)' },
+                            { value: 'amount', label: 'Valor ($)' },
+                          ]}
+                          className="max-w-[180px]"
+                        />
+                      </td>
+                      <td className="py-3 px-4">
+                        {budgetDiscountType !== 'none' ? (
+                          <Input
+                            type="number"
+                            min={0}
+                            step="0.01"
+                            value={budgetDiscountValue}
+                            onChange={(e) => setBudgetDiscountValue(e.target.value)}
+                            className="w-24 py-1 px-2"
+                          />
+                        ) : (
+                          <span className="text-slate-400">—</span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 font-medium text-red-600 dark:text-red-300">
+                        - $ {budgetDiscountAmount.toFixed(2)}
+                      </td>
+                      <td className="py-3 px-4" />
+                    </tr>
                     <tr className="border-t-2 border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50">
                       <td className="py-3 px-4 font-semibold text-slate-700 dark:text-slate-300" colSpan={2}>
                         Total

@@ -11,6 +11,7 @@ export type OrderArea =
   | 'waiting-parts';
 export type OrderState = 'income' | 'maintenance' | 'warehouse' | 'delivery' | 'waiting' | 'no_solution' | 'finished';
 export type OrderWorkflow = 'standard' | 'warranty';
+export type OrderDiscountType = 'none' | 'percentage' | 'amount';
 
 export interface OrderListItem {
   id: string;
@@ -30,6 +31,8 @@ export interface OrderListItem {
   technical: string;
   equipmentCondition: string;
   technicalReport: string;
+  discountType?: OrderDiscountType;
+  discountValue?: number;
   total: number;
   advancement: number;
 }
@@ -70,6 +73,8 @@ export interface CreateOrderPayload {
   warranty?: 'yes' | 'no' | boolean;
   fianceeDate?: string;
   advancement?: number | string;
+  discountType?: OrderDiscountType;
+  discountValue?: number;
   accessories?: string[];
   budgetLines?: Array<{ serviceId: string; name: string; price: number; amount: number; total: number }>;
   /** One URL (legacy) or several image URLs */
@@ -154,6 +159,8 @@ export interface OrderDetail {
   warranty: boolean;
   fianceeDate: string;
   advancement: number;
+  discountType: OrderDiscountType;
+  discountValue: number;
 
   accessories: string[];
   budgetLines: OrderBudgetLine[];
@@ -231,6 +238,8 @@ export type UpdateOrderPayload = Partial<{
   warranty: 'yes' | 'no' | boolean;
   fianceeDate: string;
   advancement: number | string;
+  discountType: OrderDiscountType;
+  discountValue: number;
   accessories: string[];
   budgetLines: Array<{ serviceId: string; name: string; price: number; amount: number; total: number }>;
   photoBeforeRepair?: string | string[] | null;
