@@ -93,8 +93,15 @@ function randomCode(len = 6): string {
 }
 
 async function nextOrderNo(): Promise<string> {
-  const count = await Order.countDocuments();
-  return String(count + 1).padStart(6, '0');
+  const last = await Order.findOne().sort({ no: -1 }).select('no').lean();
+  const n = Number.parseInt(String((last as any)?.no ?? '0'), 10);
+  const next = Number.isFinite(n) ? n + 1 : 1;
+  return String(next).padStart(6, '0');
+}
+
+function isDuplicateKeyError(err: unknown): boolean {
+  const e = err as { code?: unknown };
+  return Number(e?.code) === 11000;
 }
 
 function normalizeBudgetLines(lines: unknown): IOrderBudgetLine[] {
@@ -974,15 +981,12 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
       return res.status(400).json({ error: 'After-repair photo is required when moving to warehouse' });
     }
 
-    let doc;
-    try {
-      doc = await Order.create({
-      no: await nextOrderNo(),
-      code: randomCode(6),
+    let doc: any = null;
+    const baseCreate = {
       priority,
       area,
       state,
-        progressStageKey,
+      progressStageKey,
       deliveryArrivedAt: state === 'delivery' ? new Date() : undefined,
       type,
       clientId,
@@ -1004,14 +1008,31 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
       discountType,
       discountValue,
       total: Number.isFinite(totalFromLines) ? totalFromLines : 0,
-
       photoBeforeRepair: photoBefore.value,
       photoAfterRepair: photoAfter.value,
-    });
-    } catch (createErr) {
+    };
+    const maxCreateAttempts = 5;
+    for (let attempt = 0; attempt < maxCreateAttempts; attempt += 1) {
+      try {
+        doc = await Order.create({
+          ...baseCreate,
+          no: await nextOrderNo(),
+          code: randomCode(6),
+        });
+        break;
+      } catch (createErr) {
+        if (isDuplicateKeyError(createErr) && attempt < maxCreateAttempts - 1) {
+          continue;
+        }
+        const rollback = await applyBudgetLinesReplacementStockDelta(budgetLines, []);
+        if (!rollback.ok) console.error('Replacement stock rollback after failed create:', rollback.error);
+        throw createErr;
+      }
+    }
+    if (!doc) {
       const rollback = await applyBudgetLinesReplacementStockDelta(budgetLines, []);
-      if (!rollback.ok) console.error('Replacement stock rollback after failed create:', rollback.error);
-      throw createErr;
+      if (!rollback.ok) console.error('Replacement stock rollback after exhausted create retries:', rollback.error);
+      return res.status(409).json({ error: 'Duplicate order number/code. Please try again.' });
     }
 
     const obj = doc.toObject();
