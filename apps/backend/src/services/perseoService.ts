@@ -33,6 +33,30 @@ export type PerseoProductRow = Record<string, unknown> & {
     productocodigo?: string;
 };
 
+function normalizeTarifasValue(v: unknown): unknown[] {
+    if (Array.isArray(v)) return v;
+    if (v != null && typeof v === 'object') {
+        const rec = v as Record<string, unknown>;
+        const preferred = ['unidadinterna', 'unidadventa', 'unidadcompra', 'tarifas', 'items', 'list'];
+        for (const k of preferred) {
+            const maybe = rec[k];
+            if (Array.isArray(maybe)) return maybe;
+        }
+        for (const maybe of Object.values(rec)) {
+            if (Array.isArray(maybe)) return maybe;
+        }
+    }
+    return [];
+}
+
+/** Keep backend payload format stable even if Perseo changes nested fields. */
+function normalizePerseoProductRow(row: PerseoProductRow): PerseoProductRow {
+    return {
+        ...row,
+        tarifas: normalizeTarifasValue((row as Record<string, unknown>).tarifas),
+    };
+}
+
 /**
  * Perseo `productos_consulta` — full catalog when productocodigo is empty.
  * Uses PERSEO_DATA_C3_APP + productos_consulta (same base as clientes_consulta).
@@ -55,11 +79,11 @@ export async function getProducts(productocodigo = ''): Promise<PerseoProductRow
     }
     const data: unknown = await res.json();
     if (Array.isArray(data)) {
-        return data as PerseoProductRow[];
+        return (data as PerseoProductRow[]).map(normalizePerseoProductRow);
     }
     if (data && typeof data === 'object' && 'productos' in data) {
         const list = (data as { productos?: unknown }).productos;
-        if (Array.isArray(list)) return list as PerseoProductRow[];
+        if (Array.isArray(list)) return (list as PerseoProductRow[]).map(normalizePerseoProductRow);
     }
     return [];
 }

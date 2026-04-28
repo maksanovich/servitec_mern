@@ -10,6 +10,8 @@ import {
 
   precioFromPayload,
 
+  tarifasArrayFromPayload,
+
   stockFromPayload,
 
 } from '../services/perseoProductFields.js';
@@ -36,7 +38,7 @@ function mapSpareDocToItem(d: {
 
   const productosid = typeof d.productosid === 'number' ? d.productosid : Number(d.productosid);
 
-  const tarifas = Array.isArray(payload.tarifas) ? payload.tarifas : [];
+  const tarifas = tarifasArrayFromPayload(payload);
 
   return {
 
@@ -114,7 +116,7 @@ export async function getSpareServerByProductId(req: Request, res: Response): Pr
 
     const payload = (doc.payload ?? {}) as Record<string, unknown>;
 
-    const tarifas = Array.isArray(payload.tarifas) ? payload.tarifas : [];
+    const tarifas = tarifasArrayFromPayload(payload);
 
     const ubicaciones = Array.isArray(payload.ubicaciones) ? payload.ubicaciones : [];
 

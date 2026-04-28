@@ -24,6 +24,35 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return v != null && typeof v === 'object' && !Array.isArray(v);
 }
 
+/**
+ * Perseo changed `tarifas` shape:
+ * - old: `tarifas: [{...}]`
+ * - new: `tarifas: { unidadinterna: [{...}] }`
+ * This helper normalizes both to a plain array.
+ */
+export function tarifasArrayFromPayload(payload: Record<string, unknown>): unknown[] {
+  const tarifasRaw = payload.tarifas;
+  if (Array.isArray(tarifasRaw)) return tarifasRaw;
+  if (isRecord(tarifasRaw)) {
+    const keysInPriorityOrder = [
+      'unidadinterna',
+      'unidadventa',
+      'unidadcompra',
+      'tarifas',
+      'items',
+      'list',
+    ];
+    for (const k of keysInPriorityOrder) {
+      const v = tarifasRaw[k];
+      if (Array.isArray(v)) return v;
+    }
+    for (const v of Object.values(tarifasRaw)) {
+      if (Array.isArray(v)) return v;
+    }
+  }
+  return [];
+}
+
 const DESC_KEYS = [
   'descripcion',
   'productodescripcion',
@@ -74,7 +103,7 @@ const STOCK_KEYS = [
 
 /** Price: first `tarifas[]` object (Perseo), then root-level fallbacks. */
 export function precioFromPayload(payload: Record<string, unknown>): number | null {
-  const tarifas = payload.tarifas;
+  const tarifas = tarifasArrayFromPayload(payload);
   if (Array.isArray(tarifas) && tarifas.length > 0) {
     const first = tarifas[0];
     if (isRecord(first)) {
