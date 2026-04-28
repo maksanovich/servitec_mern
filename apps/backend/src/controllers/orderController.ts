@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import PDFDocument from 'pdfkit';
 import {
@@ -12,6 +13,7 @@ import {
   type OrderState,
   type OrderWorkflow,
 } from '../models/Order.js';
+import { OrderCounter } from '../models/OrderCounter.js';
 import { OrderProgressStage } from '../models/OrderProgressStage.js';
 import { Client } from '../models/Client.js';
 import { Product } from '../models/Product.js';
@@ -85,23 +87,52 @@ function resolveStoredImageBuffer(raw: unknown): Buffer | null {
   }
 }
 
-function randomCode(len = 6): string {
-  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const TRACKING_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+/** Cryptographic random; 9 chars from 32-symbol alphabet ≈ 45 bits (extremely low collision rate). */
+function randomTrackingCode(): string {
+  const bytes = crypto.randomBytes(12);
   let out = '';
-  for (let i = 0; i < len; i += 1) out += alphabet[Math.floor(Math.random() * alphabet.length)];
+  for (let i = 0; i < 9; i += 1) {
+    out += TRACKING_CODE_ALPHABET[bytes[i]! % TRACKING_CODE_ALPHABET.length];
+  }
   return out;
 }
 
-async function nextOrderNo(): Promise<string> {
+/**
+ * Next `no` in a single atomic update: `max(counter, maxExistingNo) + 1`.
+ * Avoids the race where two requests read the same "last" order and insert the same number.
+ */
+async function allocateNextOrderNo(): Promise<string> {
   const last = await Order.findOne().sort({ no: -1 }).select('no').lean();
-  const n = Number.parseInt(String((last as any)?.no ?? '0'), 10);
-  const next = Number.isFinite(n) ? n + 1 : 1;
-  return String(next).padStart(6, '0');
+  const floor = Math.max(0, parseInt(String((last as { no?: string } | null)?.no ?? '0'), 10) || 0);
+
+  const updated = await OrderCounter.findOneAndUpdate(
+    { _id: 'orderNo' },
+    [{ $set: { seq: { $add: [{ $max: [{ $ifNull: ['$seq', 0] }, floor] }, 1] } } }],
+    { new: true, upsert: true }
+  ).lean();
+
+  const seq = Number((updated as { seq?: number } | null)?.seq);
+  const n = Number.isFinite(seq) && seq > 0 ? seq : floor + 1;
+  return String(n).padStart(6, '0');
 }
 
 function isDuplicateKeyError(err: unknown): boolean {
-  const e = err as { code?: unknown };
-  return Number(e?.code) === 11000;
+  const visit = (e: unknown, depth: number): boolean => {
+    if (depth > 8 || e == null) return false;
+    if (typeof e !== 'object') return false;
+    const o = e as Record<string, unknown>;
+    if (Number(o.code) === 11000) return true;
+    if (o.name === 'MongoServerError' && Number(o.code) === 11000) return true;
+    if (o.name === 'MongoBulkWriteError' && Number(o.code) === 11000) return true;
+    if (String(o.codeName) === 'DuplicateKey') return true;
+    if (o.cause != null && visit(o.cause, depth + 1)) return true;
+    if (Array.isArray(o.writeErrors) && o.writeErrors.some((w) => visit(w, depth + 1))) return true;
+    if (o.error != null && visit(o.error, depth + 1)) return true;
+    return false;
+  };
+  return visit(err, 0);
 }
 
 function normalizeBudgetLines(lines: unknown): IOrderBudgetLine[] {
@@ -1011,13 +1042,13 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
       photoBeforeRepair: photoBefore.value,
       photoAfterRepair: photoAfter.value,
     };
-    const maxCreateAttempts = 5;
+    const maxCreateAttempts = 25;
     for (let attempt = 0; attempt < maxCreateAttempts; attempt += 1) {
       try {
         doc = await Order.create({
           ...baseCreate,
-          no: await nextOrderNo(),
-          code: randomCode(6),
+          no: await allocateNextOrderNo(),
+          code: randomTrackingCode(),
         });
         break;
       } catch (createErr) {
@@ -1081,8 +1112,7 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
     const ctx = await loadStageInferenceContext();
     return res.status(201).json({ order: toListResponse(obj, usersById, new Map<number, string>(), ctx) });
   } catch (err) {
-    const error = err as Error & { code?: number };
-    if (error.code === 11000) {
+    if (isDuplicateKeyError(err)) {
       return res.status(409).json({ error: 'Duplicate order number/code. Please try again.' });
     }
     console.error('Create order error:', err);
