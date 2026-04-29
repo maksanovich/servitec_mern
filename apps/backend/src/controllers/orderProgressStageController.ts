@@ -266,6 +266,7 @@ export async function ensureWarrantyStages(): Promise<void> {
     }
   }
   await ensureQuarantineAbandonmentStages();
+  await syncCanonicalStageSortOrders();
 }
 
 /** Etapas de cuarentena / abandono automáticos tras largo tiempo sin retiro (ver cron de cuarentena en entrega). */
@@ -319,6 +320,75 @@ export async function ensureQuarantineAbandonmentStages(): Promise<void> {
     if (!exists) {
       await OrderProgressStage.create(row);
     }
+  }
+}
+
+/** Devuelve etiquetas cortas si una versión anterior las alargó en BD. */
+async function revertExpandedStageLabelsIfPresent(): Promise<void> {
+  await OrderProgressStage.updateMany(
+    { key: 'waiting-parts', label: 'Espera de repuestos (si aplica)' },
+    { $set: { label: 'Espera de repuestos' } }
+  );
+  await OrderProgressStage.updateMany(
+    { key: 'delivery-quarantine', label: 'Cuarentena (observación final opcional)' },
+    {
+      $set: {
+        label: 'Cuarentena',
+        description:
+          'Equipo sin reclamar; pasado a cuarentena tras dos meses en entrega sin retiro.',
+      },
+    }
+  );
+  await OrderProgressStage.updateMany(
+    { key: 'delivery-abandonment', label: 'Abandono (estado aparte para equipos no retirados)' },
+    {
+      $set: {
+        label: 'Abandono',
+        description: 'Equipo trasladado a almacén de abandono tras cuatro meses sin retiro.',
+      },
+    }
+  );
+  await OrderProgressStage.updateMany(
+    { key: 'warranty-quarantine', label: 'Cuarentena (observación final opcional)' },
+    {
+      $set: {
+        label: 'Cuarentena',
+        description:
+          'Equipo sin reclamar; pasado a cuarentena tras dos meses en entrega sin retiro.',
+      },
+    }
+  );
+  await OrderProgressStage.updateMany(
+    { key: 'warranty-abandonment', label: 'Abandono (estado aparte para equipos no retirados)' },
+    {
+      $set: {
+        label: 'Abandono',
+        description: 'Equipo trasladado a almacén de abandono tras cuatro meses sin retiro.',
+      },
+    }
+  );
+}
+
+/** Mantiene solo el orden de pestañas (`sortOrder`) y metadatos; no modifica etiquetas mostradas en la UI. */
+async function syncCanonicalStageSortOrders(): Promise<void> {
+  await revertExpandedStageLabelsIfPresent();
+  for (const row of DEFAULT_STAGES) {
+    await OrderProgressStage.updateOne(
+      { key: row.key },
+      { $set: { sortOrder: row.sortOrder, legacyArea: row.legacyArea, workflow: row.workflow } }
+    );
+  }
+  for (const row of DEFAULT_WARRANTY_STAGES) {
+    await OrderProgressStage.updateOne(
+      { key: row.key },
+      { $set: { sortOrder: row.sortOrder, legacyArea: row.legacyArea, workflow: row.workflow } }
+    );
+  }
+  for (const row of QUARANTINE_ABANDONMENT_STAGES) {
+    await OrderProgressStage.updateOne(
+      { key: row.key },
+      { $set: { sortOrder: row.sortOrder, legacyArea: row.legacyArea, workflow: row.workflow } }
+    );
   }
 }
 

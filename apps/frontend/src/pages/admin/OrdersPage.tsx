@@ -108,13 +108,12 @@ const STAGE_TAB_ICONS: LucideIcon[] = [
   Settings2,
 ];
 
-/** Recepción / Ingreso uses legacy area `entrance`; keep it first regardless of DB return order. */
+/** Tab order follows canonical `sortOrder` from the API (aligned with backend seed/sync). */
 function sortStagesForTabDisplay(stages: OrderProgressStage[]): OrderProgressStage[] {
   return [...stages].sort((a, b) => {
-    const aEntrance = a.legacyArea === 'entrance' ? 0 : 1;
-    const bEntrance = b.legacyArea === 'entrance' ? 0 : 1;
-    if (aEntrance !== bEntrance) return aEntrance - bEntrance;
-    return a.sortOrder - b.sortOrder;
+    const d = a.sortOrder - b.sortOrder;
+    if (d !== 0) return d;
+    return a.key.localeCompare(b.key);
   });
 }
 
