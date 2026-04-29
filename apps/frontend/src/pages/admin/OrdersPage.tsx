@@ -108,6 +108,16 @@ const STAGE_TAB_ICONS: LucideIcon[] = [
   Settings2,
 ];
 
+/** Recepción / Ingreso uses legacy area `entrance`; keep it first regardless of DB return order. */
+function sortStagesForTabDisplay(stages: OrderProgressStage[]): OrderProgressStage[] {
+  return [...stages].sort((a, b) => {
+    const aEntrance = a.legacyArea === 'entrance' ? 0 : 1;
+    const bEntrance = b.legacyArea === 'entrance' ? 0 : 1;
+    if (aEntrance !== bEntrance) return aEntrance - bEntrance;
+    return a.sortOrder - b.sortOrder;
+  });
+}
+
 interface BudgetLineItem {
   id: string;
   serviceId: string;
@@ -179,7 +189,11 @@ export function OrdersPage() {
         const { stages: list } = await getOrderProgressStagesPublic(workflowView);
         if (!mounted) return;
         setStages(list);
-        setActiveStageKey((prev) => (prev && list.some((s) => s.key === prev) ? prev : list[0]?.key ?? ''));
+        setActiveStageKey((prev) => {
+          const sorted = sortStagesForTabDisplay(list);
+          const firstKey = sorted[0]?.key ?? '';
+          return prev && list.some((s) => s.key === prev) ? prev : firstKey;
+        });
       } catch (e) {
         console.error(e);
         if (!mounted) return;
@@ -780,10 +794,7 @@ export function OrdersPage() {
     }
   }, [token, warehouseMoveOrder, warehouseTargetStageKey, warehouseAfterItems, stages, refetchOrders, toastWhatsAppPatchStatus]);
 
-  const sortedStagesForTabs = useMemo(
-    () => [...stages].sort((a, b) => a.sortOrder - b.sortOrder),
-    [stages]
-  );
+  const sortedStagesForTabs = useMemo(() => sortStagesForTabDisplay(stages), [stages]);
 
   const tableColumns = useMemo(
     () =>
