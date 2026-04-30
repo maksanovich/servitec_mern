@@ -28,6 +28,7 @@ const actionBtnClass =
 const MENU_WIDTH = 160;
 
 /** Stable keys — when at approval, offer a direct jump to repair (skip e.g. waiting-for-parts). */
+const INBOUND_STAGE_KEY = 'inbound-receiving';
 const APPROVAL_STAGE_KEY = 'approval';
 const REPAIR_STAGE_KEY = 'repair';
 const WARRANTY_WAIT_APPROVAL_KEY = 'warranty-waiting-provider-approval';
@@ -463,14 +464,19 @@ function StageActionDropdown({
     };
   }, [open]);
 
-  const stageIndex = stages.findIndex((s) => s.key === (order.progressStageKey ?? ''));
-  const currentStage = stageIndex >= 0 ? stages[stageIndex] : null;
-  const prevStage = stageIndex > 0 ? stages[stageIndex - 1] : null;
-  const nextStage = stageIndex >= 0 && stageIndex < stages.length - 1 ? stages[stageIndex + 1] : null;
-  const repairStageDirect = stages.find((s) => s.key === REPAIR_STAGE_KEY);
-  const warrantyApprovedStageDirect = stages.find((s) => s.key === WARRANTY_APPROVED_KEY);
-  const warrantyRejectedStageDirect = stages.find((s) => s.key === WARRANTY_REJECTED_KEY);
-  const warrantySolutionStageDirect = stages.find((s) => s.key === WARRANTY_SOLUTION_KEY);
+  const orderedStages = [...stages].sort((a, b) => {
+    const d = a.sortOrder - b.sortOrder;
+    return d !== 0 ? d : a.key.localeCompare(b.key);
+  });
+
+  const stageIndex = orderedStages.findIndex((s) => s.key === (order.progressStageKey ?? ''));
+  const currentStage = stageIndex >= 0 ? orderedStages[stageIndex] : null;
+  const prevStage = stageIndex > 0 ? orderedStages[stageIndex - 1] : null;
+  const nextStage = stageIndex >= 0 && stageIndex < orderedStages.length - 1 ? orderedStages[stageIndex + 1] : null;
+  const repairStageDirect = orderedStages.find((s) => s.key === REPAIR_STAGE_KEY);
+  const warrantyApprovedStageDirect = orderedStages.find((s) => s.key === WARRANTY_APPROVED_KEY);
+  const warrantyRejectedStageDirect = orderedStages.find((s) => s.key === WARRANTY_REJECTED_KEY);
+  const warrantySolutionStageDirect = orderedStages.find((s) => s.key === WARRANTY_SOLUTION_KEY);
   const atWarrantyAwaitingApproval =
     order.workflow === 'warranty' && (order.progressStageKey ?? '') === WARRANTY_WAIT_APPROVAL_KEY;
   const showWarrantyApprovalOutcomes =
@@ -490,7 +496,27 @@ function StageActionDropdown({
     nextStage?.key !== WARRANTY_SOLUTION_KEY;
 
   const workflow = order.workflow ?? 'standard';
-  const approvalStageInPipeline = stages.find(
+  const atStandardInbound =
+    workflow === 'standard' && (order.progressStageKey ?? '') === INBOUND_STAGE_KEY && currentStage != null;
+
+  /** After recepción: suggest Reparación first, then every other forward stage (pipeline order). */
+  const inboundForwardStages =
+    atStandardInbound && currentStage
+      ? (() => {
+          const forward = orderedStages.filter(
+            (s) => s.workflow === workflow && s.sortOrder > currentStage.sortOrder
+          );
+          const repIdx = forward.findIndex((s) => s.key === REPAIR_STAGE_KEY);
+          if (repIdx > 0) {
+            const next = [...forward];
+            const [rep] = next.splice(repIdx, 1);
+            return [rep, ...next];
+          }
+          return forward;
+        })()
+      : [];
+
+  const approvalStageInPipeline = orderedStages.find(
     (s) => s.workflow === workflow && s.key === APPROVAL_STAGE_KEY
   );
   const isAfterApprovalStage =
@@ -542,7 +568,31 @@ function StageActionDropdown({
         </button>
       )}
 
-      {nextStage && onMoveToStage && !showWarrantyApprovalOutcomes && (
+      {atStandardInbound && inboundForwardStages.length > 0 && onMoveToStage && !showWarrantyApprovalOutcomes && (
+        <>
+          {inboundForwardStages.map((s, idx) => (
+            <button
+              key={s.key}
+              type="button"
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-200 hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20"
+              title={
+                idx === 0 && s.key === REPAIR_STAGE_KEY
+                  ? 'Tras el ingreso puede iniciarse la reparación; también puede elegir otra etapa abajo.'
+                  : undefined
+              }
+              onClick={() => {
+                onMoveToStage(order, s.key);
+                setOpen(false);
+              }}
+            >
+              {s.key === REPAIR_STAGE_KEY ? <Wrench className="w-4 h-4 shrink-0" /> : null}
+              {s.label}
+            </button>
+          ))}
+        </>
+      )}
+
+      {nextStage && onMoveToStage && !showWarrantyApprovalOutcomes && !atStandardInbound && (
         <button
           type="button"
           className="flex w-full items-center gap-2 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-200 hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20"

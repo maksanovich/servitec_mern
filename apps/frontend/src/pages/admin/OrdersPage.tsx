@@ -798,7 +798,7 @@ export function OrdersPage() {
   const tableColumns = useMemo(
     () =>
       getOrdersColumns(handleDeleteClick, deleteLoading, {
-        stages,
+        stages: sortedStagesForTabs,
         onMoveToStage: handleMoveToStage,
         onEditBudgetClick: handleEditBudgetClick,
         hideStateColumn: stages.length > 0,
@@ -806,7 +806,7 @@ export function OrdersPage() {
     [
       handleDeleteClick,
       deleteLoading,
-      stages,
+      sortedStagesForTabs,
       handleMoveToStage,
       handleEditBudgetClick,
     ]
