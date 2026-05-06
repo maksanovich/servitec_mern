@@ -1365,6 +1365,8 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
         variables: {
           1: String(doc.clientName ?? ''),
           2: String(doc.no ?? ''),
+          // Twilio template expects: {{3}} = estado anterior, {{4}} = nuevo estado.
+          // Keep chronological order: RECEPCIÓN / INGRESO -> APROBACIÓN, etc.
           3: waFromLabel,
           4: waToLabel,
           5: String(doc.code ?? ''),
