@@ -1599,7 +1599,7 @@ export function NewOrderPage() {
                     <DataTableWithToolbar<ServiceSparePartItem>
                       data={availableServices}
                       columns={servicesColumns}
-                      searchFields={['name']}
+                      searchFields={['name', 'details']}
                       searchPlaceholder="Buscar:"
                       pageSizeOptions={[10, 25, 50]}
                       defaultPageSize={10}
