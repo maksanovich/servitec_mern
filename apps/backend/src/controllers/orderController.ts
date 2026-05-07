@@ -50,9 +50,23 @@ function isTechnicianRole(slug: string, roleName?: string): boolean {
   return s === 'technician' || s.includes('tech') || n.includes('technician') || n.includes('tech');
 }
 
+/**
+ * Lead / outsourced technicians work the full order board like admins (see `seedRoles.ts`).
+ * They must not be treated as "only my assigned orders" — `lead_technician` matches `slug.includes('tech')`
+ * and "Outsourced Technician" matches `name.includes('technician')`.
+ */
+const ORDER_BOARD_UNRESTRICTED_ROLE_SLUGS = new Set(['lead_technician', 'outsourced']);
+
+/** True when the user should only list/patch orders where they are the assignee (`technician` field). */
+function isAssigneeOnlyTechnicianAccess(slug: string, roleName?: string): boolean {
+  const s = String(slug ?? '').trim().toLowerCase();
+  if (ORDER_BOARD_UNRESTRICTED_ROLE_SLUGS.has(s)) return false;
+  return isTechnicianRole(s, roleName);
+}
+
 /** Technicians may only access orders assigned to them; use 404 to avoid leaking ids. */
 function denyIfTechnicianNotAssignee(req: AuthRequest, res: Response, orderTechnicianId: unknown): boolean {
-  if (!req.user || !isTechnicianRole(req.user.role)) return false;
+  if (!req.user || !isAssigneeOnlyTechnicianAccess(req.user.role, req.user.roleName)) return false;
   const tid = String(orderTechnicianId ?? '').trim();
   if (tid === req.user._id) return false;
   res.status(404).json({ error: 'Order not found' });
@@ -556,7 +570,7 @@ export async function getOrders(req: AuthRequest, res: Response): Promise<Respon
     const ctx = await loadStageInferenceContext();
 
     const filter: Record<string, unknown> = {};
-    if (req.user && isTechnicianRole(req.user.role, req.user.roleName)) {
+    if (req.user && isAssigneeOnlyTechnicianAccess(req.user.role, req.user.roleName)) {
       filter.technician = req.user._id;
     }
     if (workflowQ === 'standard' || workflowQ === 'warranty') {
@@ -934,7 +948,7 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<Resp
     let state = String(body.state ?? '').trim() as OrderState;
     const priority = (String(body.priority ?? '').trim() as OrderPriority) || 'normal';
     let technician = String(body.technician ?? '').trim();
-    if (req.user && isTechnicianRole(req.user.role)) {
+    if (req.user && isAssigneeOnlyTechnicianAccess(req.user.role, req.user.roleName)) {
       if (technician && technician !== req.user._id) {
         return res.status(403).json({ error: 'You can only create orders assigned to yourself' });
       }
@@ -1209,7 +1223,7 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
     if (body.priority != null) doc.priority = (String(body.priority ?? '').trim() as OrderPriority) || 'normal';
 
     if (body.technician != null) {
-      if (req.user && isTechnicianRole(req.user.role, req.user.roleName)) {
+      if (req.user && isAssigneeOnlyTechnicianAccess(req.user.role, req.user.roleName)) {
         return res.status(403).json({ error: 'You cannot reassign the technician' });
       }
       const technician = String(body.technician ?? '').trim();
