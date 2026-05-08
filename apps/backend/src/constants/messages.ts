@@ -13,7 +13,7 @@ export const ORDER_STATE_LABELS: Record<OrderState, string> = {
 export const PRINT_ORDER_MESSAGES = {
   trackingHeading: 'CONSULTE EL ESTADO DE ESTA ORDEN DE TRABAJO EN NUESTRO SITIO WEB',
   trackingInstruction: (trackingCode: string) =>
-    `Ingrese a serviciotecnico.xyz e introduzca el siguiente código. CÓDIGO: ${trackingCode}`,
+    `Ingrese a tecnico.digitalserver.com.ec e introduzca el siguiente código. CÓDIGO: ${trackingCode}`,
   termsTitle: 'Términos y condiciones:',
   termsText:
     '1) Para retirar el equipo es obligatorio presentar esta orden de trabajo. Consérvela en lugar seguro. ' +

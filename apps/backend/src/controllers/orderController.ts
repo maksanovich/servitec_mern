@@ -1539,14 +1539,15 @@ export async function printOrderPdf(req: AuthRequest, res: Response): Promise<Re
 
     const client = await Client.findOne({ clientesid: orderDoc.clientId }).lean();
 
+    // For printable PDF, show technician phone on "Técnico" line (instead of id card).
     const usersById = new Map<string, { name: string; identification: string }>();
     const technicianId = String((orderDoc as any).technician ?? '').trim();
     if (technicianId) {
-      const u = await User.findById(technicianId).select('name identification').lean();
+      const u = await User.findById(technicianId).select('name phone').lean();
       if (u) {
         usersById.set(String(u._id), {
           name: String((u as any).name ?? ''),
-          identification: String((u as any).identification ?? ''),
+          identification: String((u as any).phone ?? ''),
         });
       }
     }
