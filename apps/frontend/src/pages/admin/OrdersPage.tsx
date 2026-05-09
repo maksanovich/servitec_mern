@@ -72,6 +72,7 @@ import { getClientById } from '../../api/clients';
 import {
   collectSpareTarifaIdsFromCatalog,
   recalculateSpareBudgetLines,
+  serviceCatalogUnitPriceInclVat,
   spareRowHasTarifaId,
   spareUnitPriceInclVat,
 } from '../../utils/spareTariffPrice';
@@ -362,7 +363,8 @@ export function OrdersPage() {
           amount = addNow;
         }
 
-        const total = item.price * amount;
+        const unitPrice = serviceCatalogUnitPriceInclVat(item);
+        const total = unitPrice * amount;
         if (existing) {
           const newAmount = existing.amount + amount;
           return prev.map((l) =>
@@ -375,7 +377,7 @@ export function OrdersPage() {
             id: `budget-${item.id}-${Date.now()}`,
             serviceId: item.id,
             name: item.name,
-            price: item.price,
+            price: unitPrice,
             amount,
             total,
           },
@@ -823,7 +825,14 @@ export function OrdersPage() {
     () => [
       { id: 'name', name: 'Código', width: '140px', selector: (r) => r.name, sortable: true },
       { id: 'details', name: 'Detalle', maxWidth: '420px', selector: (r) => r.details, sortable: true },
-      { id: 'price', name: 'Precio', width: '100px', selector: (r) => r.price, sortable: true, format: (r) => r.price.toFixed(2) },
+      {
+        id: 'price',
+        name: 'Precio (IVA incl.)',
+        width: '100px',
+        selector: (r) => serviceCatalogUnitPriceInclVat(r),
+        sortable: true,
+        format: (r) => serviceCatalogUnitPriceInclVat(r).toFixed(2),
+      },
       {
         id: 'add',
         name: '',

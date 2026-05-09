@@ -1,4 +1,5 @@
 import type { SpareServerRow } from '../api/spareServer';
+import type { ServiceSparePartItem } from '../api/servicesSpareParts';
 
 /** VAT included in unit prices shown and stored for spare budget lines (Ecuador-style 15%). */
 const VAT_FACTOR = 1.15;
@@ -80,6 +81,16 @@ export function spareUnitPriceInclVat(
 ): number {
   const base = spareBasePriceForTarifa(row, clientTarifasid);
   return Math.round(base * VAT_FACTOR * 100) / 100;
+}
+
+/** Catalog list price for labor services: stored ex-VAT, same 15% IVA as repuestos. */
+export function serviceCatalogUnitPriceInclVat(item: Pick<ServiceSparePartItem, 'type' | 'price'>): number {
+  const base = Number(item.price);
+  if (!Number.isFinite(base)) return 0;
+  if (item.type === 'service') {
+    return Math.round(base * VAT_FACTOR * 100) / 100;
+  }
+  return Math.round(base * 100) / 100;
 }
 
 export interface SpareTariffPriceEntry {

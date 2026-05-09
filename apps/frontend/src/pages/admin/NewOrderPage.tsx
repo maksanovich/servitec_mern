@@ -48,6 +48,7 @@ import { getSpareServerCatalog, type SpareServerRow } from '../../api/spareServe
 import {
   collectSpareTarifaIdsFromCatalog,
   recalculateSpareBudgetLines,
+  serviceCatalogUnitPriceInclVat,
   spareRowHasTarifaId,
   spareUnitPriceInclVat,
 } from '../../utils/spareTariffPrice';
@@ -512,16 +513,28 @@ export function NewOrderPage() {
     }));
   }, [spareCatalogData]);
 
+  const lastTarifaSyncCustomerRef = useRef<string>('');
+
   useEffect(() => {
     if (spareTarifaSelectOptions.length === 0) {
       setSpareCatalogTarifaId(0);
       return;
     }
     const ids = spareTarifaSelectOptions.map((o) => Number(o.value));
-    const preferred =
-      clientTarifasid > 0 && ids.includes(clientTarifasid) ? clientTarifasid : ids[0];
-    setSpareCatalogTarifaId(preferred);
-  }, [spareTarifaSelectOptions, clientTarifasid]);
+    const customerChanged = lastTarifaSyncCustomerRef.current !== customer;
+    lastTarifaSyncCustomerRef.current = customer;
+
+    setSpareCatalogTarifaId((current) => {
+      if (customerChanged) {
+        if (clientTarifasid > 0 && ids.includes(clientTarifasid)) return clientTarifasid;
+        return ids[0] ?? 0;
+      }
+      if (current > 0 && ids.includes(current)) return current;
+      const preferred =
+        clientTarifasid > 0 && ids.includes(clientTarifasid) ? clientTarifasid : ids[0] ?? 0;
+      return preferred;
+    });
+  }, [spareTarifaSelectOptions, clientTarifasid, customer]);
 
   const filteredSpareCatalog = useMemo(() => {
     return spareCatalogData.filter((r) => spareRowHasTarifaId(r, spareCatalogTarifaId));
@@ -582,7 +595,8 @@ export function NewOrderPage() {
           amount = addNow;
         }
 
-        const total = item.price * amount;
+        const unitPrice = serviceCatalogUnitPriceInclVat(item);
+        const total = unitPrice * amount;
         if (existing) {
           const newAmount = existing.amount + amount;
           return prev.map((l) =>
@@ -597,7 +611,7 @@ export function NewOrderPage() {
             id: `budget-${item.id}-${Date.now()}`,
             serviceId: item.id,
             name: item.name,
-            price: item.price,
+            price: unitPrice,
             amount,
             total,
           },
@@ -967,7 +981,14 @@ export function NewOrderPage() {
     () => [
       { id: 'name', name: 'Código', width: "140px", selector: (r) => r.name, sortable: true },
       { id: 'details', name: 'Detalle', maxWidth: "420px", selector: (r) => r.details, sortable: true },
-      { id: 'price', name: 'Precio', width: '100px', selector: (r) => r.price, sortable: true, format: (r) => r.price.toFixed(2) },
+      {
+        id: 'price',
+        name: 'Precio (IVA incl.)',
+        width: '100px',
+        selector: (r) => serviceCatalogUnitPriceInclVat(r),
+        sortable: true,
+        format: (r) => serviceCatalogUnitPriceInclVat(r).toFixed(2),
+      },
       {
         id: 'add',
         name: '',
