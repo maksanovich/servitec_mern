@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   Home,
   Building2,
@@ -122,6 +122,7 @@ function wrapWithIcon(Icon: typeof Building2, children: React.ReactNode) {
 
 export function NewOrderPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { token } = useAuth();
   const { id } = useParams<{ id?: string }>();
   const isEditMode = !!id;
@@ -153,7 +154,9 @@ export function NewOrderPage() {
   const [equipmentCondition, setEquipmentCondition] = useState('');
   const [technicalReport, setTechnicalReport] = useState('');
   const [diagnosis, setDiagnosis] = useState('no');
-  const [warranty, setWarranty] = useState('no');
+  const [warranty, setWarranty] = useState(() =>
+    !id && searchParams.get('workflow') === 'warranty' ? 'yes' : 'no'
+  );
   const [fianceeDate, setFianceeDate] = useState('');
   const [advancement, setAdvancement] = useState('');
   const [accessories, setAccessories] = useState<Record<string, boolean>>({});
@@ -874,7 +877,7 @@ export function NewOrderPage() {
       } else {
         await createOrder(token, payload as any);
       }
-      navigate('/admin/order');
+      navigate(warranty === 'yes' ? '/admin/order?workflow=warranty' : '/admin/order');
     } catch (err) {
       if (err instanceof CreateOrderError && err.code === 'CLIENT_CONTACT_REQUIRED' && err.clientId != null) {
         setSubmitError({

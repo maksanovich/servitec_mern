@@ -1,5 +1,5 @@
 import { useMemo, useRef, useCallback, useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   Home,
   Wrench,
@@ -131,10 +131,34 @@ interface BudgetLineItem {
 
 export function OrdersPage() {
   const { token, user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const MAX_ORDER_PHOTO_BYTES = 150 * 1024 * 1024; // 150MB (>= 100MB)
   const ACCEPT_ORDER_IMAGES = 'image/jpeg,image/png,image/webp,image/gif';
 
-  const [workflowView, setWorkflowView] = useState<OrderWorkflow>('standard');
+  const [workflowView, setWorkflowView] = useState<OrderWorkflow>(() =>
+    searchParams.get('workflow') === 'warranty' ? 'warranty' : 'standard'
+  );
+
+  const applyWorkflowView = useCallback(
+    (w: OrderWorkflow) => {
+      setWorkflowView(w);
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (w === 'warranty') next.set('workflow', 'warranty');
+          else next.delete('workflow');
+          return next;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
+
+  useEffect(() => {
+    const w = searchParams.get('workflow') === 'warranty' ? 'warranty' : 'standard';
+    setWorkflowView((prev) => (prev === w ? prev : w));
+  }, [searchParams]);
   const [stages, setStages] = useState<OrderProgressStage[]>([]);
   const [stagesLoading, setStagesLoading] = useState(false);
   const [activeStageKey, setActiveStageKey] = useState<string>('');
@@ -972,7 +996,7 @@ export function OrdersPage() {
               type="button"
               variant={workflowView === 'standard' ? 'primary' : 'secondary'}
               size="md"
-              onClick={() => setWorkflowView('standard')}
+              onClick={() => applyWorkflowView('standard')}
             >
               Reparación estándar
             </Button>
@@ -980,12 +1004,12 @@ export function OrdersPage() {
               type="button"
               variant={workflowView === 'warranty' ? 'primary' : 'secondary'}
               size="md"
-              onClick={() => setWorkflowView('warranty')}
+              onClick={() => applyWorkflowView('warranty')}
             >
               Garantía
             </Button>
           </ButtonGroup>
-          <Link to="/admin/order/new">
+          <Link to={workflowView === 'warranty' ? '/admin/order/new?workflow=warranty' : '/admin/order/new'}>
             <Button
               variant="emerald"
               size="md"
