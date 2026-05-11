@@ -9,6 +9,7 @@ function toResponse(item: any) {
     name: item.name,
     amount: item.amount ?? 0,
     price: item.price ?? 0,
+    tarifas: Array.isArray(item.tarifas) ? item.tarifas : [],
     details: item.details ?? '',
     state: item.state === 'inactive' ? 'inactive' : 'active',
     syncedAt: updated ? new Date(updated).toISOString() : null,

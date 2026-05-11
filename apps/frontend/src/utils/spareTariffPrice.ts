@@ -83,14 +83,54 @@ export function spareUnitPriceInclVat(
   return Math.round(base * VAT_FACTOR * 100) / 100;
 }
 
-/** Catalog list price for labor services: stored ex-VAT, same 15% IVA as repuestos. */
-export function serviceCatalogUnitPriceInclVat(item: Pick<ServiceSparePartItem, 'type' | 'price'>): number {
-  const base = Number(item.price);
-  if (!Number.isFinite(base)) return 0;
-  if (item.type === 'service') {
-    return Math.round(base * VAT_FACTOR * 100) / 100;
+/** Distinct Perseo tariff ids from spare catalog and from synced servicios rows. */
+export function collectTarifaIdsFromSparesAndServices(
+  catalog: Pick<SpareServerRow, 'precio' | 'tarifas'>[],
+  services: Pick<ServiceSparePartItem, 'price' | 'tarifas' | 'type'>[]
+): number[] {
+  const ids = new Set<number>();
+  for (const id of collectSpareTarifaIdsFromCatalog(catalog)) ids.add(id);
+  for (const s of services) {
+    if (s.type !== 'service') continue;
+    const row: Pick<SpareServerRow, 'precio' | 'tarifas'> = {
+      precio: s.price ?? null,
+      tarifas: Array.isArray(s.tarifas) ? s.tarifas : [],
+    };
+    for (const id of collectSpareTarifaIdsFromCatalog([row])) ids.add(id);
   }
-  return Math.round(base * 100) / 100;
+  return Array.from(ids).sort((a, b) => a - b);
+}
+
+/** Servicio row visible for the selected tariff filter (legacy rows without `tarifas` stay visible). */
+export function serviceRowVisibleForSelectedTarifa(
+  item: Pick<ServiceSparePartItem, 'type' | 'price' | 'tarifas' | 'state'>,
+  selectedTarifaId: number
+): boolean {
+  if (item.type !== 'service' || item.state === 'inactive') return false;
+  const tarifas = Array.isArray(item.tarifas) ? item.tarifas : [];
+  if (tarifas.length === 0) return true;
+  return spareRowHasTarifaId({ precio: item.price ?? null, tarifas }, selectedTarifaId);
+}
+
+/** Catalog unit price for services: uses selected Perseo tariff when `tarifas` present; else IVA on single `price`. */
+export function serviceCatalogUnitPriceInclVat(
+  item: Pick<ServiceSparePartItem, 'type' | 'price' | 'tarifas'>,
+  selectedTarifaId = 0
+): number {
+  const safeBase = Number(item.price);
+  const baseIn = Number.isFinite(safeBase) ? safeBase : 0;
+  if (item.type === 'replacement') {
+    return Math.round(baseIn * 100) / 100;
+  }
+  const tarifas = Array.isArray(item.tarifas) ? item.tarifas : [];
+  if (tarifas.length === 0) {
+    return Math.round(baseIn * VAT_FACTOR * 100) / 100;
+  }
+  const base = spareBasePriceForTarifa(
+    { precio: item.price ?? null, tarifas } as Pick<SpareServerRow, 'precio' | 'tarifas'>,
+    selectedTarifaId
+  );
+  return Math.round(base * VAT_FACTOR * 100) / 100;
 }
 
 export interface SpareTariffPriceEntry {
@@ -176,6 +216,21 @@ export function recalculateSpareBudgetLines<T extends { serviceId: string; amoun
     const spare = spareById.get(line.serviceId);
     if (!spare) return line;
     const price = spareUnitPriceInclVat(spare, clientTarifasid);
+    return { ...line, price, total: Math.round(price * line.amount * 100) / 100 };
+  });
+}
+
+export function recalculateServiceBudgetLines<
+  T extends { serviceId: string; amount: number; price: number; total: number },
+>(
+  lines: T[],
+  servicesById: Map<string, Pick<ServiceSparePartItem, 'type' | 'price' | 'tarifas'>>,
+  selectedTarifaId: number
+): T[] {
+  return lines.map((line) => {
+    const item = servicesById.get(line.serviceId);
+    if (!item || item.type !== 'service') return line;
+    const price = serviceCatalogUnitPriceInclVat(item, selectedTarifaId);
     return { ...line, price, total: Math.round(price * line.amount * 100) / 100 };
   });
 }

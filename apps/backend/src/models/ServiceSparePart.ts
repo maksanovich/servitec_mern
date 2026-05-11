@@ -8,6 +8,8 @@ export interface IServiceSparePart extends Document {
   name: string;
   amount: number;
   price: number;
+  /** Perseo `tarifas` (normalized array) when synced from productos_consulta — list pricing by tariff id. */
+  tarifas?: unknown[];
   details: string;
   state: ServiceSparePartState;
 }
@@ -33,6 +35,10 @@ const serviceSparePartSchema = new mongoose.Schema<IServiceSparePart>(
       type: Number,
       required: true,
       min: 0,
+    },
+    tarifas: {
+      type: [mongoose.Schema.Types.Mixed],
+      default: undefined,
     },
     details: {
       type: String,

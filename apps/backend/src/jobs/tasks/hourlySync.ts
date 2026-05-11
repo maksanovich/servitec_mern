@@ -7,6 +7,7 @@ const {
   descriptionIndicatesServicio,
   precioFromPayload,
   stockFromPayload,
+  tarifasArrayFromPayload,
 } = await import('../../services/perseoProductFields.js');
 
 function toISODate(value: string): string {
@@ -106,6 +107,7 @@ export async function runHourlySync(): Promise<void> {
           const name = productocodigo.trim() || `Perseo ${productosid}`;
           const price = precioFromPayload(payload) ?? 0;
           const amount = stockFromPayload(payload) ?? 0;
+          const tarifas = tarifasArrayFromPayload(payload);
           await ServiceSparePart.findOneAndUpdate(
             { type: 'service', name },
             {
@@ -113,6 +115,7 @@ export async function runHourlySync(): Promise<void> {
               name,
               price,
               amount,
+              tarifas,
               details: description,
               state: 'active',
             },

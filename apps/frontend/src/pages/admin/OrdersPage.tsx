@@ -70,9 +70,11 @@ import { getServicesSpareParts, canAddCatalogItemToBudget, type ServiceSparePart
 import { getSpareServerCatalog, type SpareServerRow } from '../../api/spareServer';
 import { getClientById } from '../../api/clients';
 import {
-  collectSpareTarifaIdsFromCatalog,
+  collectTarifaIdsFromSparesAndServices,
+  recalculateServiceBudgetLines,
   recalculateSpareBudgetLines,
   serviceCatalogUnitPriceInclVat,
+  serviceRowVisibleForSelectedTarifa,
   spareRowHasTarifaId,
   spareUnitPriceInclVat,
 } from '../../utils/spareTariffPrice';
@@ -287,8 +289,10 @@ export function OrdersPage() {
 
   const availableServices = useMemo(() => {
     if (!budgetOrder) return [];
-    return servicesData.filter((s) => s.state !== 'inactive' && s.type === 'service');
-  }, [servicesData, budgetOrder]);
+    return servicesData.filter(
+      (s) => serviceRowVisibleForSelectedTarifa(s, spareCatalogTarifaId)
+    );
+  }, [servicesData, budgetOrder, spareCatalogTarifaId]);
 
   const servicesById = useMemo(() => {
     const m = new Map<string, ServiceSparePartItem>();
@@ -303,11 +307,11 @@ export function OrdersPage() {
   }, [spareCatalogData]);
 
   const spareTarifaSelectOptions = useMemo((): SelectOption[] => {
-    return collectSpareTarifaIdsFromCatalog(spareCatalogData).map((id) => ({
+    return collectTarifaIdsFromSparesAndServices(spareCatalogData, servicesData).map((id) => ({
       value: String(id),
       label: `Tarifa ${id}`,
     }));
-  }, [spareCatalogData]);
+  }, [spareCatalogData, servicesData]);
 
   const filteredSpareCatalog = useMemo(() => {
     return spareCatalogData.filter((r) => spareRowHasTarifaId(r, spareCatalogTarifaId));
@@ -315,8 +319,11 @@ export function OrdersPage() {
 
   useEffect(() => {
     if (!budgetOrder) return;
-    setBudgetLines((prev) => recalculateSpareBudgetLines(prev, spareById, spareCatalogTarifaId));
-  }, [budgetOrder, spareCatalogTarifaId, spareById, budgetLines.length]);
+    setBudgetLines((prev) => {
+      const withSpares = recalculateSpareBudgetLines(prev, spareById, spareCatalogTarifaId);
+      return recalculateServiceBudgetLines(withSpares, servicesById, spareCatalogTarifaId);
+    });
+  }, [budgetOrder, spareCatalogTarifaId, spareById, servicesById, budgetLines.length]);
 
   const getInitialBudgetQty = useCallback((serviceId: string) => {
     return initialBudgetQtyRef.current.get(serviceId) ?? 0;
@@ -363,7 +370,7 @@ export function OrdersPage() {
           amount = addNow;
         }
 
-        const unitPrice = serviceCatalogUnitPriceInclVat(item);
+        const unitPrice = serviceCatalogUnitPriceInclVat(item, spareCatalogTarifaId);
         const total = unitPrice * amount;
         if (existing) {
           const newAmount = existing.amount + amount;
@@ -384,7 +391,7 @@ export function OrdersPage() {
         ];
       });
     },
-    [getReplacementRemaining]
+    [getReplacementRemaining, spareCatalogTarifaId]
   );
 
   const addSpareToBudget = useCallback(
@@ -487,7 +494,7 @@ export function OrdersPage() {
           clientTarifa = 0;
         }
         const spareMap = new Map(spareResp.items.map((p) => [p.id, p]));
-        const tarifaIds = collectSpareTarifaIdsFromCatalog(spareResp.items);
+        const tarifaIds = collectTarifaIdsFromSparesAndServices(spareResp.items, servicesResp.items);
         const preferredTarifa: number =
           clientTarifa > 0 && tarifaIds.includes(clientTarifa) ? clientTarifa : (tarifaIds[0] ?? 0);
         setSpareCatalogTarifaId(preferredTarifa);
@@ -500,7 +507,12 @@ export function OrdersPage() {
           amount: l.amount,
           total: l.total,
         }));
-        const lines = recalculateSpareBudgetLines(linesRaw, spareMap, preferredTarifa);
+        const servicesMap = new Map(servicesResp.items.map((s) => [s.id, s]));
+        const lines = recalculateServiceBudgetLines(
+          recalculateSpareBudgetLines(linesRaw, spareMap, preferredTarifa),
+          servicesMap,
+          preferredTarifa
+        );
         setBudgetLines(lines);
         setBudgetDiscountType((orderResp.order.discountType as DiscountType) ?? 'none');
         setBudgetDiscountValue(String(orderResp.order.discountValue ?? 0));
@@ -829,9 +841,9 @@ export function OrdersPage() {
         id: 'price',
         name: 'Precio (IVA incl.)',
         width: '100px',
-        selector: (r) => serviceCatalogUnitPriceInclVat(r),
+        selector: (r) => serviceCatalogUnitPriceInclVat(r, spareCatalogTarifaId),
         sortable: true,
-        format: (r) => serviceCatalogUnitPriceInclVat(r).toFixed(2),
+        format: (r) => serviceCatalogUnitPriceInclVat(r, spareCatalogTarifaId).toFixed(2),
       },
       {
         id: 'add',
@@ -860,7 +872,7 @@ export function OrdersPage() {
         ignoreRowClick: true,
       },
     ],
-    [addToBudget, budgetLines, getReplacementRemaining]
+    [addToBudget, budgetLines, getReplacementRemaining, spareCatalogTarifaId]
   );
 
   const spareColumns: TableColumn<SpareServerRow>[] = useMemo(

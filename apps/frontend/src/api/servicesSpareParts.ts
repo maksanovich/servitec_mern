@@ -9,6 +9,8 @@ export interface ServiceSparePartItem {
   name: string;
   amount: number;
   price: number;
+  /** Perseo tariff lines when synced from productos_consulta (same shape as spare `tarifas`). */
+  tarifas?: unknown[];
   details: string;
   state: ServiceSparePartState;
   /** ISO timestamp — last DB update (e.g. Perseo sync). */
