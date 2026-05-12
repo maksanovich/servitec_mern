@@ -73,6 +73,7 @@ import {
   collectTarifaIdsFromSparesAndServices,
   recalculateServiceBudgetLines,
   recalculateSpareBudgetLines,
+  serviceCatalogDisplayName,
   serviceCatalogUnitPriceInclVat,
   serviceRowVisibleForSelectedTarifa,
   spareRowHasTarifaId,
@@ -381,7 +382,10 @@ export function OrdersPage() {
   );
 
   const addToBudget = useCallback(
-    (item: Pick<ServiceSparePartItem, 'id' | 'name' | 'price' | 'type' | 'amount'>, amount: number = 1) => {
+    (
+      item: Pick<ServiceSparePartItem, 'id' | 'name' | 'details' | 'price' | 'type' | 'amount'>,
+      amount: number = 1
+    ) => {
       if (!canAddCatalogItemToBudget(item)) return;
       setBudgetLines((prev) => {
         const existing = prev.find((l) => l.serviceId === item.id);
@@ -407,7 +411,7 @@ export function OrdersPage() {
           {
             id: `budget-${item.id}-${Date.now()}`,
             serviceId: item.id,
-            name: item.name,
+            name: serviceCatalogDisplayName(item),
             price: unitPrice,
             amount,
             total,
@@ -859,8 +863,35 @@ export function OrdersPage() {
 
   const servicesColumns: TableColumn<ServiceSparePartItem>[] = useMemo(
     () => [
-      { id: 'name', name: 'Código', width: '140px', selector: (r) => r.name, sortable: true },
-      { id: 'details', name: 'Detalle', maxWidth: '420px', selector: (r) => r.details, sortable: true },
+      {
+        id: 'displayName',
+        name: 'Servicio',
+        minWidth: '200px',
+        selector: (r) => serviceCatalogDisplayName(r),
+        sortable: true,
+        cell: (r) => {
+          const label = serviceCatalogDisplayName(r);
+          const code = String(r.name ?? '').trim();
+          return (
+            <span
+              className="block min-w-0 max-w-md truncate text-slate-700 dark:text-slate-300 text-sm"
+              title={code && code !== label ? `${label} — Código: ${code}` : label}
+            >
+              {label}
+            </span>
+          );
+        },
+      },
+      {
+        id: 'code',
+        name: 'Código',
+        width: '120px',
+        selector: (r) => r.name,
+        sortable: true,
+        cell: (r) => (
+          <span className="text-xs text-slate-500 dark:text-slate-400 tabular-nums">{r.name || '—'}</span>
+        ),
+      },
       {
         id: 'price',
         name: 'Precio (IVA incl.)',
@@ -878,6 +909,7 @@ export function OrdersPage() {
           const remaining =
             row.type === 'replacement' ? getReplacementRemaining(row.id, currentQty, row.amount) : Number.POSITIVE_INFINITY;
           const addable = canAddCatalogItemToBudget(row) && (row.type !== 'replacement' || remaining > 0);
+          const display = serviceCatalogDisplayName(row);
           return (
             <Button
               type="button"
@@ -887,7 +919,9 @@ export function OrdersPage() {
               disabled={!addable}
               title={addable ? undefined : 'Stock insuficiente para añadir'}
               onClick={() => addToBudget(row)}
-              aria-label={addable ? `Añadir ${row.name}` : `No se puede añadir ${row.name} — stock insuficiente`}
+              aria-label={
+                addable ? `Añadir ${display}` : `No se puede añadir ${display} — stock insuficiente`
+              }
             >
               <Plus className="w-5 h-5 font-bold" />
             </Button>
@@ -1366,7 +1400,7 @@ export function OrdersPage() {
                     <DataTableWithToolbar<ServiceSparePartItem>
                       data={availableServices}
                       columns={servicesColumns}
-                      searchFields={['name']}
+                      searchFields={['name', 'details']}
                       searchPlaceholder="Buscar:"
                       pageSizeOptions={[10, 25, 50]}
                       defaultPageSize={10}

@@ -112,6 +112,16 @@ export function serviceRowVisibleForSelectedTarifa(
   return spareRowHasTarifaId({ precio: item.price ?? null, tarifas }, selectedTarifaId);
 }
 
+/**
+ * Human-readable label for catalog + budget rows: Perseo sync stores `productocodigo` in `name`
+ * and the description in `details` (see hourly sync → ServiceSparePart).
+ */
+export function serviceCatalogDisplayName(item: Pick<ServiceSparePartItem, 'name' | 'details'>): string {
+  const d = String(item.details ?? '').trim();
+  if (d) return d;
+  return String(item.name ?? '').trim() || '—';
+}
+
 /** Catalog unit price for services: uses selected Perseo tariff when `tarifas` present; else IVA on single `price`. */
 export function serviceCatalogUnitPriceInclVat(
   item: Pick<ServiceSparePartItem, 'type' | 'price' | 'tarifas'>,
@@ -221,16 +231,17 @@ export function recalculateSpareBudgetLines<T extends { serviceId: string; amoun
 }
 
 export function recalculateServiceBudgetLines<
-  T extends { serviceId: string; amount: number; price: number; total: number },
+  T extends { serviceId: string; amount: number; price: number; total: number; name?: string },
 >(
   lines: T[],
-  servicesById: Map<string, Pick<ServiceSparePartItem, 'type' | 'price' | 'tarifas'>>,
+  servicesById: Map<string, Pick<ServiceSparePartItem, 'type' | 'price' | 'tarifas' | 'name' | 'details'>>,
   selectedTarifaId: number
 ): T[] {
   return lines.map((line) => {
     const item = servicesById.get(line.serviceId);
     if (!item || item.type !== 'service') return line;
     const price = serviceCatalogUnitPriceInclVat(item, selectedTarifaId);
-    return { ...line, price, total: Math.round(price * line.amount * 100) / 100 };
+    const name = serviceCatalogDisplayName(item);
+    return { ...line, name, price, total: Math.round(price * line.amount * 100) / 100 };
   });
 }
