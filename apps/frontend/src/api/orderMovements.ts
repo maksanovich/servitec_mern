@@ -27,7 +27,14 @@ export type ListOrderMovementsResult = {
 
 export async function listOrderMovements(
   token: string,
-  params: { limit?: number; skip?: number; orderCode?: string; orderId?: string; workflow?: OrderWorkflow | '' }
+  params: {
+    limit?: number;
+    skip?: number;
+    /** Tracking code (`Order.code`) or numeric order number (`Order.no`, digits only). */
+    orderCode?: string;
+    orderId?: string;
+    workflow?: OrderWorkflow | '';
+  }
 ): Promise<ListOrderMovementsResult> {
   const sp = new URLSearchParams();
   if (params.limit != null) sp.set('limit', String(params.limit));

@@ -176,16 +176,18 @@ export function OrderMovementsPage() {
 
       <p className="text-sm text-slate-600 dark:text-slate-400 max-w-3xl">
         Cada vez que una orden avanza en el flujo de reparación o garantía, se registra quién la cambió, la etapa anterior y
-        la nueva. Use los filtros por código de seguimiento o tipo de flujo.
+        la nueva. Puede filtrar por código de seguimiento o por número de orden (p. ej. 000058).
       </p>
 
       <Card className="p-4 flex flex-col sm:flex-row flex-wrap gap-3 sm:items-end">
         <div className="flex-1 min-w-[180px]">
-          <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Código de orden</label>
+          <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+            Código de seguimiento o n.º de orden
+          </label>
           <Input
             value={orderCodeFilter}
             onChange={(e) => setOrderCodeFilter(e.target.value)}
-            placeholder="Filtrar por código"
+            placeholder="Ej. ABC234XYZ o 000058"
             onKeyDown={(e) => {
               if (e.key === 'Enter') fetchRows();
             }}

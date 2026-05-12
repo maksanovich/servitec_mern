@@ -21,7 +21,7 @@ type MovementLean = {
 
 export async function listOrderMovements(req: AuthRequest, res: Response): Promise<Response | void> {
   try {
-    const limit = Math.min(200, Math.max(1, parseInt(String(req.query.limit ?? '50'), 10) || 50));
+    const limit = Math.min(500, Math.max(1, parseInt(String(req.query.limit ?? '50'), 10) || 50));
     const skip = Math.max(0, parseInt(String(req.query.skip ?? '0'), 10) || 0);
     const orderIdRaw = String(req.query.orderId ?? '').trim();
     const orderCode = String(req.query.orderCode ?? '').trim();
@@ -32,7 +32,31 @@ export async function listOrderMovements(req: AuthRequest, res: Response): Promi
       filter.orderId = new mongoose.Types.ObjectId(orderIdRaw);
     }
     if (orderCode) {
-      filter.orderCode = new RegExp(`^${orderCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+      const escaped = orderCode.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const byTrackingCode = { orderCode: new RegExp(`^${escaped}$`, 'i') };
+      // Users often type the public order number (`Order.no`) here; movements store it as `orderNo`.
+      const or: Record<string, unknown>[] = [byTrackingCode];
+      if (/^\d+$/.test(orderCode)) {
+        const asInt = parseInt(orderCode, 10);
+        if (Number.isFinite(asInt) && asInt >= 0) {
+          or.push({
+            $expr: {
+              $eq: [
+                {
+                  $convert: {
+                    input: { $trim: { input: '$orderNo' } },
+                    to: 'long',
+                    onError: -1,
+                    onNull: -1,
+                  },
+                },
+                asInt,
+              ],
+            },
+          });
+        }
+      }
+      filter.$or = or;
     }
     if (workflow === 'standard' || workflow === 'warranty') {
       filter.workflow = workflow;
