@@ -63,7 +63,6 @@ const REPAIR_STAGE_KEY = 'repair';
 const WARRANTY_WAIT_APPROVAL_KEY = 'warranty-waiting-provider-approval';
 const WARRANTY_APPROVED_KEY = 'warranty-approved';
 const WARRANTY_REJECTED_KEY = 'warranty-rejected';
-const WARRANTY_SOLUTION_KEY = 'warranty-solution-in-progress';
 
 function onEditBudget(order: Order) {
   console.log('Edit budget', order);
@@ -503,12 +502,8 @@ function StageActionDropdown({
   const stageIndex = resolvePipelineStageIndex(order, stagesForNav);
   const currentStage = stageIndex >= 0 ? stagesForNav[stageIndex]! : null;
   const prevStage = stageIndex > 0 ? stagesForNav[stageIndex - 1]! : null;
-  const nextStage =
-    stageIndex >= 0 && stageIndex < stagesForNav.length - 1 ? stagesForNav[stageIndex + 1]! : null;
-  const repairStageDirect = stagesForNav.find((s) => s.key === REPAIR_STAGE_KEY);
   const warrantyApprovedStageDirect = stagesForNav.find((s) => s.key === WARRANTY_APPROVED_KEY);
   const warrantyRejectedStageDirect = stagesForNav.find((s) => s.key === WARRANTY_REJECTED_KEY);
-  const warrantySolutionStageDirect = stagesForNav.find((s) => s.key === WARRANTY_SOLUTION_KEY);
 
   const rawProgressKey = String(order.progressStageKey ?? '').trim();
   const atWarrantyAwaitingApproval =
@@ -516,19 +511,6 @@ function StageActionDropdown({
     (rawProgressKey === WARRANTY_WAIT_APPROVAL_KEY || currentStage?.key === WARRANTY_WAIT_APPROVAL_KEY);
   const showWarrantyApprovalOutcomes =
     onMoveToStage && atWarrantyAwaitingApproval && warrantyApprovedStageDirect && warrantyRejectedStageDirect;
-  const showDirectRepair =
-    onMoveToStage &&
-    repairStageDirect &&
-    workflow !== 'warranty' &&
-    (rawProgressKey === APPROVAL_STAGE_KEY || currentStage?.key === APPROVAL_STAGE_KEY) &&
-    nextStage?.key !== REPAIR_STAGE_KEY;
-  /** From "Approved", jump to solution and skip "Rejected" in the linear warranty list. */
-  const showDirectWarrantySolution =
-    onMoveToStage &&
-    warrantySolutionStageDirect &&
-    workflow === 'warranty' &&
-    (rawProgressKey === WARRANTY_APPROVED_KEY || currentStage?.key === WARRANTY_APPROVED_KEY) &&
-    nextStage?.key !== WARRANTY_SOLUTION_KEY;
 
   const atStandardInbound =
     workflow === 'standard' && currentStage != null && currentStage.key === INBOUND_STAGE_KEY;
@@ -536,31 +518,28 @@ function StageActionDropdown({
   const atWarrantyInbound =
     workflow === 'warranty' && currentStage != null && currentStage.key === WARRANTY_INBOUND_STAGE_KEY;
 
-  /** After recepción: suggest Reparación first, then every other forward stage (pipeline order). */
-  const inboundForwardStages =
-    atStandardInbound && currentStage
+  /**
+   * Every tab: list all later pipeline stages as skip targets (not only recepción or the single “next”).
+   * At recepción estándar / garantía, keep Reparación / Diagnóstico first in the list.
+   */
+  const forwardSkipStages =
+    onMoveToStage && currentStage && !showWarrantyApprovalOutcomes
       ? (() => {
-          const forward = stagesForNav.filter((s) => s.sortOrder > currentStage.sortOrder);
-          const repIdx = forward.findIndex((s) => s.key === REPAIR_STAGE_KEY);
-          if (repIdx > 0) {
-            const next = [...forward];
-            const [rep] = next.splice(repIdx, 1);
-            return [rep, ...next];
-          }
-          return forward;
-        })()
-      : [];
-
-  /** After recepción del equipo (garantía): list forward stages; prioritize diagnóstico like repair in estándar. */
-  const warrantyInboundForwardStages =
-    atWarrantyInbound && currentStage
-      ? (() => {
-          const forward = stagesForNav.filter((s) => s.sortOrder > currentStage.sortOrder);
-          const diagIdx = forward.findIndex((s) => s.key === 'warranty-diagnosis');
-          if (diagIdx > 0) {
-            const next = [...forward];
-            const [d] = next.splice(diagIdx, 1);
-            return [d, ...next];
+          let forward = stagesForNav.filter((s) => s.sortOrder > currentStage.sortOrder);
+          if (atStandardInbound) {
+            const repIdx = forward.findIndex((s) => s.key === REPAIR_STAGE_KEY);
+            if (repIdx > 0) {
+              const arr = [...forward];
+              const [rep] = arr.splice(repIdx, 1);
+              forward = [rep, ...arr];
+            }
+          } else if (atWarrantyInbound) {
+            const diagIdx = forward.findIndex((s) => s.key === 'warranty-diagnosis');
+            if (diagIdx > 0) {
+              const arr = [...forward];
+              const [d] = arr.splice(diagIdx, 1);
+              forward = [d, ...arr];
+            }
           }
           return forward;
         })()
@@ -615,65 +594,32 @@ function StageActionDropdown({
         </button>
       )}
 
-      {atStandardInbound && inboundForwardStages.length > 0 && onMoveToStage && !showWarrantyApprovalOutcomes && (
+      {forwardSkipStages.length > 0 && onMoveToStage && (
         <>
-          {inboundForwardStages.map((s, idx) => (
+          {forwardSkipStages.map((s, idx) => (
             <button
               key={s.key}
               type="button"
               className="flex w-full items-center gap-2 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-200 hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20"
               title={
-                idx === 0 && s.key === REPAIR_STAGE_KEY
+                atStandardInbound && idx === 0 && s.key === REPAIR_STAGE_KEY
                   ? 'Tras el ingreso puede iniciarse la reparación; también puede elegir otra etapa abajo.'
-                  : undefined
+                  : atWarrantyInbound && idx === 0 && s.key === 'warranty-diagnosis'
+                    ? 'Elija la siguiente etapa del flujo de garantía.'
+                    : undefined
               }
               onClick={() => {
                 onMoveToStage(order, s.key);
                 setOpen(false);
               }}
             >
-              {s.key === REPAIR_STAGE_KEY ? <Wrench className="w-4 h-4 shrink-0" /> : null}
+              {s.key === REPAIR_STAGE_KEY || s.key === 'warranty-diagnosis' ? (
+                <Wrench className="w-4 h-4 shrink-0" />
+              ) : null}
               {s.label}
             </button>
           ))}
         </>
-      )}
-
-      {atWarrantyInbound && warrantyInboundForwardStages.length > 0 && onMoveToStage && !showWarrantyApprovalOutcomes && (
-        <>
-          {warrantyInboundForwardStages.map((s, idx) => (
-            <button
-              key={s.key}
-              type="button"
-              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-200 hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20"
-              title={
-                idx === 0 && s.key === 'warranty-diagnosis'
-                  ? 'Elija la siguiente etapa del flujo de garantía.'
-                  : undefined
-              }
-              onClick={() => {
-                onMoveToStage(order, s.key);
-                setOpen(false);
-              }}
-            >
-              {s.key === 'warranty-diagnosis' ? <Wrench className="w-4 h-4 shrink-0" /> : null}
-              {s.label}
-            </button>
-          ))}
-        </>
-      )}
-
-      {nextStage && onMoveToStage && !showWarrantyApprovalOutcomes && !atStandardInbound && !atWarrantyInbound && (
-        <button
-          type="button"
-          className="flex w-full items-center gap-2 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-200 hover:bg-emerald-500/10 dark:hover:bg-emerald-500/20"
-          onClick={() => {
-            onMoveToStage(order, nextStage.key);
-            setOpen(false);
-          }}
-        >
-          {nextStage.label}
-        </button>
       )}
 
       {showWarrantyApprovalOutcomes && warrantyApprovedStageDirect && warrantyRejectedStageDirect && (
@@ -701,38 +647,6 @@ function StageActionDropdown({
             {warrantyRejectedStageDirect.label}
           </button>
         </>
-      )}
-
-      {showDirectRepair && repairStageDirect && (
-        <button
-          type="button"
-          className="flex w-full items-center gap-2 px-3 py-2 text-sm text-sky-700 dark:text-sky-200 hover:bg-sky-500/10 dark:hover:bg-sky-500/20"
-          title="Ir directamente a reparación (omitir etapas intermedias)"
-          onClick={() => {
-            if (!onMoveToStage) return;
-            onMoveToStage(order, repairStageDirect.key);
-            setOpen(false);
-          }}
-        >
-          <Wrench className="w-4 h-4 shrink-0" />
-          {repairStageDirect.label}
-        </button>
-      )}
-
-      {showDirectWarrantySolution && warrantySolutionStageDirect && (
-        <button
-          type="button"
-          className="flex w-full items-center gap-2 px-3 py-2 text-sm text-sky-700 dark:text-sky-200 hover:bg-sky-500/10 dark:hover:bg-sky-500/20"
-          title="Ir directamente a solución en curso"
-          onClick={() => {
-            if (!onMoveToStage) return;
-            onMoveToStage(order, warrantySolutionStageDirect.key);
-            setOpen(false);
-          }}
-        >
-          <Wrench className="w-4 h-4 shrink-0" />
-          {warrantySolutionStageDirect.label}
-        </button>
       )}
 
       {showEditBudgetAction && (
