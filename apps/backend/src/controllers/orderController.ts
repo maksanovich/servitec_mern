@@ -42,6 +42,7 @@ import {
 } from '../utils/orderPhotos.js';
 import { recordOrderStageChange, recordTechnicianAssignment } from '../services/orderMovementService.js';
 import { normalizePhoneForWhatsApp } from '../utils/whatsappPhone.js';
+import { buildPublicOrderTrackUrl } from '../utils/orderTrackUrl.js';
 
 /** Matches backend `getAssignableTechnicians` / frontend technician detection. */
 function isTechnicianRole(slug: string, roleName?: string): boolean {
@@ -1374,17 +1375,21 @@ export async function patchOrder(req: AuthRequest, res: Response): Promise<Respo
         stateBefore,
         stateAfter
       );
+      const trackingCode = String(doc.code ?? '').trim();
+      const trackUrl = buildPublicOrderTrackUrl(trackingCode);
+      const waVariables: Record<string | number, string> = {
+        1: String(doc.clientName ?? ''),
+        2: String(doc.no ?? ''),
+        // Twilio template expects: {{3}} = estado anterior, {{4}} = nuevo estado.
+        3: waFromLabel,
+        4: waToLabel,
+        5: trackingCode,
+      };
+      // {{6}} = enlace de seguimiento (añadir en plantilla Twilio, p. ej. "Seguimiento: {{6}}")
+      if (trackUrl) waVariables[6] = trackUrl;
       const wa = await sendWhatsAppTemplateMessage({
         toRawPhone: phone,
-        variables: {
-          1: String(doc.clientName ?? ''),
-          2: String(doc.no ?? ''),
-          // Twilio template expects: {{3}} = estado anterior, {{4}} = nuevo estado.
-          // Keep chronological order: RECEPCIÓN / INGRESO -> APROBACIÓN, etc.
-          3: waFromLabel,
-          4: waToLabel,
-          5: String(doc.code ?? ''),
-        },
+        variables: waVariables,
       });
       if (wa.ok) {
         whatsappStatus = { sent: true };

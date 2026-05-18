@@ -98,6 +98,39 @@ async function fetchContentTemplateVariableKeys(
 /**
  * Keeps only keys that exist on the Content template. Extra keys are dropped (fixes 21656).
  */
+/**
+ * Ensures the public track URL is included in the message.
+ * - If the Twilio template defines {{6}}, variable 6 is the full URL (variable 5 stays the code).
+ * - Otherwise the URL is appended on a new line after the tracking code in {{5}}.
+ */
+function applyTrackingLinkToPickedVariables(
+  picked: Record<string | number, string>,
+  templateKeys: string[] | null,
+  sourceVars: Record<string | number, string>
+): void {
+  const trackUrl = String(sourceVars[6] ?? '').trim();
+  if (!trackUrl) return;
+
+  const trackCode = String(sourceVars[5] ?? '').trim();
+  const keys = templateKeys ?? Object.keys(picked).map(String);
+  const templateHas6 = keys.includes('6');
+
+  if (templateHas6) {
+    picked[6] = trackUrl;
+    if (!String(picked[5] ?? '').trim() && trackCode) {
+      picked[5] = trackCode;
+    }
+    return;
+  }
+
+  if (keys.includes('5')) {
+    const code = String(picked[5] ?? trackCode).trim();
+    picked[5] = code ? `${code}\n${trackUrl}` : trackUrl;
+  } else if (templateKeys === null) {
+    picked[6] = trackUrl;
+  }
+}
+
 function pickVariablesForTemplate(
   vars: Record<string | number, string>,
   templateKeys: string[] | null
@@ -159,6 +192,7 @@ export async function sendWhatsAppTemplateMessage(params: {
 
   const templateKeys = await fetchContentTemplateVariableKeys(client, contentSid);
   const picked = pickVariablesForTemplate(params.variables, templateKeys);
+  applyTrackingLinkToPickedVariables(picked, templateKeys, params.variables);
 
   if (
     templateKeys &&

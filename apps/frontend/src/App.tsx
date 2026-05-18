@@ -56,6 +56,7 @@ function App() {
             <Route path="blog" element={<BlogPage />} />
             <Route path="blog/:code" element={<BlogPostPage />} />
             <Route path="track" element={<TrackPage />} />
+            <Route path="track/:code" element={<TrackPage />} />
             <Route path="diagnosis" element={<PreDiagnosisPage />} />
           </Route>
           <Route

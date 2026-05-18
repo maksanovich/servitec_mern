@@ -1,4 +1,5 @@
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent, useEffect, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
 import {
   trackOrderByCode,
   downloadTechnicalReportDocx,
@@ -126,6 +127,7 @@ function getTimelineProgress(currentIndex: number, stagesLength: number): number
 }
 
 export function TrackPage() {
+  const { code: codeFromRoute } = useParams<{ code?: string }>();
   const [trackNumber, setTrackNumber] = useState('');
   const [order, setOrder] = useState<OrderTrackPublic | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -179,22 +181,33 @@ export function TrackPage() {
     : 0;
   const timelineProgress = getTimelineProgress(currentStageIndex, timelineStages.length);
 
-  const handleTrack = async (e: FormEvent) => {
-    e.preventDefault();
-    const code = trackNumber.trim();
-    if (!code) return;
+  const lookupByCode = useCallback(async (code: string) => {
+    const trimmed = code.trim();
+    if (!trimmed) return;
     setLoading(true);
     setError(null);
     setOrder(null);
     setReportError(null);
     try {
-      const { order: o } = await trackOrderByCode(code);
+      const { order: o } = await trackOrderByCode(trimmed);
       setOrder(o);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Orden no encontrada');
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    const fromRoute = codeFromRoute?.trim();
+    if (!fromRoute) return;
+    setTrackNumber(fromRoute);
+    void lookupByCode(fromRoute);
+  }, [codeFromRoute, lookupByCode]);
+
+  const handleTrack = async (e: FormEvent) => {
+    e.preventDefault();
+    await lookupByCode(trackNumber);
   };
 
   return (
