@@ -452,6 +452,78 @@ export function NewOrderPage() {
 
   const normalizeKey = useCallback((s: string) => s.trim().toLowerCase(), []);
 
+  /** Persist a new model name to EquipmentModel (MongoDB) for the selected brand. */
+  const ensureModelInDatabase = useCallback(
+    async (brandName: string, modelName: string): Promise<string> => {
+      const b = brandName.trim();
+      const m = modelName.trim();
+      if (!b || !m || !token) return m;
+
+      const exists = allModels.some(
+        (row) => normalizeKey(row.brand) === normalizeKey(b) && normalizeKey(row.model) === normalizeKey(m)
+      );
+      if (exists) return m;
+
+      try {
+        const { model: created } = await createModel(token, {
+          brand: b,
+          model: m,
+          state: 'active',
+        });
+        setAllModels((prev) => {
+          const dup = prev.some(
+            (row) =>
+              normalizeKey(row.brand) === normalizeKey(created.brand) &&
+              normalizeKey(row.model) === normalizeKey(created.model)
+          );
+          if (dup) return prev;
+          return [...prev, { brand: created.brand, model: created.model }];
+        });
+        return created.model;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message.toLowerCase() : '';
+        if (msg.includes('already exists') || msg.includes('duplicate')) {
+          try {
+            const { models: list } = await getModels(token);
+            setAllModels(
+              list
+                .filter((x) => x.state !== 'inactive')
+                .map((x) => ({
+                  brand: String(x.brand ?? '').trim(),
+                  model: String(x.model ?? '').trim(),
+                }))
+                .filter((row) => row.brand && row.model)
+            );
+          } catch {
+            // ignore refresh failure
+          }
+          return m;
+        }
+        throw err;
+      }
+    },
+    [allModels, normalizeKey, token]
+  );
+
+  const handleModelCustomValue = useCallback(
+    async (modelName: string) => {
+      if (!brand.trim()) {
+        setSubmitError({ text: 'Seleccione una marca antes de indicar el modelo.' });
+        return;
+      }
+      try {
+        const saved = await ensureModelInDatabase(brand, modelName);
+        setModel(saved);
+        setSubmitError(null);
+      } catch (err) {
+        setSubmitError({
+          text: err instanceof Error ? err.message : 'No se pudo guardar el modelo en el catálogo.',
+        });
+      }
+    },
+    [brand, ensureModelInDatabase]
+  );
+
   const modelOptions: SelectOption[] = useMemo(() => {
     const brandKey = normalizeKey(brand);
     const filtered = brandKey
@@ -832,10 +904,12 @@ export function NewOrderPage() {
         }))
       );
 
+      const modelForOrder = await ensureModelInDatabase(brand, model);
+
       const payload = {
         clientId: parseInt(customer, 10),
         brand,
-        model,
+        model: modelForOrder,
         series,
         type: product,
         area: area as any,
@@ -1242,9 +1316,14 @@ export function NewOrderPage() {
                       Cpu,
                       <SearchableSelect
                         options={modelOptions}
-                        placeholder="-- Seleccionar --"
+                        placeholder="-- Seleccionar o escribir --"
+                        searchPlaceholder="Buscar o escribir modelo…"
                         value={model}
                         onValueChange={setModel}
+                        allowCustomValue={Boolean(brand.trim())}
+                        customValueLabel={(q) => `Guardar modelo «${q}»`}
+                        onCustomValueSelect={handleModelCustomValue}
+                        disabled={!brand.trim()}
                       />
                     )}
                   </div>

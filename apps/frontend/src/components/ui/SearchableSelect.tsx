@@ -14,6 +14,11 @@ export interface SearchableSelectProps {
   className?: string;
   buttonClassName?: string;
   emptyText?: string;
+  /** When true, user can confirm a value typed in the search box that is not in `options`. */
+  allowCustomValue?: boolean;
+  customValueLabel?: (query: string) => string;
+  /** Called after the user confirms a custom (non-listed) value. */
+  onCustomValueSelect?: (value: string) => void;
 }
 
 export function SearchableSelect({
@@ -28,6 +33,9 @@ export function SearchableSelect({
   className = '',
   buttonClassName = '',
   emptyText = 'Sin resultados',
+  allowCustomValue = false,
+  customValueLabel,
+  onCustomValueSelect,
 }: SearchableSelectProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -44,6 +52,23 @@ export function SearchableSelect({
       return haystack.includes(q);
     });
   }, [filterOptions, options, query]);
+
+  const customQuery = query.trim();
+  const showCustomRow =
+    allowCustomValue &&
+    customQuery.length > 0 &&
+    !options.some((o) => o.value.trim().toLowerCase() === customQuery.toLowerCase());
+
+  const confirmCustomValue = (raw: string) => {
+    const next = raw.trim();
+    if (!next) return;
+    onValueChange(next);
+    onCustomValueSelect?.(next);
+    setOpen(false);
+    setQuery('');
+  };
+
+  const displayLabel = selected?.label ?? (value.trim() ? value.trim() : null);
 
   useEffect(() => {
     if (!open) setQuery('');
@@ -84,8 +109,8 @@ export function SearchableSelect({
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <span className={`truncate ${selected ? '' : 'text-slate-500 dark:text-slate-400'}`}>
-          {selected ? selected.label : placeholder}
+        <span className={`truncate ${displayLabel ? '' : 'text-slate-500 dark:text-slate-400'}`}>
+          {displayLabel ?? placeholder}
         </span>
         <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
@@ -104,6 +129,12 @@ export function SearchableSelect({
                 autoFocus
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && showCustomRow) {
+                    e.preventDefault();
+                    confirmCustomValue(customQuery);
+                  }
+                }}
                 placeholder={searchPlaceholder}
                 className="
                   w-full pl-10 pr-3 py-2 rounded-md border border-slate-200 dark:border-slate-700
@@ -115,7 +146,22 @@ export function SearchableSelect({
           </div>
 
           <div className="max-h-64 overflow-auto py-1">
-            {filtered.length === 0 ? (
+            {showCustomRow && (
+              <button
+                type="button"
+                role="option"
+                onClick={() => confirmCustomValue(customQuery)}
+                className="
+                  w-full text-left px-3 py-2 text-sm font-medium
+                  text-emerald-700 dark:text-emerald-300
+                  hover:bg-emerald-50 dark:hover:bg-emerald-950/30
+                  border-b border-slate-100 dark:border-slate-700/80
+                "
+              >
+                {customValueLabel ? customValueLabel(customQuery) : `Usar «${customQuery}»`}
+              </button>
+            )}
+            {filtered.length === 0 && !showCustomRow ? (
               <div className="px-3 py-2 text-sm text-slate-500 dark:text-slate-400">{emptyText}</div>
             ) : (
               filtered.map((opt) => {
@@ -147,4 +193,3 @@ export function SearchableSelect({
     </div>
   );
 }
-
