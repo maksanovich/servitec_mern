@@ -7,12 +7,12 @@ import {
   deleteClient,
 } from '../controllers/clientController.js';
 import { authMiddleware } from '../middleware/auth.js';
-import { requirePage } from '../middleware/rbac.js';
+import { requirePageOrOrderWorkflow } from '../middleware/rbac.js';
 
 const router = Router();
 
 router.use(authMiddleware);
-router.use(requirePage('/admin/clients'));
+router.use(requirePageOrOrderWorkflow('/admin/clients'));
 
 router.get('/', getClients);
 router.get('/:id', getClientById);

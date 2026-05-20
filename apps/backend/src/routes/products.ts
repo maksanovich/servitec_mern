@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.js';
-import { requirePage } from '../middleware/rbac.js';
+import { requirePageOrOrderWorkflow } from '../middleware/rbac.js';
 import {
   createProduct,
   deleteProduct,
@@ -15,7 +15,7 @@ const router = Router();
 router.get('/public', getProductsPublic);
 
 router.use(authMiddleware);
-router.use(requirePage('/admin/products'));
+router.use(requirePageOrOrderWorkflow('/admin/products'));
 
 router.get('/', getProducts);
 router.get('/:id', getProductById);

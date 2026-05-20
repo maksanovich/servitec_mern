@@ -7,12 +7,12 @@ import {
   deleteBrand,
 } from '../controllers/brandController.js';
 import { authMiddleware } from '../middleware/auth.js';
-import { requirePage } from '../middleware/rbac.js';
+import { requirePageOrOrderWorkflow } from '../middleware/rbac.js';
 
 const router = Router();
 
 router.use(authMiddleware);
-router.use(requirePage('/admin/brand'));
+router.use(requirePageOrOrderWorkflow('/admin/brand'));
 
 router.get('/', getAllBrands);
 router.get('/:id', getBrandById);

@@ -43,7 +43,27 @@ import {
 import { recordOrderStageChange, recordTechnicianAssignment } from '../services/orderMovementService.js';
 import { normalizePhoneForWhatsApp } from '../utils/whatsappPhone.js';
 import { buildPublicOrderTrackUrl } from '../utils/orderTrackUrl.js';
-import { isAssigneeOnlyTechnicianAccess } from '../utils/orderAccess.js';
+
+/** Matches backend `getAssignableTechnicians` / frontend technician detection. */
+function isTechnicianRole(slug: string, roleName?: string): boolean {
+  const s = String(slug ?? '').toLowerCase();
+  const n = String(roleName ?? '').toLowerCase();
+  return s === 'technician' || s.includes('tech') || n.includes('technician') || n.includes('tech');
+}
+
+/**
+ * Lead / outsourced technicians work the full order board like admins (see `seedRoles.ts`).
+ * They must not be treated as "only my assigned orders" — `lead_technician` matches `slug.includes('tech')`
+ * and "Outsourced Technician" matches `name.includes('technician')`.
+ */
+const ORDER_BOARD_UNRESTRICTED_ROLE_SLUGS = new Set(['lead_technician', 'outsourced']);
+
+/** True when the user should only list/patch orders where they are the assignee (`technician` field). */
+function isAssigneeOnlyTechnicianAccess(slug: string, roleName?: string): boolean {
+  const s = String(slug ?? '').trim().toLowerCase();
+  if (ORDER_BOARD_UNRESTRICTED_ROLE_SLUGS.has(s)) return false;
+  return isTechnicianRole(s, roleName);
+}
 
 /** Technicians may only access orders assigned to them; use 404 to avoid leaking ids. */
 function denyIfTechnicianNotAssignee(req: AuthRequest, res: Response, orderTechnicianId: unknown): boolean {

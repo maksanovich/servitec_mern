@@ -7,12 +7,12 @@ import {
   deleteModel,
 } from '../controllers/modelController.js';
 import { authMiddleware } from '../middleware/auth.js';
-import { requirePage } from '../middleware/rbac.js';
+import { requirePageOrOrderWorkflow } from '../middleware/rbac.js';
 
 const router = Router();
 
 router.use(authMiddleware);
-router.use(requirePage('/admin/models'));
+router.use(requirePageOrOrderWorkflow('/admin/models'));
 
 router.get('/', getAllModels);
 router.get('/:id', getModelById);

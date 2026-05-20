@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { User } from '../models/User.js';
-import { isTechnicianRole } from '../utils/orderAccess.js';
 import { Role } from '../models/Role.js';
 
 function toResponse(user: {
@@ -75,9 +74,9 @@ export async function getAssignableTechnicians(_req: Request, res: Response): Pr
     );
 
     const technicians = normalized.filter((u) => {
-      const slug = String(u.role?.slug ?? '');
-      const name = String(u.role?.name ?? '');
-      return isTechnicianRole(slug, name);
+      const slug = String(u.role?.slug ?? '').toLowerCase();
+      const name = String(u.role?.name ?? '').toLowerCase();
+      return slug === 'technician' || slug.includes('tech') || name.includes('technician') || name.includes('tech');
     });
 
     res.json({ users: technicians.length > 0 ? technicians : normalized });
