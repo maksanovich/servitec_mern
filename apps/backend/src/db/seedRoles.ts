@@ -21,15 +21,15 @@ const DEFAULT_ROLES = [
     pages: ['/admin/order'],
   },
   {
-    name: 'Lead Technician',
+    name: 'Tecnico Lead',
     slug: 'lead_technician',
-    description: 'Technical operations, receipts',
+    description: 'Operaciones técnicas; puede ver y editar todas las órdenes',
     pages: ['/admin/order'],
   },
   {
-    name: 'Outsourced Technician',
+    name: 'Tecnico Outsourced',
     slug: 'outsourced',
-    description: 'Third-party repairs (charged)',
+    description: 'Reparaciones externas; puede ver y editar todas las órdenes',
     pages: ['/admin/order'],
   },
   {
