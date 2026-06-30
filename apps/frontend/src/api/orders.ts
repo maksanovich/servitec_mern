@@ -37,16 +37,36 @@ export interface OrderListItem {
   advancement: number;
 }
 
+export interface GetOrdersParams {
+  area?: string;
+  state?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+  all?: boolean;
+  workflow?: OrderWorkflow;
+  progressStageKey?: string;
+}
+
+export interface GetOrdersResponse {
+  orders: OrderListItem[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export async function getOrders(
   token: string | null,
-  params: { area?: string; state?: string; search?: string; limit?: number; all?: boolean; workflow?: OrderWorkflow } = {}
-): Promise<{ orders: OrderListItem[] }> {
-  if (!token) return { orders: [] };
+  params: GetOrdersParams = {}
+): Promise<GetOrdersResponse> {
+  if (!token) return { orders: [], total: 0, page: 1, limit: 10 };
   const sp = new URLSearchParams();
   if (params.area) sp.set('area', params.area);
   if (params.state) sp.set('state', params.state);
   if (params.search) sp.set('search', params.search);
   if (params.workflow) sp.set('workflow', params.workflow);
+  if (params.progressStageKey) sp.set('progressStageKey', params.progressStageKey);
+  if (params.page != null) sp.set('page', String(params.page));
   if (params.all) sp.set('all', 'true');
   if (params.limit != null) sp.set('limit', String(params.limit));
   const qs = sp.toString();

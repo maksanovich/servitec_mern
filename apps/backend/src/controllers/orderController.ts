@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import type { PipelineStage } from 'mongoose';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
@@ -43,6 +44,9 @@ import {
 import { recordOrderStageChange, recordTechnicianAssignment } from '../services/orderMovementService.js';
 import { normalizePhoneForWhatsApp } from '../utils/whatsappPhone.js';
 import { buildPublicOrderTrackUrl } from '../utils/orderTrackUrl.js';
+
+const DEFAULT_LIMIT = 10;
+const MAX_LIMIT = 100;
 
 /** Matches backend `getAssignableTechnicians` / frontend technician detection. */
 function isTechnicianRole(slug: string, roleName?: string): boolean {
@@ -561,12 +565,18 @@ function isWarehouseTransition(area: unknown, state: unknown): boolean {
 
 export async function getOrders(req: AuthRequest, res: Response): Promise<Response | void> {
   try {
+    const page = Math.max(1, parseInt(String(req.query.page), 10) || 1);
+    const limit = Math.min(
+      MAX_LIMIT,
+      Math.max(1, parseInt(String(req.query.limit), 10) || DEFAULT_LIMIT)
+    );
     const area = typeof req.query.area === 'string' ? req.query.area.trim() : '';
     const state = typeof req.query.state === 'string' ? req.query.state.trim() : '';
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
     const workflowQ = typeof req.query.workflow === 'string' ? req.query.workflow.trim().toLowerCase() : '';
+    const progressStageKey =
+      typeof req.query.progressStageKey === 'string' ? req.query.progressStageKey.trim() : '';
     const fetchAll = String(req.query.all ?? '').trim().toLowerCase() === 'true';
-    const limit = Math.min(200, Math.max(1, parseInt(String(req.query.limit), 10) || 50));
 
     await syncLegacyOrderWorkflowFields();
     const ctx = await loadStageInferenceContext();
@@ -578,6 +588,7 @@ export async function getOrders(req: AuthRequest, res: Response): Promise<Respon
     if (workflowQ === 'standard' || workflowQ === 'warranty') {
       filter.workflow = workflowQ;
     }
+    if (progressStageKey) filter.progressStageKey = progressStageKey;
     if (area) filter.area = area;
     if (state) filter.state = state;
     if (search) {
@@ -585,25 +596,34 @@ export async function getOrders(req: AuthRequest, res: Response): Promise<Respon
       filter.$or = [{ no: re }, { code: re }, { clientName: re }, { series: re }, { brand: re }, { model: re }];
     }
 
-    const query = Order.find(filter);
-    if (!fetchAll) query.limit(limit);
-    const orders = await query.lean();
-
     // Prioritize equipment in service for more than 7 days since arrival (`createdAt`)
     // so that older/overdue items appear first by default in the UI table.
-    const nowMs = Date.now();
     const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
-    orders.sort((a: any, b: any) => {
-      const aCreated = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const bCreated = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
+    const overdueCutoff = new Date(Date.now() - sevenDaysMs);
+    const pipeline: PipelineStage[] = [
+      { $match: filter },
+      {
+        $addFields: {
+          __oldInService: {
+            $cond: [
+              { $and: [{ $ne: ['$state', 'finished'] }, { $lt: ['$createdAt', overdueCutoff] }] },
+              1,
+              0,
+            ],
+          },
+        },
+      },
+      { $sort: { __oldInService: -1, createdAt: -1, _id: -1 } },
+    ];
+    if (!fetchAll) {
+      pipeline.push({ $skip: (page - 1) * limit }, { $limit: limit });
+    }
+    pipeline.push({ $project: { __oldInService: 0 } });
 
-      const aInServiceOld = String(a?.state ?? '') !== 'finished' && nowMs - aCreated > sevenDaysMs;
-      const bInServiceOld = String(b?.state ?? '') !== 'finished' && nowMs - bCreated > sevenDaysMs;
-
-      if (aInServiceOld !== bInServiceOld) return aInServiceOld ? -1 : 1; // old first
-      // Keep existing behavior as secondary key: newest first.
-      return bCreated - aCreated;
-    });
+    const [orders, total] = await Promise.all([
+      Order.aggregate(pipeline),
+      Order.countDocuments(filter),
+    ]);
 
     const techIds = Array.from(
       new Set(
@@ -648,6 +668,9 @@ export async function getOrders(req: AuthRequest, res: Response): Promise<Respon
 
     return res.json({
       orders: orders.map((o: any) => toListResponse(o, usersById, clientPhonesById, ctx)),
+      total,
+      page,
+      limit,
     });
   } catch (err) {
     console.error('Get orders error:', err);

@@ -42,8 +42,10 @@ import {
   type SelectOption,
 } from '../../components/ui';
 import {
+  DataTable,
+  DataTableToolbar,
+  DataTablePagination,
   DataTableWithToolbar,
-  type DataTableFilterState,
   exportTableToPDF,
   exportTableToExcel,
 } from '../../components/datatable';
@@ -92,6 +94,8 @@ import { discountAmountForSubtotal, totalAfterDiscount, type DiscountType } from
 export type { Order };
 
 const exportOptions = { title: 'Ordenes', filename: 'ordenes' };
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+const DEFAULT_PAGE_SIZE = 10;
 
 /** One icon per tab index so stages that share a legacy area still look distinct. */
 const STAGE_TAB_ICONS: LucideIcon[] = [
@@ -165,6 +169,12 @@ export function OrdersPage() {
   const [activeStageKey, setActiveStageKey] = useState<string>('');
   const filteredDataRef = useRef<Order[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [ordersTotal, setOrdersTotal] = useState(0);
+  const [ordersPage, setOrdersPage] = useState(1);
+  const [ordersPageSize, setOrdersPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [ordersSearch, setOrdersSearch] = useState('');
+  const [ordersSearchInput, setOrdersSearchInput] = useState('');
+  const [ordersLoading, setOrdersLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<Order | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -235,39 +245,55 @@ export function OrdersPage() {
     };
   }, [workflowView]);
 
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const { orders: list } = await getOrders(token, { all: true, workflow: workflowView });
-        if (mounted) setOrders(list as unknown as Order[]);
-      } catch (e) {
-        console.error(e);
-        if (mounted) setOrders([]);
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, [token, workflowView]);
-
-  const dataByStage = useMemo(() => {
-    if (!activeStageKey) return [];
-    return orders.filter((o) => (o.progressStageKey ?? '') === activeStageKey);
-  }, [activeStageKey, orders]);
-
-  const onFilteredDataChange = useCallback((_filters: DataTableFilterState, filteredData: Order[]) => {
-    filteredDataRef.current = filteredData;
-  }, []);
-
-  const refetchOrders = useCallback(async () => {
+  const fetchOrders = useCallback(async () => {
+    if (!token || !activeStageKey) {
+      setOrders([]);
+      setOrdersTotal(0);
+      return;
+    }
+    setOrdersLoading(true);
     try {
-      const { orders: list } = await getOrders(token, { all: true, workflow: workflowView });
+      const { orders: list, total } = await getOrders(token, {
+        page: ordersPage,
+        limit: ordersPageSize,
+        search: ordersSearch || undefined,
+        workflow: workflowView,
+        progressStageKey: activeStageKey,
+      });
       setOrders(list as unknown as Order[]);
+      setOrdersTotal(total);
     } catch (e) {
       console.error(e);
+      setOrders([]);
+      setOrdersTotal(0);
+    } finally {
+      setOrdersLoading(false);
     }
-  }, [token, workflowView]);
+  }, [token, activeStageKey, ordersPage, ordersPageSize, ordersSearch, workflowView]);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setOrdersSearch(ordersSearchInput);
+      setOrdersPage(1);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [ordersSearchInput]);
+
+  useEffect(() => {
+    setOrdersPage(1);
+  }, [workflowView, activeStageKey]);
+
+  useEffect(() => {
+    filteredDataRef.current = orders;
+  }, [orders]);
+
+  const refetchOrders = useCallback(async () => {
+    await fetchOrders();
+  }, [fetchOrders]);
 
   const toastWhatsAppPatchStatus = useCallback((status?: OrderPatchWhatsAppStatus) => {
     if (!status) return;
@@ -1076,7 +1102,10 @@ export function OrdersPage() {
               <button
                 key={s.key}
                 type="button"
-                onClick={() => setActiveStageKey(s.key)}
+                onClick={() => {
+                  setActiveStageKey(s.key);
+                  setOrdersPage(1);
+                }}
                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-colors ${isActive ? 'bg-blue-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200'
                   }`}
               >
@@ -1088,20 +1117,16 @@ export function OrdersPage() {
       </div>
 
       <Card className="overflow-hidden">
-        <DataTableWithToolbar<Order>
-          data={dataByStage}
-          columns={tableColumns}
-          searchFields={['no', 'code', 'customer', 'technical', 'equipment', 'series', 'type']}
-          searchPlaceholder="Look for:"
-          pageSizeOptions={[10, 25, 50, 100]}
-          defaultPageSize={10}
-          onFilteredDataChange={onFilteredDataChange}
-          expandableRows
-          expandableRowsComponent={OrderExpandedRow}
-          expandableIcon={{
-            collapsed: <Plus className="h-4 w-4" strokeWidth={2.5} />,
-            expanded: <Minus className="h-4 w-4" strokeWidth={2.5} />,
+        <DataTableToolbar
+          pageSize={ordersPageSize}
+          onPageSizeChange={(size) => {
+            setOrdersPageSize(size);
+            setOrdersPage(1);
           }}
+          pageSizeOptions={PAGE_SIZE_OPTIONS}
+          searchValue={ordersSearchInput}
+          onSearchChange={setOrdersSearchInput}
+          searchPlaceholder="Look for:"
           rightContent={
             <ButtonGroup>
               <Button
@@ -1125,6 +1150,51 @@ export function OrdersPage() {
             </ButtonGroup>
           }
         />
+        <div className="pb-5 w-full min-w-0 overflow-x-auto relative min-h-[280px]">
+          <div
+            aria-hidden={!ordersLoading}
+            aria-live="polite"
+            className="absolute inset-0 z-10 flex items-center justify-center bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-[2px] transition-opacity duration-200"
+            style={{
+              opacity: ordersLoading ? 1 : 0,
+              pointerEvents: ordersLoading ? 'auto' : 'none',
+            }}
+          >
+            <div className="flex flex-col items-center gap-3">
+              <Loader size="lg" />
+              <span className="text-sm text-slate-500 dark:text-slate-400 animate-pulse">Cargando…</span>
+            </div>
+          </div>
+          <DataTable<Order>
+            key={ordersPageSize}
+            className="w-full max-w-full"
+            columns={tableColumns}
+            data={orders}
+            pagination
+            paginationServer
+            paginationTotalRows={ordersTotal}
+            paginationDefaultPage={ordersPage}
+            paginationPerPage={ordersPageSize}
+            paginationRowsPerPageOptions={PAGE_SIZE_OPTIONS}
+            paginationComponent={DataTablePagination}
+            onChangePage={(nextPage) => setOrdersPage(nextPage)}
+            onChangeRowsPerPage={(nextPageSize) => {
+              setOrdersPageSize(nextPageSize);
+              setOrdersPage(1);
+            }}
+            noDataComponent={
+              <div className="py-12 text-center text-slate-500 dark:text-slate-400">
+                {ordersLoading ? 'Cargando…' : 'No hay ordenes para esta etapa.'}
+              </div>
+            }
+            expandableRows
+            expandableRowsComponent={OrderExpandedRow}
+            expandableIcon={{
+              collapsed: <Plus className="h-4 w-4" strokeWidth={2.5} />,
+              expanded: <Minus className="h-4 w-4" strokeWidth={2.5} />,
+            }}
+          />
+        </div>
       </Card>
 
       <Modal
