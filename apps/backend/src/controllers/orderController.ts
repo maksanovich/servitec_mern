@@ -565,6 +565,7 @@ export async function getOrders(req: AuthRequest, res: Response): Promise<Respon
     const state = typeof req.query.state === 'string' ? req.query.state.trim() : '';
     const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
     const workflowQ = typeof req.query.workflow === 'string' ? req.query.workflow.trim().toLowerCase() : '';
+    const fetchAll = String(req.query.all ?? '').trim().toLowerCase() === 'true';
     const limit = Math.min(200, Math.max(1, parseInt(String(req.query.limit), 10) || 50));
 
     await syncLegacyOrderWorkflowFields();
@@ -584,7 +585,9 @@ export async function getOrders(req: AuthRequest, res: Response): Promise<Respon
       filter.$or = [{ no: re }, { code: re }, { clientName: re }, { series: re }, { brand: re }, { model: re }];
     }
 
-    const orders = await Order.find(filter).limit(limit).lean();
+    const query = Order.find(filter);
+    if (!fetchAll) query.limit(limit);
+    const orders = await query.lean();
 
     // Prioritize equipment in service for more than 7 days since arrival (`createdAt`)
     // so that older/overdue items appear first by default in the UI table.

@@ -239,7 +239,7 @@ export function OrdersPage() {
     let mounted = true;
     (async () => {
       try {
-        const { orders: list } = await getOrders(token, { limit: 200, workflow: workflowView });
+        const { orders: list } = await getOrders(token, { all: true, workflow: workflowView });
         if (mounted) setOrders(list as unknown as Order[]);
       } catch (e) {
         console.error(e);
@@ -262,7 +262,7 @@ export function OrdersPage() {
 
   const refetchOrders = useCallback(async () => {
     try {
-      const { orders: list } = await getOrders(token, { limit: 200, workflow: workflowView });
+      const { orders: list } = await getOrders(token, { all: true, workflow: workflowView });
       setOrders(list as unknown as Order[]);
     } catch (e) {
       console.error(e);

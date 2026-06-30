@@ -39,7 +39,7 @@ export interface OrderListItem {
 
 export async function getOrders(
   token: string | null,
-  params: { area?: string; state?: string; search?: string; limit?: number; workflow?: OrderWorkflow } = {}
+  params: { area?: string; state?: string; search?: string; limit?: number; all?: boolean; workflow?: OrderWorkflow } = {}
 ): Promise<{ orders: OrderListItem[] }> {
   if (!token) return { orders: [] };
   const sp = new URLSearchParams();
@@ -47,6 +47,7 @@ export async function getOrders(
   if (params.state) sp.set('state', params.state);
   if (params.search) sp.set('search', params.search);
   if (params.workflow) sp.set('workflow', params.workflow);
+  if (params.all) sp.set('all', 'true');
   if (params.limit != null) sp.set('limit', String(params.limit));
   const qs = sp.toString();
   const res = await apiFetch(qs ? `/orders?${qs}` : '/orders', { token });
