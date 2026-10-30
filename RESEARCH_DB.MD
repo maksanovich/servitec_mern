@@ -1,8 +1,8 @@
 # Efficient Multi-Dimensional State Indexing for Complex Service Order Workflows
 
-**Authors:** Dustin Schneiter¹*, Maksim Sanovich²  
+**Authors:** Dustin Schneiter¹
 **Affiliation:** ¹Servitec Technical Services, ²Database Research Group  
-**Submitted:** October 2026  
+**Submitted:** June 2026  
 
 ---
 
@@ -105,7 +105,7 @@ Recent work on "adaptive" or "self-tuning" indexes (AutoAdmin, Schuhknecht et al
 
 Servitec is a technical repair and warranty management system deployed in production since 2022. It processes orders for equipment repair, warranty claims, and spare parts allocation.
 
-**Key statistics (as of October 2026):**
+**Key statistics (as of June 2026):**
 - 2.3M total orders in MongoDB
 - 300–400 new orders/day
 - 20–100 concurrent users (admins, technicians, managers)
@@ -126,7 +126,7 @@ income → maintenance → warehouse → delivery → finished
 
 ### 3.2 Query Patterns (Before Optimization)
 
-We logged all queries to the `orders` collection over 4 weeks (October 2024). The top 20 queries by frequency:
+We logged all queries to the `orders` collection over 4 weeks (June 2024). The top 20 queries by frequency:
 
 | Query Pattern | Count | Avg. Latency (ms) | 95th %ile (ms) |
 |---------------|-------|-------------------|----------------|
@@ -457,7 +457,7 @@ export async function findOrdersOptimized(
 - 2.3M orders in collection (~2.8GB on disk)
 
 **Workload:**
-- Queries extracted from 4 weeks of production logs (October 2024)
+- Queries extracted from 4 weeks of production logs (June 2024)
 - Top 20 query patterns from Section 3.2
 - Each experiment: run query 100 times with warm cache, measure latency
 
@@ -753,7 +753,7 @@ db.orders.find({ state: "delivery", workflow: "warranty" })
 
 ---
 
-**Manuscript received:** October 2026  
+**Manuscript received:** June 2026  
 **Keywords:** MongoDB, multi-dimensional indexing, state machines, OLTP, query optimization, service workflows
 
 ---
